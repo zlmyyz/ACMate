@@ -20,6 +20,7 @@
 - [x] 数据库健康检查接口
 - [x] 数据库健康检查验证
 - [x] 最小 Spring Security 配置
+- [x] 用户注册接口
 
 ## 本地启动
 
@@ -76,8 +77,10 @@ $env:DB_PASSWORD="your_password"
 curl http://localhost:8080/api/health
 ```
 
-实际返回：
+响应示例（`userCount` 取决于数据库当前数据，全新数据库为 0）：
 
 ```json
 {"status":"UP","database":"UP","userCount":0}
 ```
+
+> 2026-07-24 本地验收实际返回 userCount=1（详见 DEVLOG）。
