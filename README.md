@@ -21,6 +21,9 @@
 - [x] 数据库健康检查验证
 - [x] 最小 Spring Security 配置
 - [x] 用户注册接口
+- [x] Session 登录接口
+- [x] 当前用户查询接口
+- [x] 退出登录接口
 
 ## 本地启动
 
@@ -83,4 +86,4 @@ curl http://localhost:8080/api/health
 {"status":"UP","database":"UP","userCount":0}
 ```
 
-> 2026-07-24 本地验收实际返回 userCount=1（详见 DEVLOG）。
+> 2026-07-25 本地验收实际返回 userCount > 0（含注册用户和验收用户，详见 DEVLOG）。

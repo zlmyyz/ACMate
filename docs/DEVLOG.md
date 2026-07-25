@@ -500,3 +500,36 @@ Tests run: 50, Failures: 0, Errors: 0, Skipped: 0
 ### 已知限制
 
 - Session 认证阶段（login + me + logout + csrf）已完整实现
+
+## 2026-07-25：Session 认证真实运行验收
+
+### 验收时间
+
+2026-07-25，本地运行环境，Maven + local profile。
+
+### 验收流程
+
+1. POST /api/auth/register → 201（新建验收用户）
+2. POST /api/auth/login → 200（无 password 或 passwordHash 字段）
+3. GET /api/users/me → 200（用户信息与登录一致）
+4. GET /api/auth/csrf → 200（token 非空，含 headerName 和 parameterName）
+5. POST /api/auth/logout + CSRF header → 204（响应体为空）
+6. GET /api/users/me（同一 Session）→ 401（Session 已失效）
+7. POST /api/auth/login（错误密码）→ 401
+8. GET /api/users/me（未登录）→ 401（JSON 格式，非 HTML 或 302）
+9. POST /api/auth/logout（无 CSRF）→ 403
+
+### 自动化测试 vs 真实运行
+
+| 维度 | 自动化测试 | 真实运行验收 |
+|------|-----------|-------------|
+| 环境 | @WebMvcTest + mock Mapper | Maven spring-boot:run + 真实 MySQL |
+| Session | MockHttpSession | 真实 Tomcat HttpSession + JSESSIONID Cookie |
+| CSRF | with(csrf()) post-processor | 真实 GET /api/auth/csrf → 提取 token → 设置请求头 |
+| 认证 | with(user(...)) 或 mock login | 真实 BCrypt + AuthenticationManager + DB 查询 |
+
+两者在所有接口行为上完全一致。
+
+### 已知限制
+
+- Session 认证模块已全面验收通过
