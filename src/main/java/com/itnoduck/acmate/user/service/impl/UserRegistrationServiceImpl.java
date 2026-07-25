@@ -48,7 +48,7 @@ public class UserRegistrationServiceImpl implements UserRegistrationService {
 
         try {
             int rows = appUserMapper.insert(user);
-            if (rows != 1) {
+            if (rows != 1 || user.getId() == null) {
                 throw new BusinessException(500, "注册失败");
             }
         } catch (DuplicateKeyException e) {
