@@ -2,8 +2,10 @@ package com.itnoduck.acmate.user.controller;
 
 import com.itnoduck.acmate.common.exception.GlobalExceptionHandler;
 import com.itnoduck.acmate.config.SecurityConfig;
+import com.itnoduck.acmate.security.DatabaseUserDetailsService;
 import com.itnoduck.acmate.user.dto.RegisterRequest;
 import com.itnoduck.acmate.user.dto.RegisterResponse;
+import com.itnoduck.acmate.user.service.UserAuthenticationService;
 import com.itnoduck.acmate.user.service.UserRegistrationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +36,12 @@ class AuthControllerTest {
 
     @MockitoBean
     private UserRegistrationService userRegistrationService;
+
+    @MockitoBean
+    private UserAuthenticationService userAuthenticationService;
+
+    @MockitoBean
+    private DatabaseUserDetailsService databaseUserDetailsService;
 
     @Test
     void shouldReturn201OnValidRegister() throws Exception {

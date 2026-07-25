@@ -319,3 +319,78 @@ Tests run: 23, Failures: 0, Errors: 0, Skipped: 0
 - 尚未实现 Session 持久化
 - 尚未实现退出登录
 - 尚未实现当前用户查询接口
+
+## 2026-07-25：Session 登录
+
+### 本次目标
+
+实现 POST /api/auth/login、GET /api/users/me、Session 持久化，不实现退出登录。
+
+### 新增文件
+- src/main/java/com/itnoduck/acmate/user/dto/LoginRequest.java — 登录请求（无 @Data，手动 toString 排除 password）
+- src/main/java/com/itnoduck/acmate/user/dto/LoginResponse.java — 登录响应 record
+- src/main/java/com/itnoduck/acmate/user/dto/CurrentUserResponse.java — 当前用户响应 record
+- src/main/java/com/itnoduck/acmate/user/service/UserAuthenticationService.java — 登录服务接口
+- src/main/java/com/itnoduck/acmate/user/service/impl/UserAuthenticationServiceImpl.java — 登录认证实现
+- src/main/java/com/itnoduck/acmate/user/controller/UserController.java — GET /api/users/me
+- src/main/java/com/itnoduck/acmate/security/RestAuthenticationEntryPoint.java — 401 JSON 响应
+- src/test/java/com/itnoduck/acmate/user/controller/SessionLoginTest.java — 12 个登录 Session 集成测试
+
+### 修改文件
+- src/main/java/com/itnoduck/acmate/config/SecurityConfig.java — 增加 AuthenticationManager、SecurityContextRepository、SessionAuthenticationStrategy、RestAuthenticationEntryPoint Bean；放行 /api/auth/login；保护 /api/users/me
+- src/main/java/com/itnoduck/acmate/user/controller/AuthController.java — 增加 POST /api/auth/login
+- src/main/java/com/itnoduck/acmate/common/exception/GlobalExceptionHandler.java — 增加 BadCredentialsException/UsernameNotFoundException → 401、DisabledException → 403
+- src/main/java/com/itnoduck/acmate/common/dto/ApiError.java — Jackson 3.x import 修正
+- src/main/resources/application.yml — 增加 Session 超时和 Cookie 配置
+- src/test/java/com/itnoduck/acmate/user/controller/AuthControllerTest.java — 增加 @MockitoBean 适配新依赖
+- docs/API.md — 增加登录和 /me 接口文档
+- docs/DEVLOG.md — 追加本记录
+
+### AuthenticationManager 配置
+
+```java
+DaoAuthenticationProvider provider = new DaoAuthenticationProvider(databaseUserDetailsService);
+provider.setPasswordEncoder(passwordEncoder);
+new ProviderManager(provider);
+```
+
+### 登录认证链路
+
+1. AuthController 接收 LoginRequest → UserAuthenticationService.login()
+2. UsernamePasswordAuthenticationToken(username, rawPassword)
+3. AuthenticationManager.authenticate() → DaoAuthenticationProvider
+4. DatabaseUserDetailsService.loadUserByUsername() → 查询用户
+5. BCryptPasswordEncoder.matches() → 验证密码
+6. 成功 → SecurityContext → SecurityContextHolder + HttpSession
+7. ChangeSessionIdAuthenticationStrategy 更换 Session ID
+
+### SecurityContext 写入 Session
+
+通过 SecurityContextRepository.saveContext(context, request, response) 将 SecurityContext 持久化到 HttpSession，后续请求可通过 JSESSIONID Cookie 恢复登录状态。
+
+### Session Fixation 防护
+
+ChangeSessionIdAuthenticationStrategy 在认证成功时自动更换 Session ID，防止 Session Fixation 攻击。
+
+### 异常处理
+
+| 异常 | HTTP | 消息 |
+|------|------|------|
+| BadCredentialsException | 401 | 用户名或密码错误 |
+| UsernameNotFoundException | 401 | 用户名或密码错误 |
+| DisabledException | 403 | 账号已被禁用 |
+
+### 测试结果
+
+```
+Tests run: 35, Failures: 0, Errors: 0, Skipped: 0
+```
+
+- SessionLoginTest: 12 tests（正确凭证、密码错误、用户不存在、禁用用户、CSRF 忽略、Session 存储、跨请求 /me、响应字段验证、未登录 401、Principal 类型验证、管理员标识）
+- AuthControllerTest: 12 tests（注册相关测试仍通过）
+- UserRegistrationServiceImplTest: 10 tests
+- AcMateApplicationTests: 1 test
+
+### 已知限制
+
+- 尚未实现退出登录
