@@ -1,5 +1,6 @@
 package com.itnoduck.acmate.user.controller;
 
+import com.itnoduck.acmate.user.dto.CsrfTokenResponse;
 import com.itnoduck.acmate.user.dto.LoginRequest;
 import com.itnoduck.acmate.user.dto.LoginResponse;
 import com.itnoduck.acmate.user.dto.RegisterRequest;
@@ -13,6 +14,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
+import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -53,5 +56,11 @@ public class AuthController {
             new SecurityContextLogoutHandler().logout(request, response, authentication);
         }
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/csrf")
+    public CsrfTokenResponse csrf(HttpServletRequest request) {
+        CsrfToken csrfToken = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
+        return new CsrfTokenResponse(csrfToken.getToken(), csrfToken.getHeaderName(), csrfToken.getParameterName());
     }
 }

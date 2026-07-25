@@ -164,6 +164,43 @@ Session 登录。
 - 使用 @AuthenticationPrincipal 直接获取 AuthenticatedUser
 - 不为此接口重新查询数据库
 
+## GET /api/auth/csrf
+
+获取当前 Session 的 CSRF Token。
+
+### 认证
+
+不需要登录，但请求必须携带 JSESSIONID Cookie 才能与后续写操作共享同一个 CSRF Token。
+
+### CSRF
+
+GET 请求不受 CSRF 保护。不要求携带 CSRF Token。
+
+### 成功响应
+
+**200 OK**
+
+```json
+{
+  "token": "<csrf-token>",
+  "headerName": "<header-name>",
+  "parameterName": "<parameter-name>"
+}
+```
+
+| 字段 | 说明 |
+|------|------|
+| token | CSRF Token 值，用于后续写操作的请求头 |
+| headerName | 请求头名称，用于提交 CSRF Token |
+| parameterName | 表单参数名称（使用请求头即可以忽略） |
+
+### 客户端流程
+
+1. 登录 POST /api/auth/login 并保留 JSESSIONID Cookie
+2. 使用同一客户端 GET /api/auth/csrf，读取 token 和 headerName
+3. 调用 POST /api/auth/logout 时，以 headerName 为请求头键、token 为请求头值
+4. logout 成功返回 204
+
 ## POST /api/auth/logout
 
 退出登录，使当前 Session 失效。
@@ -174,7 +211,7 @@ Session 登录。
 
 ### CSRF
 
-需要携带有效 CSRF Token。不在 CSRF 忽略列表中。
+需要携带有效 CSRF Token。通过 GET /api/auth/csrf 获取。不在 CSRF 忽略列表中。
 
 ### 成功响应
 

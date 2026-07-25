@@ -415,9 +415,9 @@ Tests run: 35, Failures: 0, Errors: 0, Skipped: 0
 
 Controller 中注入 Authentication（Spring MVC 参数自动绑定），调用 SecurityContextLogoutHandler.logout(request, response, authentication)：
 
-1. 清除 SecurityContext（SecurityContextHolder.clearContext() + SecurityContextRepository.saveContext()）
-2. 使当前 HttpSession 失效（invalidate()）
-3. 清除 SecurityContextHolder 中的认证
+1. SecurityContextLogoutHandler 负责：清除 SecurityContextHolder + 调用 SecurityContextRepository.saveContext() 将空 Context 写回 Session + 使 HttpSession 失效
+2. SecurityContextRepository（HttpSessionSecurityContextRepository）负责：从 Session 读取/写入 SecurityContext，在此流程中完成 Session 属性清理
+3. SecurityContextHolder.clearContext() 仅清理当前线程，不足以使 Session 失效
 
 返回 204 No Content，响应体为空。
 
@@ -448,3 +448,55 @@ Tests run: 44, Failures: 0, Errors: 0, Skipped: 0
 ### 已知限制
 
 - Session 认证阶段（login + me + logout）已完整实现
+
+## 2026-07-25：CSRF Token 获取接口
+
+### 本次目标
+
+为真实客户端（非测试 built-in helper）提供 CSRF Token 获取端点 GET /api/auth/csrf，完成跨请求真实 Token 流程测试。
+
+### 新建文件
+- src/main/java/com/itnoduck/acmate/user/dto/CsrfTokenResponse.java — record(token, headerName, parameterName)
+
+### 修改文件
+- src/main/java/com/itnoduck/acmate/config/SecurityConfig.java — GET /api/auth/csrf → permitAll
+- src/main/java/com/itnoduck/acmate/user/controller/AuthController.java — 增加 GET /api/auth/csrf
+- src/test/java/com/itnoduck/acmate/user/controller/LogoutTest.java — 增加 7 个 CSRF Token 获取和真实流程测试
+- docs/API.md — 增加 GET /api/auth/csrf 文档和客户端使用流程
+- docs/DEVLOG.md — 追加本记录
+
+### CSRF Token 获取方式
+
+客户端通过 GET /api/auth/csrf 获取当前 Session 的 Token。CsrfFilter 在每次请求时通过 CsrfTokenRepository 生成/加载 Token 并存入 request attribute。
+
+Controller 从 request.getAttribute(CsrfToken.class.getName()) 提取 Token，返回 token、headerName、parameterName。
+
+### 真实客户端流程
+
+1. POST /api/auth/login → 获取 JSESSIONID Cookie
+2. GET /api/auth/csrf（同一 Session）→ 获取 token + headerName
+3. POST /api/auth/logout（同一 Session）→ 设置请求头 `<headerName>: <token>` → 204
+
+### SecurityContextLogoutHandler 与 SecurityContextRepository 职责区分
+
+| 组件 | 职责 |
+|------|------|
+| SecurityContextLogoutHandler | 调用 SecurityContextHolder.clearContext() + 触发 SecurityContextRepository.saveContext(empty) + 使 Session 失效 |
+| SecurityContextRepository | 从 Session 读取/写入 SecurityContext 属性（SPRING_SECURITY_CONTEXT），不负责 Session 生命周期 |
+| SecurityContextHolder | 线程绑定的 Context，clearContext() 只影响当前线程 |
+
+### 测试结果
+
+```
+Tests run: 50, Failures: 0, Errors: 0, Skipped: 0
+```
+
+- LogoutTest: 15 tests（新增：CSRF 接口 200、Token 非空、响应不含 sessionId、真实 Token 登录后 logout → 204、错误 Token → 403、真实流程 login → csrf → logout → /me → 401）
+- SessionLoginTest: 12 tests
+- AuthControllerTest: 12 tests
+- UserRegistrationServiceImplTest: 10 tests
+- AcMateApplicationTests: 1 test
+
+### 已知限制
+
+- Session 认证阶段（login + me + logout + csrf）已完整实现

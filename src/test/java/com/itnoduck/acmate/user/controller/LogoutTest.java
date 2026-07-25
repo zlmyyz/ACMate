@@ -10,6 +10,7 @@ import com.itnoduck.acmate.user.service.UserRegistrationService;
 import com.itnoduck.acmate.user.service.impl.UserAuthenticationServiceImpl;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import com.jayway.jsonpath.JsonPath;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -18,7 +19,10 @@ import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.emptyOrNullString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -213,5 +217,118 @@ class LogoutTest {
                         .content("{}"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value(403));
+    }
+
+    @Test
+    void shouldReturnCsrfTokenOnGet() throws Exception {
+        mockMvc.perform(get("/api/auth/csrf"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").exists())
+                .andExpect(jsonPath("$.headerName").exists())
+                .andExpect(jsonPath("$.parameterName").exists());
+    }
+
+    @Test
+    void shouldReturnNonEmptyToken() throws Exception {
+        mockMvc.perform(get("/api/auth/csrf"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token", not(emptyOrNullString())));
+    }
+
+    @Test
+    void shouldNotContainSessionIdInCsrfResponse() throws Exception {
+        mockMvc.perform(get("/api/auth/csrf"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sessionId").doesNotExist())
+                .andExpect(jsonPath("$.cookie").doesNotExist());
+    }
+
+    @Test
+    void shouldLogoutWithRealCsrfToken() throws Exception {
+        AppUser user = buildAppUser(1L, "testuser", "test@example.com", 0, 1);
+        when(appUserMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(user);
+
+        MockHttpSession session = new MockHttpSession();
+        mockMvc.perform(post("/api/auth/login")
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"testuser\",\"password\":\"" + RAW_PASSWORD + "\"}"))
+                .andExpect(status().isOk());
+
+        MvcResult csrfResult = mockMvc.perform(get("/api/auth/csrf")
+                        .session(session))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String responseJson = csrfResult.getResponse().getContentAsString();
+        String token = JsonPath.read(responseJson, "$.token");
+        String headerName = JsonPath.read(responseJson, "$.headerName");
+
+        mockMvc.perform(post("/api/auth/logout")
+                        .session(session)
+                        .header(headerName, token))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void shouldReturn403WithWrongCsrfToken() throws Exception {
+        AppUser user = buildAppUser(1L, "testuser", "test@example.com", 0, 1);
+        when(appUserMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(user);
+
+        MockHttpSession session = new MockHttpSession();
+        mockMvc.perform(post("/api/auth/login")
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"testuser\",\"password\":\"" + RAW_PASSWORD + "\"}"))
+                .andExpect(status().isOk());
+
+        MvcResult csrfResult = mockMvc.perform(get("/api/auth/csrf")
+                        .session(session))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String headerName = JsonPath.read(csrfResult.getResponse().getContentAsString(), "$.headerName");
+
+        mockMvc.perform(post("/api/auth/logout")
+                        .session(session)
+                        .header(headerName, "wrong-token-value"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(403));
+    }
+
+    @Test
+    void shouldLogoutAndThenMeReturns401WithRealCsrfFlow() throws Exception {
+        AppUser user = buildAppUser(1L, "testuser", "test@example.com", 0, 1);
+        when(appUserMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(user);
+
+        MockHttpSession session = new MockHttpSession();
+        mockMvc.perform(post("/api/auth/login")
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"testuser\",\"password\":\"" + RAW_PASSWORD + "\"}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/users/me")
+                        .session(session))
+                .andExpect(status().isOk());
+
+        MvcResult csrfResult = mockMvc.perform(get("/api/auth/csrf")
+                        .session(session))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String responseJson = csrfResult.getResponse().getContentAsString();
+        String token = JsonPath.read(responseJson, "$.token");
+        String headerName = JsonPath.read(responseJson, "$.headerName");
+
+        mockMvc.perform(post("/api/auth/logout")
+                        .session(session)
+                        .header(headerName, token))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/users/me")
+                        .session(session))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(401));
     }
 }
