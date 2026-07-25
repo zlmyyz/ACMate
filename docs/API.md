@@ -244,3 +244,111 @@ GET 请求不受 CSRF 保护。不要求携带 CSRF Token。
 - 同时清除 SecurityContext 和 HttpSession
 - 不接受任何请求体或参数
 - 退出后旧 Session 无法访问任何受保护接口
+
+## GET /api/problems/{id}
+
+获取题目详情。
+
+### 认证
+
+需要登录后携带 JSESSIONID Cookie。
+
+### 成功响应
+
+**200 OK**
+
+```json
+{
+  "id": 1,
+  "platform": "CUSTOM",
+  "externalProblemKey": "EXT-1",
+  "title": "Two Sum",
+  "sourceUrl": "https://example.com/1",
+  "difficulty": "800",
+  "tags": "dp,greedy",
+  "contentMd": "## 题目描述\n...",
+  "creatorUserId": 1,
+  "createTime": "2026-07-20T12:00:00",
+  "updateTime": "2026-07-21T12:00:00"
+}
+```
+
+### 错误响应
+
+**401 Unauthorized** — 未登录
+
+**404 Not Found** — 题目不存在或已禁用（不区分，统一返回"题目不存在"）
+
+```json
+{"code": 404, "message": "题目不存在", "timestamp": "..."}
+```
+
+### 实现说明
+
+- 仅返回 status=1 的题目，已禁用题目对普通用户不可见
+- 不暴露 status 字段
+
+## GET /api/problems
+
+分页查询题目列表。
+
+### 认证
+
+需要登录后携带 JSESSIONID Cookie。
+
+### 查询参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| page | long | 1 | 页码，最小 1 |
+| size | long | 20 | 每页数量，1-100 |
+| platform | string | — | 平台筛选：CUSTOM / CODEFORCES / NOWCODER / OTHER |
+| difficulty | string | — | 难度精确匹配 |
+| keyword | string | — | 关键词，匹配 title 或 externalProblemKey，最大 100 字符 |
+
+示例：`?page=1&size=20&platform=CODEFORCES&difficulty=1200&keyword=two`
+
+### 成功响应
+
+**200 OK**
+
+```json
+{
+  "page": 1,
+  "size": 20,
+  "total": 42,
+  "pages": 3,
+  "records": [
+    {
+      "id": 1,
+      "platform": "CUSTOM",
+      "externalProblemKey": "EXT-1",
+      "title": "Two Sum",
+      "sourceUrl": "https://example.com/1",
+      "difficulty": "800",
+      "tags": "dp,greedy",
+      "creatorUserId": 1,
+      "createTime": "2026-07-20T12:00:00"
+    }
+  ]
+}
+```
+
+### 错误响应
+
+**400 Bad Request** — 参数校验失败（page < 1、size > 100、platform 非法、keyword 超长）
+
+**401 Unauthorized** — 未登录
+
+### 过滤规则
+
+- 固定过滤 status=1
+- platform 非空时精确匹配
+- difficulty 非空时精确匹配
+- keyword 非空时匹配 title 或 externalProblemKey（括号组合，不会绕过 status 过滤）
+- 按 createTime DESC、id DESC 排序
+
+### 实现说明
+
+- status=0 的题目在任何条件下都不会出现在列表中
+- 使用 MyBatis-Plus 分页插件，数据库层兜底 maxLimit=100

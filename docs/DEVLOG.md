@@ -533,3 +533,67 @@ Tests run: 50, Failures: 0, Errors: 0, Skipped: 0
 ### 已知限制
 
 - Session 认证模块已全面验收通过
+
+## 2026-07-25：题目查询模块
+
+### 本次目标
+
+实现题目实体、Mapper、分页配置、题目详情查询、题目分页列表，包含 DTO、Service、Controller、测试和文档。
+
+### 新建文件
+- src/main/java/com/itnoduck/acmate/problem/entity/Problem.java — 题目实体
+- src/main/java/com/itnoduck/acmate/problem/mapper/ProblemMapper.java — Mapper 接口
+- src/main/java/com/itnoduck/acmate/problem/dto/ProblemQueryRequest.java — 列表查询参数
+- src/main/java/com/itnoduck/acmate/problem/dto/ProblemSummaryResponse.java — 列表项响应
+- src/main/java/com/itnoduck/acmate/problem/dto/ProblemDetailResponse.java — 详情响应
+- src/main/java/com/itnoduck/acmate/common/dto/PageResponse.java — 通用分页响应
+- src/main/java/com/itnoduck/acmate/problem/service/ProblemQueryService.java — 查询服务接口
+- src/main/java/com/itnoduck/acmate/problem/service/impl/ProblemQueryServiceImpl.java — 查询服务实现
+- src/main/java/com/itnoduck/acmate/problem/controller/ProblemController.java — 查询接口
+- src/main/java/com/itnoduck/acmate/config/MybatisPlusConfig.java — 分页插件配置
+- src/test/java/com/itnoduck/acmate/problem/service/impl/ProblemQueryServiceImplTest.java — Service 测试（9 tests）
+- src/test/java/com/itnoduck/acmate/problem/controller/ProblemControllerTest.java — Controller 测试（7 tests）
+
+### 修改文件
+- pom.xml — 增加 mybatis-plus-jsqlparser 3.5.17（分页插件必需）
+- docs/API.md — 增加 GET /api/problems 和 GET /api/problems/{id}
+- docs/DEVLOG.md — 追加本记录
+
+### 实体与 Mapper
+
+- Problem 实体映射 problem 表，@TableName("problem")，id 使用 @TableId(type = IdType.AUTO)
+- tags 字段当前为 VARCHAR(255) 逗号分隔字符串，暂不拆分为关联表
+- ProblemMapper extends BaseMapper<Problem>，无 XML Mapper，无手写 SQL
+
+### 分页插件配置
+
+- MybatisPlusInterceptor + PaginationInnerInterceptor(DbType.MYSQL)
+- maxLimit=100 为数据库层兜底，接口 DTO 层仍有 @Min/@Max 独立校验
+- 需单独引入 mybatis-plus-jsqlparser，不通过 mybatis-plus-spring-boot4-starter 传递
+
+### 动态查询条件
+
+- 固定过滤 status=1，保证普通用户只看到正常题目
+- platform 精确匹配，difficulty 精确匹配
+- keyword 使用括号组合匹配 title OR externalProblemKey，防止 OR 绕过 status=1 过滤
+- 排序：createTime DESC, id DESC
+
+### status 过滤原因
+
+Service 注释明确说明：status=0 的禁用题目不应被普通用户看到，用户不应感知题目"曾经存在但已禁用"的事实。所有查询入口统一过滤，不做按角色区分。
+
+### 测试结果
+
+```
+Tests run: 66, Failures: 0, Errors: 0, Skipped: 0
+```
+
+- ProblemQueryServiceImplTest: 9 tests（正常查询、不存在的 id→404、零/负 id→404、禁用题目不可见、status 过滤、platform 过滤、difficulty 过滤、keyword 括号组合、Entity→DTO 转换）
+- ProblemControllerTest: 7 tests（未认证→401、已认证列表→200、已认证详情→200、不存在→404、page=0→400、size=101→400、非法 platform→400）
+- 原 50 tests 全部通过
+
+### 已知限制
+
+- 尚未实现创建、修改、删除题目
+- 尚未实现管理员接口
+- 尚未实现训练计划、用户做题状态
