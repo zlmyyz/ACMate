@@ -294,3 +294,28 @@ No active profile set, falling back to 1 default profile: "default"
 ```
 Tests run: 23, Failures: 0, Errors: 0, Skipped: 0
 ```
+
+## 2026-07-25：Session 登录 — 认证基础层
+
+### 本次目标
+
+创建认证主体和数据库 UserDetailsService，不实现登录接口、Session 或 JWT。
+
+### 新增文件
+- src/main/java/com/itnoduck/acmate/security/AuthenticatedUser.java — 实现 UserDetails
+- src/main/java/com/itnoduck/acmate/security/DatabaseUserDetailsService.java — 实现 UserDetailsService
+
+### 设计决策
+
+- **AuthenticatedUser**：final class，手动 getter，不暴露 passwordHash 到 toString
+- **权限映射**：所有用户 → ROLE_USER；isAdmin=1 → 额外 ROLE_ADMIN，使用 SimpleGrantedAuthority
+- **状态映射**：status=1 → enabled=true，其他 → enabled=false，禁用账号仍会被加载
+- **查询**：LambdaQueryWrapper + selectOne，username 先 strip 再 toLowerCase(Locale.ROOT)
+- **密码**：不在此层执行 BCrypt matches，由后续 DaoAuthenticationProvider 处理
+
+### 已知限制
+
+- 尚未实现登录接口
+- 尚未实现 Session 持久化
+- 尚未实现退出登录
+- 尚未实现当前用户查询接口
