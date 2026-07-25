@@ -394,3 +394,57 @@ Tests run: 35, Failures: 0, Errors: 0, Skipped: 0
 ### 已知限制
 
 - 尚未实现退出登录
+
+## 2026-07-25：Session 退出登录
+
+### 本次目标
+
+实现 POST /api/auth/logout，包括 SecurityContext 清除、Session 失效、JSON 403 响应、测试和文档。
+
+### 新建文件
+- src/main/java/com/itnoduck/acmate/security/RestAccessDeniedHandler.java — JSON 403 响应
+- src/test/java/com/itnoduck/acmate/user/controller/LogoutTest.java — 9 个退出登录测试
+
+### 修改文件
+- src/main/java/com/itnoduck/acmate/config/SecurityConfig.java — 增加 RestAccessDeniedHandler Bean，exceptionHandling 增加 accessDeniedHandler
+- src/main/java/com/itnoduck/acmate/user/controller/AuthController.java — 增加 POST /api/auth/logout
+- docs/API.md — 增加 logout 接口文档
+- docs/DEVLOG.md — 追加本记录
+
+### logout 实现方式
+
+Controller 中注入 Authentication（Spring MVC 参数自动绑定），调用 SecurityContextLogoutHandler.logout(request, response, authentication)：
+
+1. 清除 SecurityContext（SecurityContextHolder.clearContext() + SecurityContextRepository.saveContext()）
+2. 使当前 HttpSession 失效（invalidate()）
+3. 清除 SecurityContextHolder 中的认证
+
+返回 204 No Content，响应体为空。
+
+### CSRF 防护
+
+- POST /api/auth/logout 不在 CSRF 忽略列表
+- 必须携带有效 CSRF Token
+- 缺少 CSRF → 403 JSON（AccessDeniedHandler）
+- 未认证 → 401 JSON（AuthenticationEntryPoint）
+
+### 401 vs 403 区分
+
+- 401：未认证（未登录或 Session 已失效）→ AuthenticationEntryPoint
+- 403：已认证但缺少/无效 CSRF → AccessDeniedHandler（新增 RestAccessDeniedHandler）
+
+### 测试结果
+
+```
+Tests run: 44, Failures: 0, Errors: 0, Skipped: 0
+```
+
+- LogoutTest: 9 tests（无 CSRF → 403、有 CSRF → 204、Session 失效、logout 后 /me → 401、SecurityContext 清除、未认证 → 401、响应体为空、注册和登录 CSRF 豁免不退化、其他 POST 无 CSRF → 403）
+- SessionLoginTest: 12 tests
+- AuthControllerTest: 12 tests
+- UserRegistrationServiceImplTest: 10 tests
+- AcMateApplicationTests: 1 test
+
+### 已知限制
+
+- Session 认证阶段（login + me + logout）已完整实现

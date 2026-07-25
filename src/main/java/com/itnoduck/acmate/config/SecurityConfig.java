@@ -2,6 +2,7 @@ package com.itnoduck.acmate.config;
 
 import tools.jackson.databind.ObjectMapper;
 import com.itnoduck.acmate.security.DatabaseUserDetailsService;
+import com.itnoduck.acmate.security.RestAccessDeniedHandler;
 import com.itnoduck.acmate.security.RestAuthenticationEntryPoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,7 +27,8 @@ import org.springframework.security.web.servlet.util.matcher.PathPatternRequestM
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, RestAuthenticationEntryPoint entryPoint) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, RestAuthenticationEntryPoint entryPoint,
+                                                    RestAccessDeniedHandler accessDeniedHandler) throws Exception {
         http
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
@@ -43,6 +45,7 @@ public class SecurityConfig {
             .httpBasic(AbstractHttpConfigurer::disable)
             .exceptionHandling(ex -> ex
                 .authenticationEntryPoint(entryPoint)
+                .accessDeniedHandler(accessDeniedHandler)
             );
         return http.build();
     }
@@ -68,6 +71,11 @@ public class SecurityConfig {
     @Bean
     public RestAuthenticationEntryPoint restAuthenticationEntryPoint(ObjectMapper objectMapper) {
         return new RestAuthenticationEntryPoint(objectMapper);
+    }
+
+    @Bean
+    public RestAccessDeniedHandler restAccessDeniedHandler(ObjectMapper objectMapper) {
+        return new RestAccessDeniedHandler(objectMapper);
     }
 
     @Bean

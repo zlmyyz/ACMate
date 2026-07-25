@@ -11,6 +11,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -41,5 +43,15 @@ public class AuthController {
                                                HttpServletResponse httpResponse) {
         LoginResponse response = userAuthenticationService.login(request, httpRequest, httpResponse);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(Authentication authentication,
+                                       HttpServletRequest request,
+                                       HttpServletResponse response) {
+        if (authentication != null) {
+            new SecurityContextLogoutHandler().logout(request, response, authentication);
+        }
+        return ResponseEntity.noContent().build();
     }
 }

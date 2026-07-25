@@ -163,3 +163,47 @@ Session 登录。
 
 - 使用 @AuthenticationPrincipal 直接获取 AuthenticatedUser
 - 不为此接口重新查询数据库
+
+## POST /api/auth/logout
+
+退出登录，使当前 Session 失效。
+
+### 认证
+
+需要携带登录时获得的 JSESSIONID Cookie。
+
+### CSRF
+
+需要携带有效 CSRF Token。不在 CSRF 忽略列表中。
+
+### 成功响应
+
+**204 No Content** — 响应体为空。SecurityContext 已清除，Session 已失效。
+
+### 错误响应
+
+**401 Unauthorized** — 未登录（当前未认证，即使用了有效 CSRF Token）
+
+```json
+{"code": 401, "message": "未登录或登录已失效", "timestamp": "..."}
+```
+
+**403 Forbidden** — 缺少或无效 CSRF Token（已认证但无 CSRF）
+
+```json
+{"code": 403, "message": "无权执行该操作", "timestamp": "..."}
+```
+
+### 401 vs 403 区别
+
+| 状态 | 场景 |
+|------|------|
+| 401 | 未认证用户调用 logout（/me 也是 401） |
+| 403 | 已认证但缺少/无效 CSRF Token |
+
+### 实现说明
+
+- 使用 SecurityContextLogoutHandler 清除认证
+- 同时清除 SecurityContext 和 HttpSession
+- 不接受任何请求体或参数
+- 退出后旧 Session 无法访问任何受保护接口
