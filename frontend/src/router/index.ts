@@ -36,6 +36,36 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
+      path: '/admin/posts',
+      name: 'admin-posts',
+      component: () => import('@/views/AdminPostsView.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/admin/comments',
+      name: 'admin-comments',
+      component: () => import('@/views/AdminCommentsView.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/admin/sync-tasks',
+      name: 'admin-sync-tasks',
+      component: () => import('@/views/AdminSyncTasksView.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/admin/audit-logs',
+      name: 'admin-audit-logs',
+      component: () => import('@/views/AdminAuditLogsView.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/admin/exports',
+      name: 'admin-exports',
+      component: () => import('@/views/AdminExportsView.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
       path: '/users/:id',
       name: 'user-profile',
       component: () => import('@/views/UserProfileView.vue'),
@@ -111,6 +141,12 @@ const router = createRouter({
       path: '/problems',
       name: 'problems',
       component: () => import('@/views/ProblemsView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/notifications',
+      name: 'notifications',
+      component: () => import('@/views/NotificationsView.vue'),
       meta: { requiresAuth: true },
     },
     {

@@ -1208,3 +1208,73 @@ BUILD SUCCESS（后端编译通过，前端 type-check + lint + build + test 全
 ### 构建结果
 
 编译通过，后端/前端 type-check + build + test 全部通过（83 测试）。
+
+## 2026-07-27：Phase 5-7 后端重构 + Phase 8 剩余模块
+
+### 本次目标
+
+1. 重构 Phase 5-7 后端 Controller → Service → Mapper 分层
+2. 实现 Phase 8 全部模块：通知中心、管理员内容管理、同步任务、操作日志、数据导出
+
+### Phase 5-7 后端重构
+
+**新建 Service 层：**
+- `leaderboard/service/LeaderboardService.java` + impl — 数据库聚合查询，支持分页
+- `oj/service/OjAccountService.java` + impl — 账号绑定/解绑/审核业务
+- `admin/service/AdminUserService.java` + impl — 用户管理业务（含权限校验）
+- `admin/service/AdminContentService.java` + impl — 帖子/评论管理
+
+**修改：**
+- `oj/mapper/OjSubmissionMapper.java` — 新增聚合查询方法（aggregateLeaderboard等）
+- `LeaderboardController.java` → 仅注入 LeaderboardService
+- `OjAccountController.java` → 仅注入 OjAccountService
+- `AdminUserController.java` → 仅注入 AdminUserService
+- 前端排行榜支持分页（page/size参数）
+
+### Phase 8 新增模块
+
+**数据库迁移：**
+- `V8__create_notification.sql` — 通知表
+- `V9__add_post_comment_audit.sql` — 帖子/评论停用审计字段
+- `V10__create_audit_log.sql` — 管理员操作日志表
+
+**通知中心（后端）：**
+- `notification/entity/Notification.java`
+- `notification/mapper/NotificationMapper.java`
+- `notification/service/NotificationService.java` + impl
+- `notification/controller/NotificationController.java`
+
+**管理员内容管理（后端）：**
+- `admin/controller/AdminContentController.java` — 帖子/评论列表、强制停用、恢复
+
+**同步任务管理（后端）：**
+- `synctask/entity/SyncTaskLog.java`
+- `synctask/mapper/SyncTaskLogMapper.java`
+- `synctask/service/SyncTaskService.java` + impl
+- `synctask/controller/SyncTaskController.java`
+
+**操作日志（后端）：**
+- `auditlog/entity/AuditLog.java`
+- `auditlog/mapper/AuditLogMapper.java`
+- `auditlog/service/AuditLogService.java` + impl
+- `auditlog/controller/AuditLogController.java`
+
+**数据导出（后端）：**
+- `export/service/DataExportService.java` + impl — CSV导出
+- `export/controller/DataExportController.java` — 题目/排行榜CSV下载
+
+**前端新增：**
+- 7 个新视图：NotificationsView, AdminPostsView, AdminCommentsView, AdminSyncTasksView, AdminAuditLogsView, AdminExportsView
+- 4 个新 API 模块：notifications, admin-content, sync-tasks, audit-logs
+- 4 个新类型定义：notification, admin-content, sync-task, audit-log
+- 4 个新路由 + 通知铃铛（未读数）+ 管理导航链接
+
+**前端修改：**
+- `router/index.ts` — 新增7条路由
+- `AppHeader.vue` — 通知铃铛+未读数+管理导航
+- `constants/labels.ts` — 新增管理导航标签
+
+### 构建结果
+
+后端编译通过（116个源文件），前端 type-check + build + test 全部通过（107测试）
+

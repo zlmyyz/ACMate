@@ -21,8 +21,21 @@ public class Post {
     private Integer commentCount;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
+    private String deactivationSource;
+    private String deactivationReason;
+    private Long deactivatedBy;
+    private LocalDateTime deactivationTime;
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
+
+    public String getDeactivationSource() { return deactivationSource; }
+    public void setDeactivationSource(String v) { this.deactivationSource = v; }
+    public String getDeactivationReason() { return deactivationReason; }
+    public void setDeactivationReason(String v) { this.deactivationReason = v; }
+    public Long getDeactivatedBy() { return deactivatedBy; }
+    public void setDeactivatedBy(Long v) { this.deactivatedBy = v; }
+    public LocalDateTime getDeactivationTime() { return deactivationTime; }
+    public void setDeactivationTime(LocalDateTime v) { this.deactivationTime = v; }
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

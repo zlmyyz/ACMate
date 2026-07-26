@@ -1,15 +1,24 @@
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
 import { navLabels, actionLabels } from '@/constants/labels'
+import { getUnreadCount } from '@/api/notifications'
 
 const auth = useAuthStore()
 const router = useRouter()
+const unreadCount = ref(0)
 
 async function handleLogout() {
   await auth.logout()
   router.push({ name: 'login' })
 }
+
+async function refreshUnread() {
+  try { unreadCount.value = await getUnreadCount() } catch { /* ignore */ }
+}
+
+onMounted(refreshUnread)
 </script>
 
 <template>
@@ -45,9 +54,25 @@ async function handleLogout() {
           <RouterLink v-if="auth.isAdmin" to="/admin/users" class="nav-link" active-class="nav-link-active">
             {{ navLabels.adminUsers }}
           </RouterLink>
+          <RouterLink v-if="auth.isAdmin" to="/admin/posts" class="nav-link" active-class="nav-link-active">
+            {{ navLabels.adminPosts }}
+          </RouterLink>
+          <RouterLink v-if="auth.isAdmin" to="/admin/sync-tasks" class="nav-link" active-class="nav-link-active">
+            {{ navLabels.adminSyncTasks }}
+          </RouterLink>
+          <RouterLink v-if="auth.isAdmin" to="/admin/audit-logs" class="nav-link" active-class="nav-link-active">
+            {{ navLabels.adminAuditLogs }}
+          </RouterLink>
+          <RouterLink v-if="auth.isAdmin" to="/admin/exports" class="nav-link" active-class="nav-link-active">
+            {{ navLabels.adminExports }}
+          </RouterLink>
         </nav>
       </div>
       <div class="header-right">
+        <RouterLink v-if="auth.user" to="/notifications" class="notif-bell">
+          &#128276;
+          <span v-if="unreadCount > 0" class="badge">{{ unreadCount }}</span>
+        </RouterLink>
         <RouterLink v-if="auth.user" to="/settings/profile" class="user-greeting">
           {{ auth.user.nickname || auth.user.username }}
         </RouterLink>
@@ -152,6 +177,13 @@ async function handleLogout() {
   background: var(--color-primary-container);
   padding: 2px 10px;
   border-radius: 999px;
+}
+
+.notif-bell { position: relative; font-size: 20px; color: var(--color-on-surface-variant); padding: 4px; }
+.notif-bell .badge {
+  position: absolute; top: -2px; right: -4px;
+  background: var(--color-status-error); color: #fff; font-size: 10px; font-weight: 700;
+  min-width: 16px; height: 16px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
 }
 
 .logout-btn {

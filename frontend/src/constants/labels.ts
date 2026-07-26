@@ -58,6 +58,11 @@ export const navLabels = {
   leaderboard: '排行榜',
   adminProblems: '全部题库',
   adminUsers: '用户管理',
+  adminPosts: '内容管理',
+  adminComments: '评论管理',
+  adminSyncTasks: '同步任务',
+  adminAuditLogs: '操作日志',
+  adminExports: '数据导出',
 }
 
 export const actionLabels = {
