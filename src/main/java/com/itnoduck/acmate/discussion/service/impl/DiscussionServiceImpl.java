@@ -2,6 +2,7 @@ package com.itnoduck.acmate.discussion.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.itnoduck.acmate.auditlog.service.AuditLogService;
 import com.itnoduck.acmate.common.exception.BusinessException;
 import com.itnoduck.acmate.discussion.dto.*;
 import com.itnoduck.acmate.discussion.entity.Post;
@@ -29,15 +30,17 @@ public class DiscussionServiceImpl implements DiscussionService {
     private final PostLikeMapper likeMapper;
     private final AppUserMapper userMapper;
     private final ProblemMapper problemMapper;
+    private final AuditLogService auditLogService;
 
     public DiscussionServiceImpl(PostMapper postMapper, PostCommentMapper commentMapper,
                                   PostLikeMapper likeMapper, AppUserMapper userMapper,
-                                  ProblemMapper problemMapper) {
+                                  ProblemMapper problemMapper, AuditLogService auditLogService) {
         this.postMapper = postMapper;
         this.commentMapper = commentMapper;
         this.likeMapper = likeMapper;
         this.userMapper = userMapper;
         this.problemMapper = problemMapper;
+        this.auditLogService = auditLogService;
     }
 
     @Override
@@ -129,8 +132,12 @@ public class DiscussionServiceImpl implements DiscussionService {
         if (!post.getAuthorUserId().equals(userId) && !isAdmin) {
             throw new BusinessException(403, "无权停用该帖子");
         }
+        String before = post.getStatus() != null && post.getStatus() == 1 ? "active" : "deactivated";
         post.setStatus(0);
         postMapper.updateById(post);
+        if (isAdmin && !post.getAuthorUserId().equals(userId)) {
+            auditLogService.log(userId, "ADMIN_DEACTIVATE_POST", "POST", postId, null, before, "deactivated");
+        }
     }
 
     @Override
@@ -169,8 +176,12 @@ public class DiscussionServiceImpl implements DiscussionService {
         AppUser u = userMapper.selectById(userId);
         boolean isAdmin = u != null && u.getIsAdmin() != null && u.getIsAdmin() == 1;
         if (!c.getUserId().equals(userId) && !isAdmin) throw new BusinessException(403, "无权删除该评论");
+        String before = c.getStatus() != null && c.getStatus() == 1 ? "active" : "deactivated";
         c.setStatus(0);
         commentMapper.updateById(c);
+        if (isAdmin && !c.getUserId().equals(userId)) {
+            auditLogService.log(userId, "ADMIN_DEACTIVATE_COMMENT", "COMMENT", commentId, null, before, "deactivated");
+        }
     }
 
     @Override

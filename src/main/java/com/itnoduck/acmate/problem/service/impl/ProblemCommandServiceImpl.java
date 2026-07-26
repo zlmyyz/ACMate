@@ -3,6 +3,7 @@ package com.itnoduck.acmate.problem.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.itnoduck.acmate.auditlog.service.AuditLogService;
 import com.itnoduck.acmate.common.exception.BusinessException;
 import com.itnoduck.acmate.problem.dto.CreateProblemRequest;
 import com.itnoduck.acmate.problem.dto.ProblemDetailResponse;
@@ -28,9 +29,11 @@ import java.util.Objects;
 public class ProblemCommandServiceImpl implements ProblemCommandService {
 
     private final ProblemMapper problemMapper;
+    private final AuditLogService auditLogService;
 
-    public ProblemCommandServiceImpl(ProblemMapper problemMapper) {
+    public ProblemCommandServiceImpl(ProblemMapper problemMapper, AuditLogService auditLogService) {
         this.problemMapper = problemMapper;
+        this.auditLogService = auditLogService;
     }
 
     @Override
@@ -334,6 +337,7 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
             }
             throw new RuntimeException("停用题目异常：状态不匹配");
         }
+        auditLogService.log(operatorUserId, "FORCE_DEACTIVATE_PROBLEM", "PROBLEM", problemId, reason, "active", "deactivated");
     }
 
     private ProblemDetailResponse toDetailResponse(Problem p) {

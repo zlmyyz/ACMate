@@ -78,7 +78,7 @@ watch(period, (v) => router.replace({ query: { period: v, page: String(page.valu
 
     <template v-else>
       <div v-if="entries.length === 0" class="empty-state">
-        <p>暂无排行数据</p>
+        <p>暂无可信同步数据</p>
       </div>
 
       <template v-else>

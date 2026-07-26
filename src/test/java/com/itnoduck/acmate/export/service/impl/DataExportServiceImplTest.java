@@ -1,6 +1,7 @@
 package com.itnoduck.acmate.export.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.itnoduck.acmate.auditlog.service.AuditLogService;
 import com.itnoduck.acmate.common.exception.BusinessException;
 import com.itnoduck.acmate.oj.mapper.OjSubmissionMapper;
 import com.itnoduck.acmate.problem.entity.Problem;
@@ -30,13 +31,16 @@ class DataExportServiceImplTest {
     @Mock
     private OjSubmissionMapper submissionMapper;
 
+    @Mock
+    private AuditLogService auditLogService;
+
     private DataExportServiceImpl service;
 
     private AuthenticatedUser adminUser;
 
     @BeforeEach
     void setUp() {
-        service = new DataExportServiceImpl(problemMapper, submissionMapper);
+        service = new DataExportServiceImpl(problemMapper, submissionMapper, auditLogService);
         adminUser = new AuthenticatedUser(1L, "admin", "hash", "Admin",
                 null, null, null, true, true,
                 List.of());

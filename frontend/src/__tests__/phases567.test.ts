@@ -113,7 +113,7 @@ describe('LeaderboardView', () => {
     })
     await flushPromises()
 
-    expect(wrapper.text()).toContain('暂无排行数据')
+    expect(wrapper.text()).toContain('暂无可信同步数据')
   })
 
   it('should show period selector', async () => {

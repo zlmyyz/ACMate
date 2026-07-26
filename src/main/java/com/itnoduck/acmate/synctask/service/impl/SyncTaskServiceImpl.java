@@ -45,4 +45,10 @@ public class SyncTaskServiceImpl implements SyncTaskService {
         }
         return Map.of("items", items, "total", result.getTotal(), "page", page, "size", size);
     }
+
+    @Override
+    public Map<String, Object> triggerSync(AuthenticatedUser user) {
+        if (!user.isAdmin()) throw new BusinessException(403, "无权访问");
+        throw new BusinessException(503, "同步服务尚未配置，请联系管理员启用 Codeforces API 集成后重试");
+    }
 }

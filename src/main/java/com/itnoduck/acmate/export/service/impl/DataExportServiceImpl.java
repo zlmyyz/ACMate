@@ -1,6 +1,7 @@
 package com.itnoduck.acmate.export.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.itnoduck.acmate.auditlog.service.AuditLogService;
 import com.itnoduck.acmate.common.exception.BusinessException;
 import com.itnoduck.acmate.export.service.DataExportService;
 import com.itnoduck.acmate.oj.mapper.OjSubmissionMapper;
@@ -17,16 +18,19 @@ public class DataExportServiceImpl implements DataExportService {
 
     private final ProblemMapper problemMapper;
     private final OjSubmissionMapper submissionMapper;
+    private final AuditLogService auditLogService;
 
-    public DataExportServiceImpl(ProblemMapper problemMapper, OjSubmissionMapper submissionMapper) {
+    public DataExportServiceImpl(ProblemMapper problemMapper, OjSubmissionMapper submissionMapper, AuditLogService auditLogService) {
         this.problemMapper = problemMapper;
         this.submissionMapper = submissionMapper;
+        this.auditLogService = auditLogService;
     }
 
     @Override
     public String exportProblems(AuthenticatedUser user) {
         if (!user.isAdmin()) throw new BusinessException(403, "无权访问");
         var problems = problemMapper.selectList(new LambdaQueryWrapper<Problem>().orderByAsc(Problem::getId));
+        auditLogService.log(user.getId(), "EXPORT_PROBLEMS", "DATA_EXPORT", null, null, null, null);
         StringBuilder sb = new StringBuilder("ID,Title,Platform,Difficulty,Status,CreatorUserId,CreateTime\n");
         for (var p : problems) {
             sb.append(p.getId()).append(',')
@@ -43,6 +47,7 @@ public class DataExportServiceImpl implements DataExportService {
     @Override
     public String exportLeaderboard(String period, AuthenticatedUser user) {
         if (!user.isAdmin()) throw new BusinessException(403, "无权访问");
+        auditLogService.log(user.getId(), "EXPORT_LEADERBOARD", "DATA_EXPORT", null, period, null, null);
         LocalDateTime cutoff = null;
         if ("7d".equals(period)) cutoff = LocalDateTime.now().minusDays(7);
         else if ("30d".equals(period)) cutoff = LocalDateTime.now().minusDays(30);

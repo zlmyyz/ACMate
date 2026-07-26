@@ -46,6 +46,7 @@ onMounted(fetch)
         <option value="SUCCESS">成功</option>
         <option value="FAILED">失败</option>
       </select>
+      <button class="btn-sync" disabled title="同步功能暂未开放">手动同步 (暂未开放)</button>
     </div>
 
     <LoadingState v-if="loading" />
@@ -77,6 +78,7 @@ onMounted(fetch)
 .page-title { font-family: var(--font-headline); font-size: var(--text-display-lg); font-weight: 700; color: var(--color-on-surface); }
 .filters { margin-bottom: var(--space-stack-md); }
 .filter-select { padding: 6px 12px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md); font-size: var(--text-body-md); }
+.btn-sync { margin-left: 12px; padding: 6px 16px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md); background: var(--color-surface-container-low); color: var(--color-on-surface-variant); font-size: var(--text-body-sm); cursor: not-allowed; opacity: 0.7; }
 .empty-state { text-align: center; padding: 60px 24px; color: var(--color-on-surface-variant); }
 .table { border: 1px solid var(--color-border-subtle); border-radius: var(--radius-lg); overflow: hidden; }
 .table-header { display: flex; padding: 10px 16px; background: var(--color-surface-container-low); font-size: var(--text-body-sm); font-weight: 600; color: var(--color-on-surface-variant); }

@@ -24,4 +24,9 @@ public class SyncTaskController {
                                      @AuthenticationPrincipal AuthenticatedUser user) {
         return syncTaskService.listTasks(page, size, taskStatus, user);
     }
+
+    @PostMapping("/trigger")
+    public Map<String, Object> trigger(@AuthenticationPrincipal AuthenticatedUser user) {
+        return syncTaskService.triggerSync(user);
+    }
 }

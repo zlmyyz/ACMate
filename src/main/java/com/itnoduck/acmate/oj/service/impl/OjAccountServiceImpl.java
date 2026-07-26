@@ -1,6 +1,7 @@
 package com.itnoduck.acmate.oj.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.itnoduck.acmate.auditlog.service.AuditLogService;
 import com.itnoduck.acmate.common.exception.BusinessException;
 import com.itnoduck.acmate.oj.entity.OjAccount;
 import com.itnoduck.acmate.oj.mapper.OjAccountMapper;
@@ -15,9 +16,11 @@ import java.util.*;
 public class OjAccountServiceImpl implements OjAccountService {
 
     private final OjAccountMapper accountMapper;
+    private final AuditLogService auditLogService;
 
-    public OjAccountServiceImpl(OjAccountMapper accountMapper) {
+    public OjAccountServiceImpl(OjAccountMapper accountMapper, AuditLogService auditLogService) {
         this.accountMapper = accountMapper;
+        this.auditLogService = auditLogService;
     }
 
     @Override
@@ -94,7 +97,10 @@ public class OjAccountServiceImpl implements OjAccountService {
         if (!user.isAdmin()) throw new BusinessException(403, "无权操作");
         var acc = accountMapper.selectById(id);
         if (acc == null) throw new BusinessException(404, "账号不存在");
+        String before = String.valueOf(acc.getVerifyStatus());
         acc.setVerifyStatus(status);
         accountMapper.updateById(acc);
+        String label = status == 1 ? "approved" : "rejected";
+        auditLogService.log(user.getId(), "VERIFY_OJ_ACCOUNT", "OJ_ACCOUNT", id, label, before, String.valueOf(status));
     }
 }
