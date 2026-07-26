@@ -352,3 +352,99 @@ GET 请求不受 CSRF 保护。不要求携带 CSRF Token。
 
 - status=0 的题目在任何条件下都不会出现在列表中
 - 使用 MyBatis-Plus 分页插件，数据库层兜底 maxLimit=100
+
+## POST /api/problems
+
+管理员创建题目。
+
+### 认证
+
+需要登录后携带 JSESSIONID Cookie，且登录用户必须具有 ROLE_ADMIN。
+
+### CSRF
+
+需要携带有效 CSRF Token。
+
+### 请求字段
+
+| 字段 | 类型 | 必填 | 校验规则 |
+|------|------|------|----------|
+| platform | string | 是 | CUSTOM / CODEFORCES / NOWCODER / OTHER |
+| externalProblemKey | string | 否 | 最大 64 字符，非 CUSTOM 平台必填 |
+| title | string | 是 | 非空，最大 255 字符 |
+| sourceUrl | string | 否 | 最大 1024 字符，空字符串规范化为 null |
+| difficulty | string | 否 | 最大 32 字符，空字符串规范化为 null |
+| tags | string | 否 | 最大 255 字符，逗号分隔，自动去重去空 |
+| contentMd | string | 否 | Markdown 内容，最大 2097152 字符（约 2MB） |
+
+### 请求体限制
+
+以下字段由服务端指定，请求体中即使携带也会被忽略：
+- `creatorUserId` — 服务端从当前认证用户获取
+- `status` — 服务端固定为 1（正常）
+- `id` / `createTime` / `updateTime` — 由数据库自动生成
+
+### 规范化规则
+
+- platform：转为大写
+- externalProblemKey：去除首尾空格，空字符串规范化为 null
+- title：去除首尾空格
+- sourceUrl / difficulty：去除首尾空格后空字符串规范化为 null
+- tags：按逗号拆分 → 去空格 → 去空 → 去重（保留首次出现顺序）→ 逗号连接；空结果规范化为 null
+- contentMd：不 trim（Markdown 首尾空白可能有意为之）
+
+### 成功响应
+
+**201 Created**
+
+```json
+{
+  "id": 1,
+  "platform": "CUSTOM",
+  "externalProblemKey": null,
+  "title": "Two Sum",
+  "sourceUrl": "https://example.com",
+  "difficulty": "800",
+  "tags": "dp,array",
+  "contentMd": "## 题目描述\n...",
+  "creatorUserId": 1,
+  "createTime": "2026-07-25T12:00:00",
+  "updateTime": "2026-07-25T12:00:00"
+}
+```
+
+响应中不包含 status 字段。
+
+### 错误响应
+
+**400 Bad Request** — 字段校验失败或平台+题目标识为空（非 CUSTOM 平台）
+
+```json
+{"code": 400, "message": "非自定义平台必须提供外部题目标识", "timestamp": "..."}
+```
+
+**401 Unauthorized** — 未登录
+
+```json
+{"code": 401, "message": "未登录或登录已失效", "timestamp": "..."}
+```
+
+**403 Forbidden** — 缺少/无效 CSRF Token 或当前用户非 ADMIN
+
+```json
+{"code": 403, "message": "无权执行该操作", "timestamp": "..."}
+```
+
+**409 Conflict** — 相同平台+题目标识的题目已存在
+
+```json
+{"code": 409, "message": "该平台题目标识已存在", "timestamp": "..."}
+```
+
+### 实现说明
+
+- creatorUserId 来自 @AuthenticationPrincipal，不由请求体指定（信任边界）
+- status 由服务端固定为 1，不在请求中暴露
+- 前置查重（selectCount by platform + externalProblemKey）提供友好错误信息
+- 数据库唯一索引 uk_platform_problem 作为并发兜底，只捕获 DuplicateKeyException
+- 权限控制在 SecurityFilterChain 中通过 hasRole("ADMIN") 实现，不使用 @PreAuthorize

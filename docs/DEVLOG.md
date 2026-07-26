@@ -597,3 +597,63 @@ Tests run: 66, Failures: 0, Errors: 0, Skipped: 0
 - 尚未实现创建、修改、删除题目
 - 尚未实现管理员接口
 - 尚未实现训练计划、用户做题状态
+
+## 2026-07-26：管理员创建题目
+
+### 本次目标
+
+实现 POST /api/problems，仅限 ROLE_ADMIN 创建，服务端指定 creatorUserId 和 status，前置查重 + DuplicateKeyException 并发兜底。
+
+### 新建文件
+- src/main/java/com/itnoduck/acmate/problem/dto/CreateProblemRequest.java — 创建请求 DTO，无 creatorUserId/status 字段，setter 内完成规范化
+- src/main/java/com/itnoduck/acmate/problem/service/ProblemCommandService.java — 创建服务接口
+- src/main/java/com/itnoduck/acmate/problem/service/impl/ProblemCommandServiceImpl.java — 创建服务实现
+- src/test/java/com/itnoduck/acmate/problem/service/impl/ProblemCommandServiceImplTest.java — Service 测试（12 tests）
+
+### 修改文件
+- src/main/java/com/itnoduck/acmate/problem/controller/ProblemController.java — 增加 POST /api/problems 端点
+- src/main/java/com/itnoduck/acmate/config/SecurityConfig.java — 增加 hasRole("ADMIN") 保护 POST /api/problems
+- src/test/java/com/itnoduck/acmate/problem/controller/ProblemControllerTest.java — 增加 10 个 POST 测试
+- docs/API.md — 增加 POST /api/problems 文档
+- docs/DEVLOG.md — 追加本记录
+
+### 信任边界
+
+- creatorUserId 来自 @AuthenticationPrincipal AuthenticatedUser，不由请求体指定
+- 请求体中的 creatorUserId 和 status 字段（无论值为何）均被忽略
+- status 由服务端固定为 1
+
+### 重复检测策略
+
+- 前置查重：externalProblemKey 非空时 selectCount by platform + externalProblemKey，命中则 409
+- 数据库兜底：catch DuplicateKeyException → 409（唯一索引 uk_platform_problem）
+- 前置查重只用于友好错误提示，并发安全依赖唯一索引
+
+### 权限控制
+
+- SecurityFilterChain 中 .requestMatchers(HttpMethod.POST, "/api/problems").hasRole("ADMIN")
+- 不使用 @PreAuthorize / @EnableMethodSecurity
+- POST /api/problems 不在 CSRF 忽略列表，必须携带有效 CSRF Token
+
+### DTO 规范化
+
+- platform → uppercase（setter）
+- externalProblemKey / title → strip，blank → null（setter）
+- sourceUrl / difficulty → strip，blank → null（setter）
+- tags → split→strip→dedup（LinkedHashSet 保留首次出现顺序）→逗号重连，empty → null（setter）
+- contentMd → 不 trim（Markdown 白空格可能有意为之）
+- @Getter 只读，手动 toString() 排除 contentMd
+
+### 测试结果
+
+```
+Tests run: 88, Failures: 0, Errors: 0, Skipped: 0
+```
+
+- ProblemCommandServiceImplTest: 12 tests（正常创建、creatorUserId 来自参数、status 固定为 1、非 CUSTOM 必填 externalKey→400、CUSTOM 允许 null externalKey、前置查重→409、DuplicateKeyException→409、insert 返回 0→500、id 未回填→500、tags 规范化、blank→null、Entity→DTO 转换）
+- ProblemControllerTest: 17 tests（原有 7 个查询 + 新增 10 个：未认证 POST+csrf→401、未认证 POST 无 csrf→403、普通用户+csrf→403、admin 无 csrf→403、admin+csrf→201、响应无 status、creatorUserId 传入 service=1L、请求体 creatorUserId/status 被忽略→仍传 1L、校验失败→400、GET 仍对普通用户可用）
+- 原有 59 tests 全部通过
+
+### 已知限制
+
+- 尚未实现修改、删除题目
