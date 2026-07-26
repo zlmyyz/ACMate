@@ -763,4 +763,50 @@ Tests run: 133, Failures: 0, Errors: 0, Skipped: 0
 
 ### 已知限制
 
+- 尚未实现删除、停用、个人题目管理
+
+## 2026-07-26：个人题目管理与停用题目可见性调整
+
+### 本次目标
+
+新增 GET /api/problems/mine，调整停止题目的查看和编辑权限，使创建者和管理员可以查看和编辑停用题目。
+
+### 新建文件
+- src/main/java/com/itnoduck/acmate/problem/dto/MineProblemStatusFilter.java — ALL/ACTIVE/INACTIVE 状态筛选枚举
+- src/main/java/com/itnoduck/acmate/problem/dto/ProblemStatusView.java — ACTIVE/INACTIVE 状态视图，不暴露数据库数字
+- src/main/java/com/itnoduck/acmate/problem/dto/MyProblemSummaryResponse.java — 含 status 和 updateTime 的列表项
+
+### 修改文件
+- src/main/java/com/itnoduck/acmate/problem/service/ProblemQueryService.java — getProblem 增加 viewerUserId/viewerAdmin；新增 listMyProblems
+- src/main/java/com/itnoduck/acmate/problem/service/impl/ProblemQueryServiceImpl.java — getProblem 先查后判；实现 listMyProblems
+- src/main/java/com/itnoduck/acmate/problem/service/impl/ProblemCommandServiceImpl.java — 不再限制 status=1；非创建者非管理员对停用题目返回 404
+- src/main/java/com/itnoduck/acmate/problem/controller/ProblemController.java — GET /mine；getProblem 传递查看者身份；更新全部 Javadoc
+- src/test/java/com/itnoduck/acmate/problem/service/impl/ProblemQueryServiceImplTest.java — 9→18 tests
+- src/test/java/com/itnoduck/acmate/problem/service/impl/ProblemCommandServiceImplTest.java — 40→43 tests
+- src/test/java/com/itnoduck/acmate/problem/controller/ProblemControllerTest.java — 34→44 tests
+- docs/API.md — 新增 GET /api/problems/mine；更新详情和修改接口
+- docs/DEVLOG.md — 追加本记录
+
+### 设计决策
+
+- **MineProblemStatusFilter / ProblemStatusView**：接口层不暴露数据库数字状态
+- **creatorUserId 来自认证主体**：不接受客户端传入，避免越权
+- **公共列表不返回 status**：避免向其他用户暴露题目管理状态
+- **停用题目对无关用户返回 404**：不暴露存在性
+- **编辑停用题目不自动恢复**：仅修改内容字段，status 保持 0
+- **getProblem 先查后判**：改为查询后根据查看者身份判断可见性
+
+### 测试结果
+
+```
+Tests run: 155, Failures: 0, Errors: 0, Skipped: 0
+```
+
+- ProblemQueryServiceImplTest: 18 tests
+- ProblemCommandServiceImplTest: 43 tests
+- ProblemControllerTest: 44 tests
+- 原有 62 tests 全部通过
+
+### 已知限制
+
 - 尚未实现删除、停用题目

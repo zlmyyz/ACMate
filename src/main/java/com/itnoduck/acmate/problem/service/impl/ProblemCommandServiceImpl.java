@@ -86,6 +86,7 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
 
     /**
      * 事务用于保证当前命令流程中"查询→校验→更新→回读"的读写边界一致。
+     * 编辑停用题目时不会自动恢复 status，仅修改内容字段。
      */
     @Override
     @Transactional
@@ -98,18 +99,22 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
             throw new BusinessException(400, "操作者 ID 无效");
         }
 
-        // 查询目标题目：限制 status=1，已停用题目不可通过修改接口编辑
-        // 不存在和已停用统一返回 404，避免通过写接口探测隐藏题目
+        // 查询目标题目：不再限制 status=1，创建者和管理员可以编辑正常或停用题目
         Problem existing = problemMapper.selectOne(
                 new LambdaQueryWrapper<Problem>()
-                        .eq(Problem::getId, problemId)
-                        .eq(Problem::getStatus, 1));
+                        .eq(Problem::getId, problemId));
         if (existing == null) {
             throw new BusinessException(404, "题目不存在");
         }
 
         // 资源所有权校验：创建者或管理员可以管理题目
-        ensureCanManageProblem(existing, operatorUserId, operatorAdmin);
+        // 非创建者且非管理员：停用题目返回 404（不暴露存在性），正常题目返回 403
+        if (!operatorAdmin && !Objects.equals(existing.getCreatorUserId(), operatorUserId)) {
+            if (existing.getStatus() != null && existing.getStatus() == 0) {
+                throw new BusinessException(404, "题目不存在");
+            }
+            throw new BusinessException(403, "无权修改该题目");
+        }
 
         // 非 CUSTOM 平台必须提供外部题目标识
         if (!"CUSTOM".equals(request.getPlatform()) && request.getExternalProblemKey() == null) {
@@ -130,10 +135,10 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
         }
 
         // 使用 LambdaUpdateWrapper 显式设置允许修改的字段
-        // 直接调用 .set() 可确保 null 值被生成到 SQL 中，不受全局字段策略限制
+        // UPDATE WHERE 不再固定 status=1，允许编辑停用题目
+        // 编辑不会自动恢复 status——仅修改内容
         LambdaUpdateWrapper<Problem> updateWrapper = Wrappers.lambdaUpdate(Problem.class)
                 .eq(Problem::getId, problemId)
-                .eq(Problem::getStatus, 1)
                 .set(Problem::getPlatform, request.getPlatform())
                 .set(Problem::getExternalProblemKey, request.getExternalProblemKey())
                 .set(Problem::getTitle, request.getTitle())
@@ -157,30 +162,14 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
         }
 
         // 更新后重新查询，确保响应为数据库实际持久化结果（含 updateTime）
+        // 不再限制 status，可回读停用题目
         Problem updated = problemMapper.selectOne(
                 new LambdaQueryWrapper<Problem>()
-                        .eq(Problem::getId, problemId)
-                        .eq(Problem::getStatus, 1));
+                        .eq(Problem::getId, problemId));
         if (updated == null) {
             throw new BusinessException(404, "题目不存在");
         }
         return toDetailResponse(updated);
-    }
-
-    /**
-     * 校验当前操作者是否有权管理指定题目。
-     *
-     * <p>普通用户只能管理自己创建的题目；管理员不受 {@code creatorUserId} 限制。
-     * {@code operatorUserId} 和 {@code operatorAdmin} 来自认证主体，
-     * 不由请求体中的任何字段推断。</p>
-     */
-    private void ensureCanManageProblem(Problem problem, long operatorUserId, boolean operatorAdmin) {
-        if (operatorAdmin) {
-            return;
-        }
-        if (!Objects.equals(problem.getCreatorUserId(), operatorUserId)) {
-            throw new BusinessException(403, "无权修改该题目");
-        }
     }
 
     private ProblemDetailResponse toDetailResponse(Problem p) {

@@ -253,6 +253,11 @@ GET 请求不受 CSRF 保护。不要求携带 CSRF Token。
 
 需要登录后携带 JSESSIONID Cookie。
 
+### 可见性规则
+
+- status=1（正常）：所有已登录用户可见
+- status=0（停用）：仅题目创建者和管理员可见；其他用户返回 404，不暴露停用题目存在性
+
 ### 成功响应
 
 **200 OK**
@@ -277,7 +282,7 @@ GET 请求不受 CSRF 保护。不要求携带 CSRF Token。
 
 **401 Unauthorized** — 未登录
 
-**404 Not Found** — 题目不存在或已禁用（不区分，统一返回"题目不存在"）
+**404 Not Found** — 题目不存在或停用题目无查看权限（统一返回"题目不存在"）
 
 ```json
 {"code": 404, "message": "题目不存在", "timestamp": "..."}
@@ -285,8 +290,95 @@ GET 请求不受 CSRF 保护。不要求携带 CSRF Token。
 
 ### 实现说明
 
-- 仅返回 status=1 的题目，已禁用题目对普通用户不可见
+- 先根据 id 查询题目，再根据 status 和查看者身份判断可见性
 - 不暴露 status 字段
+
+## GET /api/problems/mine
+
+查询当前登录用户创建的题目，支持按状态筛选。只能查看自己的题目，不能指定其他用户 ID。
+
+### 认证
+
+需要登录后携带 JSESSIONID Cookie。
+
+### CSRF
+
+GET 请求不需要 CSRF Token。
+
+### 查询参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| page | long | 1 | 页码，最小 1 |
+| size | long | 20 | 每页数量，1-100 |
+| status | string | ALL | 状态筛选：ALL / ACTIVE / INACTIVE |
+| platform | string | — | 平台筛选：CUSTOM / CODEFORCES / NOWCODER / OTHER |
+| difficulty | string | — | 难度精确匹配 |
+| keyword | string | — | 关键词，匹配 title 或 externalProblemKey，最大 100 字符 |
+
+示例：`?status=ACTIVE&page=1&size=20`
+
+### 成功响应
+
+**200 OK**
+
+```json
+{
+  "page": 1,
+  "size": 20,
+  "total": 2,
+  "pages": 1,
+  "records": [
+    {
+      "id": 1,
+      "platform": "CUSTOM",
+      "externalProblemKey": "EXT-1",
+      "title": "Two Sum",
+      "sourceUrl": "https://example.com/1",
+      "difficulty": "800",
+      "tags": "dp,greedy",
+      "status": "ACTIVE",
+      "createTime": "2026-07-25T12:00:00",
+      "updateTime": "2026-07-26T12:00:00"
+    },
+    {
+      "id": 2,
+      "platform": "CODEFORCES",
+      "externalProblemKey": "123A",
+      "title": "Watermelon",
+      "sourceUrl": null,
+      "difficulty": "800",
+      "tags": null,
+      "status": "INACTIVE",
+      "createTime": "2026-07-24T10:00:00",
+      "updateTime": "2026-07-25T15:30:00"
+    }
+  ]
+}
+```
+
+相比公共列表，多了 `status`（ACTIVE/INACTIVE 字符串）和 `updateTime`，但移除了 `creatorUserId`（全是当前用户）。
+
+### 错误响应
+
+**400 Bad Request** — 参数校验失败（page < 1、size > 100、platform 非法、status 非法）
+
+**401 Unauthorized** — 未登录
+
+### 过滤规则
+
+- 固定 `creator_user_id = 当前认证用户 ID`，不接受客户端传入
+- ALL：不附加 status 条件
+- ACTIVE：附加 status=1
+- INACTIVE：附加 status=0
+- platform、difficulty、keyword 复用公共列表筛选语义
+- 按 createTime DESC、id DESC 排序
+
+### 实现说明
+
+- creatorUserId 来自 @AuthenticationPrincipal，不能由请求参数指定（信任边界）
+- 公共列表不返回 status，避免向其他用户暴露题目管理状态
+- MineProblemStatusFilter 枚举提供语义化筛选，不暴露数据库数字
 
 ## GET /api/problems
 
@@ -452,7 +544,7 @@ GET 请求不受 CSRF 保护。不要求携带 CSRF Token。
 
 ## PUT /api/problems/{id}
 
-由题目创建者或管理员完整修改题目。普通用户只能修改自己创建的题目，管理员可以修改任意正常状态的题目。
+由题目创建者或管理员完整修改题目。创建者和管理员可以编辑正常或停用题目；编辑停用题目不会自动恢复 status。
 
 ### 认证
 
@@ -478,7 +570,7 @@ GET 请求不受 CSRF 保护。不要求携带 CSRF Token。
 
 以下字段由服务端指定或不可修改，请求体中即使携带也会被忽略：
 - `creatorUserId` — 不可修改，由创建时确定
-- `status` — 不可通过此接口修改
+- `status` — 不可通过此接口修改（编辑停用题目不会自动恢复）
 - `id` / `createTime` / `updateTime` — 由数据库维护
 
 ### 规范化规则
@@ -488,12 +580,12 @@ GET 请求不受 CSRF 保护。不要求携带 CSRF Token。
 ### 所有权校验
 
 - 普通用户只能修改 `creatorUserId == operatorUserId` 的题目
-- 管理员可以修改任意正常状态的题目
-- 不满足则返回 403
+- 管理员可以修改任意正常或停用的题目
+- 非创建者非管理员：对正常题目返回 403，对停用题目返回 404（不暴露存在性）
 
 ### 成功响应
 
-**200 OK** — 返回更新后从数据库重新读取的题目详情（含最新 updateTime）
+**200 OK** — 返回更新后重新查询的题目详情（含最新 updateTime）
 
 ### 错误响应
 
@@ -501,16 +593,17 @@ GET 请求不受 CSRF 保护。不要求携带 CSRF Token。
 
 **401 Unauthorized** — 未登录
 
-**403 Forbidden** — 缺少/无效 CSRF Token，或无资源管理权限
+**403 Forbidden** — 缺少/无效 CSRF Token，或无资源管理权限（正常题目）
 
-**404 Not Found** — 题目不存在或已禁用（不区分）
+**404 Not Found** — 题目不存在或停用题目无管理权限（不区分）
 
 **409 Conflict** — 相同平台+题目标识已被其他题目使用（排除自身）
 
 ### 实现说明
 
 - 使用 LambdaUpdateWrapper.set() 显式设置字段，确保 null 值可写入
-- UPDATE WHERE 包含 status=1，防止并发禁用情况下修改已停用题目
+- UPDATE WHERE 不再固定 status=1，允许编辑停用题目
+- 编辑停用题目仅修改内容字段，不会自动恢复 status
 - 题目标识查重时排除自身（.ne(Problem::getId, problemId)）
 - 更新后重新查询确保响应反映数据库实际状态（含 ON UPDATE CURRENT_TIMESTAMP）
 - @Transactional 保证查询→校验→更新→回读的读写边界一致

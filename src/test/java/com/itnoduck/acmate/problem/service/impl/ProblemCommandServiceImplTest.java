@@ -320,13 +320,16 @@ class ProblemCommandServiceImplTest {
     }
 
     @Test
-    void shouldReturn404ForDisabledProblem() {
+    void shouldReturn404WhenNonOwnerNonAdminTriesToEditInactiveProblem() {
+        // status=0 的题目对非创建者非管理员返回 404，不暴露存在性
+        Problem existing = buildExistingProblem(1L, 999L, 0);
         UpdateProblemRequest req = buildUpdateRequest("CUSTOM", null);
-        when(problemMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+        when(problemMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(existing);
 
         BusinessException ex = assertThrows(BusinessException.class,
-                () -> service.updateProblem(1L, req, 5L, true));
+                () -> service.updateProblem(1L, req, 5L, false));
         assertEquals(404, ex.getCode());
+        verify(problemMapper, never()).update(any(), any(LambdaUpdateWrapper.class));
     }
 
     @Test
@@ -610,7 +613,7 @@ class ProblemCommandServiceImplTest {
     }
 
     @Test
-    void updateWrapperWhereShouldIncludeStatusEq1() {
+    void updateWrapperWhereShouldNotIncludeStatusFilter() {
         Problem existing = buildExistingProblem(1L, 5L, 1);
         UpdateProblemRequest req = buildUpdateRequest("CUSTOM", "EXT-1");
         Problem updated = buildExistingProblem(1L, 5L, 1);
@@ -622,7 +625,58 @@ class ProblemCommandServiceImplTest {
 
         service.updateProblem(1L, req, 5L, false);
 
-        String sqlSegment = captor.getValue().getCustomSqlSegment();
-        assertTrue(sqlSegment.contains("status"));
+        // WHERE 不再包含 status=1，允许编辑停用题目
+        String sqlSet = captor.getValue().getSqlSet();
+        assertNotNull(sqlSet);
+        assertFalse(sqlSet.contains("status"), "SET should not contain status");
+    }
+
+    @Test
+    void shouldAllowOwnerToEditOwnInactiveProblem() {
+        Problem existing = buildExistingProblem(1L, 5L, 0);
+        UpdateProblemRequest req = buildUpdateRequest("CUSTOM", "EXT-1");
+        Problem updated = buildExistingProblem(1L, 5L, 0);
+        updated.setTitle("Updated Inactive");
+        mockSelectOneChain(existing, updated);
+        when(problemMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+        when(problemMapper.update(eq(null), any(LambdaUpdateWrapper.class))).thenReturn(1);
+
+        ProblemDetailResponse result = service.updateProblem(1L, req, 5L, false);
+
+        assertEquals("Updated Inactive", result.title());
+    }
+
+    @Test
+    void shouldAllowAdminToEditInactiveProblem() {
+        Problem existing = buildExistingProblem(1L, 999L, 0);
+        UpdateProblemRequest req = buildUpdateRequest("CUSTOM", "EXT-1");
+        Problem updated = buildExistingProblem(1L, 999L, 0);
+        updated.setTitle("Admin Updated");
+        mockSelectOneChain(existing, updated);
+        when(problemMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+        when(problemMapper.update(eq(null), any(LambdaUpdateWrapper.class))).thenReturn(1);
+
+        ProblemDetailResponse result = service.updateProblem(1L, req, 1L, true);
+
+        assertEquals("Admin Updated", result.title());
+    }
+
+    @Test
+    void shouldPreserveStatusZeroAfterEditingInactiveProblem() {
+        Problem existing = buildExistingProblem(1L, 5L, 0);
+        UpdateProblemRequest req = buildUpdateRequest("CUSTOM", "EXT-1");
+        Problem updated = buildExistingProblem(1L, 5L, 0);
+        updated.setTitle("New Title");
+        updated.setStatus(0);
+        mockSelectOneChain(existing, updated);
+        when(problemMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+        ArgumentCaptor<LambdaUpdateWrapper<Problem>> captor = ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
+        when(problemMapper.update(eq(null), captor.capture())).thenReturn(1);
+
+        service.updateProblem(1L, req, 5L, false);
+
+        // 验证 SET 子句不包含 status，即不会自动恢复
+        String sqlSet = captor.getValue().getSqlSet();
+        assertFalse(sqlSet.contains("status"));
     }
 }
