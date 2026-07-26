@@ -712,4 +712,55 @@ Tests run: 89, Failures: 0, Errors: 0, Skipped: 0
 
 ### 已知限制
 
-- 尚未实现修改、删除题目
+- 尚未实现删除、停用题目
+
+## 2026-07-26：创建者和管理员修改题目
+
+### 本次目标
+
+实现 PUT /api/problems/{id}，允许题目创建者或管理员完整修改题目，包含所有权校验、题目标识查重（排除自身）、事务保护、Controller 级中文 Javadoc。
+
+### 新建文件
+- src/main/java/com/itnoduck/acmate/problem/support/ProblemFieldNormalizer.java — 输入字段规范化工具，供 CreateProblemRequest 和 UpdateProblemRequest 共享
+- src/main/java/com/itnoduck/acmate/problem/dto/UpdateProblemRequest.java — 修改请求 DTO，字段和规则与 CreateProblemRequest 一致，无 creatorUserId/status
+
+### 修改文件
+- src/main/java/com/itnoduck/acmate/problem/dto/CreateProblemRequest.java — tags 规范化改用 ProblemFieldNormalizer
+- src/main/java/com/itnoduck/acmate/problem/service/ProblemCommandService.java — 增加 updateProblem 方法签名
+- src/main/java/com/itnoduck/acmate/problem/service/impl/ProblemCommandServiceImpl.java — 增加 updateProblem 实现，包含所有权校验、查重排除自身、LambdaUpdateWrapper null 支持、事务、回读
+- src/main/java/com/itnoduck/acmate/problem/controller/ProblemController.java — 增加 PUT /api/problems/{id} 端点，补全全部 4 个端点中文 Javadoc
+- src/main/java/com/itnoduck/acmate/config/SecurityConfig.java — PUT /api/problems/{id} 使用 authenticated()
+- src/test/java/com/itnoduck/acmate/problem/service/impl/ProblemCommandServiceImplTest.java — 增加 28 个 update 测试
+- src/test/java/com/itnoduck/acmate/problem/controller/ProblemControllerTest.java — 增加 18 个 PUT 测试
+- docs/API.md — 增加 PUT /api/problems/{id} 文档
+- docs/DEVLOG.md — 追加本记录
+
+### 设计决策
+
+- **LambdaUpdateWrapper.set()** 而非 updateById：MyBatis-Plus 全局字段策略 NOT_NULL 会忽略 null 字段，.set() 显式控制
+- **UPDATE WHERE status=1**：防止并发禁用后的修改
+- **查重排除自身**：`.ne(Problem::getId, problemId)` 允许保持原值
+- **更新后回读**：确保响应含 ON UPDATE CURRENT_TIMESTAMP 的最新 updateTime
+- **@Transactional**：查询 → 校验 → 更新 → 回读的读写边界一致
+- **权限在 Service 判断**：查询资源后判断 `operatorAdmin || Objects.equals(creatorUserId, operatorUserId)`
+- **ProblemFieldNormalizer**：CreateProblemRequest 和 UpdateProblemRequest 共享同一套规范化逻辑
+
+### 权限模型
+
+- SecurityFilterChain：PUT /api/problems/{id} → authenticated()
+- Service 层：ensureCanManageProblem() — 管理员或创建者，否则 403
+- 区分 400（参数无效）、401（未登录）、403（CSRF 或权限）、404（不存在/禁用）、409（标识冲突）
+
+### 测试结果
+
+```
+Tests run: 133, Failures: 0, Errors: 0, Skipped: 0
+```
+
+- ProblemCommandServiceImplTest: 40 tests（12 创建 + 28 更新）
+- ProblemControllerTest: 34 tests（6 查询 + 10 创建 + 18 PUT）
+- 原有 59 tests 全部通过
+
+### 已知限制
+
+- 尚未实现删除、停用题目

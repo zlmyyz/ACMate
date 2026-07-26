@@ -1,22 +1,23 @@
 package com.itnoduck.acmate.problem.dto;
 
+import com.itnoduck.acmate.problem.support.ProblemFieldNormalizer;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import com.itnoduck.acmate.problem.support.ProblemFieldNormalizer;
 import lombok.Getter;
 
 import java.util.Locale;
 
 /**
- * 创建题目请求。
+ * 题目完整更新请求，对应 {@code PUT /api/problems/{id}}。
  *
- * <p>creatorUserId 和 status 不在 DTO 中——由服务端根据当前认证用户和业务规则确定。</p>
- *
- * <p>tags 当前存储为逗号分隔字符串（VARCHAR(255)），暂不拆分为关联表。</p>
+ * <p>这是完整更新，所有可编辑字段的当前值都必须包含在请求体中。
+ * 如需清空可选字段，提交该字段为空白即可。</p>
+ * <p>不包含 {@code creatorUserId} 和 {@code status}——所有权和状态由服务端管理。</p>
+ * <p>不包含 {@code createTime} 和 {@code updateTime}——由数据库自动维护。</p>
  */
 @Getter
-public class CreateProblemRequest {
+public class UpdateProblemRequest {
 
     @NotBlank
     @Pattern(regexp = "CUSTOM|CODEFORCES|NOWCODER|OTHER", message = "不支持的平台")
@@ -38,7 +39,7 @@ public class CreateProblemRequest {
     @Size(max = 255)
     private String tags;
 
-    @Size(max = 2097152) // MEDIUMTEXT practical limit
+    @Size(max = 2097152)
     private String contentMd;
 
     public void setPlatform(String platform) {
@@ -46,7 +47,7 @@ public class CreateProblemRequest {
     }
 
     public void setExternalProblemKey(String externalProblemKey) {
-        this.externalProblemKey = externalProblemKey == null || externalProblemKey.isBlank() ? null : externalProblemKey.strip();
+        this.externalProblemKey = ProblemFieldNormalizer.normalizeOptionalString(externalProblemKey);
     }
 
     public void setTitle(String title) {
@@ -54,11 +55,11 @@ public class CreateProblemRequest {
     }
 
     public void setSourceUrl(String sourceUrl) {
-        this.sourceUrl = sourceUrl == null || sourceUrl.isBlank() ? null : sourceUrl.strip();
+        this.sourceUrl = ProblemFieldNormalizer.normalizeOptionalString(sourceUrl);
     }
 
     public void setDifficulty(String difficulty) {
-        this.difficulty = difficulty == null || difficulty.isBlank() ? null : difficulty.strip();
+        this.difficulty = ProblemFieldNormalizer.normalizeOptionalString(difficulty);
     }
 
     public String getTags() { return tags; }
@@ -73,6 +74,6 @@ public class CreateProblemRequest {
 
     @Override
     public String toString() {
-        return "CreateProblemRequest{platform='" + platform + "', title='" + title + "'}";
+        return "UpdateProblemRequest{platform='" + platform + "', title='" + title + "'}";
     }
 }

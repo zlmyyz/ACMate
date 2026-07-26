@@ -32,8 +32,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.mockito.Mockito.never;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -307,12 +309,249 @@ class ProblemControllerTest {
 
     @Test
     void shouldStillAllowGetForNormalUser() throws Exception {
-        // 验证 POST ADMIN 规则不影响 GET 查询
         PageResponse<ProblemSummaryResponse> page = new PageResponse<>(1, 20, 0, 0, List.of());
         when(problemQueryService.listProblems(any())).thenReturn(page);
 
         mockMvc.perform(get("/api/problems")
                         .with(user(buildNormalUser())))
                 .andExpect(status().isOk());
+    }
+
+    // --- PUT /api/problems/{id} ---
+
+    private ProblemDetailResponse buildUpdateResponse() {
+        return new ProblemDetailResponse(1L, "CUSTOM", "EXT-1",
+                "Updated", "https://example.com", "900", "dp",
+                "## Content", 2L,
+                LocalDateTime.of(2026, 7, 25, 12, 0),
+                LocalDateTime.of(2026, 7, 26, 12, 0));
+    }
+
+    @Test
+    void shouldReturn401WhenUnauthenticatedPutWithCsrf() throws Exception {
+        mockMvc.perform(put("/api/problems/1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"platform\":\"CUSTOM\",\"title\":\"Test\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(401));
+    }
+
+    @Test
+    void shouldReturn403WhenUnauthenticatedPutWithoutCsrf() throws Exception {
+        mockMvc.perform(put("/api/problems/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"platform\":\"CUSTOM\",\"title\":\"Test\"}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(403));
+    }
+
+    @Test
+    void shouldAllowOwnerToUpdate() throws Exception {
+        ProblemDetailResponse detail = buildUpdateResponse();
+        when(problemCommandService.updateProblem(eq(1L), any(), eq(2L), eq(false)))
+                .thenReturn(detail);
+
+        mockMvc.perform(put("/api/problems/1")
+                        .with(user(buildNormalUser()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"platform\":\"CUSTOM\",\"title\":\"Updated\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.title").value("Updated"))
+                .andExpect(jsonPath("$.creatorUserId").value(2));
+    }
+
+    @Test
+    void shouldPassOwnerUserIdAndAdminFalseToService() throws Exception {
+        ProblemDetailResponse detail = buildUpdateResponse();
+        when(problemCommandService.updateProblem(eq(1L), any(), eq(2L), eq(false)))
+                .thenReturn(detail);
+
+        mockMvc.perform(put("/api/problems/1")
+                        .with(user(buildNormalUser()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"platform\":\"CUSTOM\",\"title\":\"Updated\"}"))
+                .andExpect(status().isOk());
+
+        verify(problemCommandService).updateProblem(eq(1L), any(), eq(2L), eq(false));
+    }
+
+    @Test
+    void shouldReturn403WhenNonOwnerNormalUserUpdates() throws Exception {
+        // 非创建者普通用户：SecurityFilterChain 只检查登录，Service 判断权限后抛 403
+        when(problemCommandService.updateProblem(eq(1L), any(), eq(2L), eq(false)))
+                .thenThrow(new BusinessException(403, "无权修改该题目"));
+
+        mockMvc.perform(put("/api/problems/1")
+                        .with(user(buildNormalUser()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"platform\":\"CUSTOM\",\"title\":\"Updated\"}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(403))
+                .andExpect(jsonPath("$.message").value("无权修改该题目"));
+    }
+
+    @Test
+    void shouldAllowAdminToUpdate() throws Exception {
+        ProblemDetailResponse detail = buildUpdateResponse();
+        when(problemCommandService.updateProblem(eq(1L), any(), eq(1L), eq(true)))
+                .thenReturn(detail);
+
+        mockMvc.perform(put("/api/problems/1")
+                        .with(user(buildAdminUser()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"platform\":\"CUSTOM\",\"title\":\"Updated\"}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void shouldPassAdminUserIdAndAdminTrueToService() throws Exception {
+        ProblemDetailResponse detail = buildUpdateResponse();
+        when(problemCommandService.updateProblem(eq(1L), any(), eq(1L), eq(true)))
+                .thenReturn(detail);
+
+        mockMvc.perform(put("/api/problems/1")
+                        .with(user(buildAdminUser()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"platform\":\"CUSTOM\",\"title\":\"Updated\"}"))
+                .andExpect(status().isOk());
+
+        verify(problemCommandService).updateProblem(eq(1L), any(), eq(1L), eq(true));
+    }
+
+    @Test
+    void shouldReturn403WhenAdminPutsWithoutCsrf() throws Exception {
+        mockMvc.perform(put("/api/problems/1")
+                        .with(user(buildAdminUser()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"platform\":\"CUSTOM\",\"title\":\"Test\"}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(403));
+
+        verify(problemCommandService, never()).updateProblem(anyLong(), any(), anyLong(), eq(false));
+    }
+
+    @Test
+    void shouldReturn403WhenNormalUserPutsWithoutCsrf() throws Exception {
+        mockMvc.perform(put("/api/problems/1")
+                        .with(user(buildNormalUser()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"platform\":\"CUSTOM\",\"title\":\"Test\"}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(403));
+
+        verify(problemCommandService, never()).updateProblem(anyLong(), any(), anyLong(), eq(false));
+    }
+
+    @Test
+    void shouldIgnoreInjectedFieldsInPutRequestBody() throws Exception {
+        ProblemDetailResponse detail = buildUpdateResponse();
+        when(problemCommandService.updateProblem(eq(1L), any(), eq(1L), eq(true)))
+                .thenReturn(detail);
+
+        mockMvc.perform(put("/api/problems/1")
+                        .with(user(buildAdminUser()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"platform\":\"CUSTOM\",\"title\":\"Updated\","
+                                + "\"creatorUserId\":999,\"status\":0,"
+                                + "\"operatorUserId\":888,\"operatorAdmin\":true}"))
+                .andExpect(status().isOk());
+
+        verify(problemCommandService).updateProblem(eq(1L), any(), eq(1L), eq(true));
+    }
+
+    @Test
+    void shouldReturnUpdateResponseWithRequiredFields() throws Exception {
+        ProblemDetailResponse detail = buildUpdateResponse();
+        when(problemCommandService.updateProblem(eq(1L), any(), eq(1L), eq(true)))
+                .thenReturn(detail);
+
+        mockMvc.perform(put("/api/problems/1")
+                        .with(user(buildAdminUser()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"platform\":\"CUSTOM\",\"title\":\"Updated\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.platform").value("CUSTOM"))
+                .andExpect(jsonPath("$.externalProblemKey").value("EXT-1"))
+                .andExpect(jsonPath("$.title").value("Updated"))
+                .andExpect(jsonPath("$.creatorUserId").value(2))
+                .andExpect(jsonPath("$.updateTime").value("2026-07-26T12:00:00"));
+    }
+
+    @Test
+    void shouldNotReturnStatusInUpdateResponse() throws Exception {
+        ProblemDetailResponse detail = buildUpdateResponse();
+        when(problemCommandService.updateProblem(eq(1L), any(), eq(1L), eq(true)))
+                .thenReturn(detail);
+
+        mockMvc.perform(put("/api/problems/1")
+                        .with(user(buildAdminUser()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"platform\":\"CUSTOM\",\"title\":\"Updated\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").doesNotExist());
+    }
+
+    @Test
+    void shouldPassPathIdToUpdateService() throws Exception {
+        ProblemDetailResponse detail = buildUpdateResponse();
+        when(problemCommandService.updateProblem(eq(42L), any(), eq(1L), eq(true)))
+                .thenReturn(detail);
+
+        mockMvc.perform(put("/api/problems/42")
+                        .with(user(buildAdminUser()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"platform\":\"CUSTOM\",\"title\":\"Updated\"}"))
+                .andExpect(status().isOk());
+
+        verify(problemCommandService).updateProblem(eq(42L), any(), eq(1L), eq(true));
+    }
+
+    @Test
+    void shouldReturn400WhenPutValidationFails() throws Exception {
+        mockMvc.perform(put("/api/problems/1")
+                        .with(user(buildAdminUser()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"platform\":\"INVALID\",\"title\":\"\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(400));
+    }
+
+    @Test
+    void putShouldStillRequireCsrf() throws Exception {
+        // POST and PUT are both write operations needing CSRF
+        mockMvc.perform(put("/api/problems/1")
+                        .with(user(buildNormalUser()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"platform\":\"CUSTOM\",\"title\":\"Test\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void shouldStillAllowPostForNormalUserAfterPutEndpoint() throws Exception {
+        ProblemDetailResponse detail = new ProblemDetailResponse(1L, "CUSTOM", null,
+                "Test", null, "800", "dp", "## Content", 2L,
+                LocalDateTime.of(2026, 7, 25, 12, 0),
+                LocalDateTime.of(2026, 7, 25, 12, 0));
+        when(problemCommandService.createProblem(any(), eq(2L))).thenReturn(detail);
+
+        mockMvc.perform(post("/api/problems")
+                        .with(user(buildNormalUser()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"platform\":\"CUSTOM\",\"title\":\"Test\"}"))
+                .andExpect(status().isCreated());
     }
 }

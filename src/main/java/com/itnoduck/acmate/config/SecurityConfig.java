@@ -39,6 +39,8 @@ public class SecurityConfig {
                 // 题目查询和创建属于所有登录用户的基础权限；资源所有权由 creatorUserId 记录
                 // 后续针对具体题目的管理权限应在查询资源后判断"创建者或管理员"
                 .requestMatchers(HttpMethod.POST, "/api/problems").authenticated()
+                // URL 层只能确定调用者是否登录；创建者权限需要查询题目后在 Service 判断
+                .requestMatchers(HttpMethod.PUT, "/api/problems/{id}").authenticated()
                 .anyRequest().authenticated()
             )
             .csrf(csrf -> csrf.ignoringRequestMatchers(

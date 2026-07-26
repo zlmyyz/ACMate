@@ -449,3 +449,69 @@ GET 请求不受 CSRF 保护。不要求携带 CSRF Token。
 - 数据库唯一索引 uk_platform_problem 作为并发兜底，只捕获 DuplicateKeyException
 - 权限控制在 SecurityFilterChain 中使用 authenticated()，所有登录用户均可创建
 - 后续资源级管理操作（修改、停用等）将在获取资源后判断"创建者或管理员"
+
+## PUT /api/problems/{id}
+
+由题目创建者或管理员完整修改题目。普通用户只能修改自己创建的题目，管理员可以修改任意正常状态的题目。
+
+### 认证
+
+需要登录后携带 JSESSIONID Cookie。
+
+### CSRF
+
+需要携带有效 CSRF Token。
+
+### 请求字段
+
+| 字段 | 类型 | 必填 | 校验规则 |
+|------|------|------|----------|
+| platform | string | 是 | CUSTOM / CODEFORCES / NOWCODER / OTHER |
+| externalProblemKey | string | 否 | 最大 64 字符，非 CUSTOM 平台必填 |
+| title | string | 是 | 非空，最大 255 字符 |
+| sourceUrl | string | 否 | 最大 1024 字符，空字符串规范化为 null |
+| difficulty | string | 否 | 最大 32 字符，空字符串规范化为 null |
+| tags | string | 否 | 最大 255 字符，逗号分隔，自动去重去空 |
+| contentMd | string | 否 | Markdown 内容，最大 2097152 字符（约 2MB） |
+
+### 请求体限制
+
+以下字段由服务端指定或不可修改，请求体中即使携带也会被忽略：
+- `creatorUserId` — 不可修改，由创建时确定
+- `status` — 不可通过此接口修改
+- `id` / `createTime` / `updateTime` — 由数据库维护
+
+### 规范化规则
+
+与 POST /api/problems 完全一致。所有字符串字段经过 ProblemFieldNormalizer 统一处理。
+
+### 所有权校验
+
+- 普通用户只能修改 `creatorUserId == operatorUserId` 的题目
+- 管理员可以修改任意正常状态的题目
+- 不满足则返回 403
+
+### 成功响应
+
+**200 OK** — 返回更新后从数据库重新读取的题目详情（含最新 updateTime）
+
+### 错误响应
+
+**400 Bad Request** — 字段校验失败或非 CUSTOM 平台未提供题目标识
+
+**401 Unauthorized** — 未登录
+
+**403 Forbidden** — 缺少/无效 CSRF Token，或无资源管理权限
+
+**404 Not Found** — 题目不存在或已禁用（不区分）
+
+**409 Conflict** — 相同平台+题目标识已被其他题目使用（排除自身）
+
+### 实现说明
+
+- 使用 LambdaUpdateWrapper.set() 显式设置字段，确保 null 值可写入
+- UPDATE WHERE 包含 status=1，防止并发禁用情况下修改已停用题目
+- 题目标识查重时排除自身（.ne(Problem::getId, problemId)）
+- 更新后重新查询确保响应反映数据库实际状态（含 ON UPDATE CURRENT_TIMESTAMP）
+- @Transactional 保证查询→校验→更新→回读的读写边界一致
+- 权限判断在 Service 层完成，SecurityFilterChain 仅要求 authenticated()

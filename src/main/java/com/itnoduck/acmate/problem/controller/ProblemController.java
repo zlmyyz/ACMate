@@ -5,6 +5,7 @@ import com.itnoduck.acmate.problem.dto.CreateProblemRequest;
 import com.itnoduck.acmate.problem.dto.ProblemDetailResponse;
 import com.itnoduck.acmate.problem.dto.ProblemQueryRequest;
 import com.itnoduck.acmate.problem.dto.ProblemSummaryResponse;
+import com.itnoduck.acmate.problem.dto.UpdateProblemRequest;
 import com.itnoduck.acmate.problem.service.ProblemCommandService;
 import com.itnoduck.acmate.problem.service.ProblemQueryService;
 import com.itnoduck.acmate.security.AuthenticatedUser;
@@ -15,6 +16,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,12 +24,11 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * 题目模块的 HTTP 表现层。
  *
- * <p>当前包含题目详情查询、分页查询和创建接口。
- * 三个接口均要求用户已登录，POST 创建接口还要求携带有效 CSRF Token。</p>
- * <p>{@code creatorUserId} 从 {@link AuthenticatedUser} 认证主体获取，
- * 不由请求体指定。</p>
- * <p>Controller 只负责参数绑定和调用 Service，不直接操作 Mapper，
- * 不在 Controller 中实现业务规则。</p>
+ * <p>当前包含题目详情查询、分页查询、创建和完整修改四个接口。</p>
+ * <p>GET 接口只要求登录；POST 和 PUT 接口要求登录并通过 CSRF 校验。</p>
+ * <p>PUT 接口的资源权限为"创建者或管理员"，由 Service 在查询资源后判断。</p>
+ * <p>Controller 只负责 HTTP 参数绑定、认证主体提取和调用 Service，
+ * 不直接访问 Mapper，不在 Controller 中实现业务规则。</p>
  */
 @RestController
 @RequestMapping("/api/problems")
@@ -92,7 +93,7 @@ public class ProblemController {
      * CSRF 校验失败返回 {@code 403}；平台题目标识冲突返回 {@code 409}。</p>
      *
      * @param request 题目创建请求，只包含客户端允许填写的题目字段
-     * @param user 当前认证用户，用于确定题目创建者
+     * @param user    当前认证用户，用于确定题目创建者
      * @return 创建后的题目详情
      */
     @PostMapping
@@ -100,5 +101,32 @@ public class ProblemController {
                                                                 @AuthenticationPrincipal AuthenticatedUser user) {
         ProblemDetailResponse response = problemCommandService.createProblem(request, user.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * 完整修改指定题目的可编辑信息。
+     *
+     * <p>接口：{@code PUT /api/problems/{id}}</p>
+     * <p>权限：题目创建者可以修改自己的题目，管理员可以修改任意正常状态的题目；
+     * 其他已登录用户返回 {@code 403 Forbidden}。</p>
+     * <p>安全：该接口会修改服务器状态，必须携带有效 CSRF Token。</p>
+     * <p>参数来源：题目 ID 来自路径参数；可编辑字段来自请求体；
+     * 当前操作者 ID 和管理员状态来自认证主体，客户端不能指定。</p>
+     * <p>成功响应：{@code 200 OK}，返回数据库中的最新题目详情。</p>
+     * <p>错误响应：请求参数非法返回 {@code 400}；未登录返回 {@code 401}；
+     * 无资源管理权限或 CSRF 校验失败返回 {@code 403}；
+     * 题目不存在或已停用返回 {@code 404}；
+     * 平台题目标识冲突返回 {@code 409}。</p>
+     *
+     * @param id          路径参数中的题目 ID
+     * @param request     题目完整更新请求，只包含允许客户端编辑的字段
+     * @param currentUser 当前认证用户，用于判断题目所有权和管理员权限
+     * @return 更新后的题目详情
+     */
+    @PutMapping("/{id}")
+    public ProblemDetailResponse updateProblem(@PathVariable long id,
+                                                @Valid @RequestBody UpdateProblemRequest request,
+                                                @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        return problemCommandService.updateProblem(id, request, currentUser.getId(), currentUser.isAdmin());
     }
 }
