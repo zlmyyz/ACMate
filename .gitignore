@@ -35,3 +35,7 @@ build/
 src/main/resources/application-local.yml
 uploads/
 logs/
+exports/
+*.log
+*.csv
+*.xlsx

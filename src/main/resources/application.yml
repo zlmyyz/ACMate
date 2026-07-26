@@ -21,6 +21,10 @@ spring:
     init:
       mode: never
 
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
