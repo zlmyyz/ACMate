@@ -59,9 +59,16 @@ public class ProblemQueryServiceImpl implements ProblemQueryService {
         long size = Math.max(1, Math.min(request.getSize(), 100));
 
         // 基础条件：只返回正常状态的题目
+        // creatorUserId 用于按创建者筛选用户的公开题目，不影响 status=1 限制
         LambdaQueryWrapper<Problem> wrapper = new LambdaQueryWrapper<Problem>()
                 .eq(Problem::getStatus, 1);
 
+        if (request.getCreatorUserId() != null) {
+            if (request.getCreatorUserId() <= 0) {
+                throw new BusinessException(400, "创建者 ID 必须为正数");
+            }
+            wrapper.eq(Problem::getCreatorUserId, request.getCreatorUserId());
+        }
         if (request.getPlatform() != null) {
             wrapper.eq(Problem::getPlatform, request.getPlatform());
         }

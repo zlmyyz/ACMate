@@ -17,6 +17,8 @@ public class ProblemQueryRequest {
     private String difficulty;
     @Size(max = 100)
     private String keyword;
+    @Min(1)
+    private Long creatorUserId;
 
     public long getPage() { return page; }
     public void setPage(long page) { this.page = page; }
@@ -34,6 +36,8 @@ public class ProblemQueryRequest {
     public void setKeyword(String keyword) {
         this.keyword = keyword == null || keyword.isBlank() ? null : keyword.strip();
     }
+    public Long getCreatorUserId() { return creatorUserId; }
+    public void setCreatorUserId(Long creatorUserId) { this.creatorUserId = creatorUserId; }
     @Override
     public String toString() {
         return "ProblemQueryRequest{page=" + page + ", size=" + size + "}";

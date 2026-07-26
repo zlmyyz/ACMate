@@ -849,3 +849,51 @@ Tests run: 191, Failures: 0, Errors: 0, Skipped: 0
 ### 已知限制
 
 - 尚未实现物理删除
+
+## 2026-07-26：按创建者查看公开题目与管理员全站题库查询
+
+### 本次目标
+
+扩展 GET /api/problems 支持可选 creatorUserId 参数，新增 GET /api/admin/problems 管理员全站题库查询（含创建者信息批量加载）。
+
+### 新建文件
+- src/main/java/com/itnoduck/acmate/problem/dto/AdminProblemSummaryResponse.java — 含创建者信息的列表项 record
+- src/main/java/com/itnoduck/acmate/problem/service/AdminProblemQueryService.java — 管理员查询服务接口
+- src/main/java/com/itnoduck/acmate/problem/service/impl/AdminProblemQueryServiceImpl.java — 管理员查询实现，含批量用户加载
+- src/main/java/com/itnoduck/acmate/problem/controller/AdminProblemController.java — 管理员题目查询控制器
+- src/test/java/com/itnoduck/acmate/problem/service/impl/AdminProblemQueryServiceImplTest.java — 9 tests
+- src/test/java/com/itnoduck/acmate/problem/controller/AdminProblemControllerTest.java — 9 tests
+
+### 修改文件
+- src/main/java/com/itnoduck/acmate/problem/dto/ProblemQueryRequest.java — 增加 creatorUserId 字段
+- src/main/java/com/itnoduck/acmate/problem/service/impl/ProblemQueryServiceImpl.java — listProblems 支持 creatorUserId 过滤
+- src/main/java/com/itnoduck/acmate/config/SecurityConfig.java — 增加 /api/admin/** → hasRole("ADMIN")
+- src/test/java/com/itnoduck/acmate/problem/service/impl/ProblemQueryServiceImplTest.java — 23 tests（+5）
+- docs/API.md — 增加 GET /api/admin/problems，更新 GET /api/problems
+- docs/DEVLOG.md — 追加本记录
+
+### 设计决策
+
+- **creatorUserId 过滤**：公共列表和全家列表均支持，值 ≤ 0 时返回 400
+- **AdminProblemSummaryResponse**：扩展 ProblemSummaryResponse，增加 creatorUsername、creatorNickname、status、updateTime
+- **批量用户加载**：收集分页结果中的唯一 creatorUserId，selectBatchIds 一次查询，build Map，避免 N+1
+- **缺失创建者数据不抛异常**：username/nickname 返回 null，保留题目记录
+- **ALL 不附加 status 条件**：管理员可查看全站正常和停用全部题目
+- **ACTIVE/INACTIVE**：与 /mine 共享 MineProblemStatusFilter 枚举
+
+### 测试结果
+
+```
+Tests run: 214, Failures: 0, Errors: 0, Skipped: 0
+```
+
+- AdminProblemControllerTest: 9 tests
+- AdminProblemQueryServiceImplTest: 9 tests
+- ProblemQueryServiceImplTest: 23 tests（+5）
+- ProblemControllerTest: 59 tests
+- ProblemCommandServiceImplTest: 64 tests
+- 原有 50 tests 全部通过
+
+### 已知限制
+
+- 尚未实现物理删除

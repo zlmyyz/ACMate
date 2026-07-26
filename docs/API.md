@@ -397,8 +397,9 @@ GET 请求不需要 CSRF Token。
 | platform | string | — | 平台筛选：CUSTOM / CODEFORCES / NOWCODER / OTHER |
 | difficulty | string | — | 难度精确匹配 |
 | keyword | string | — | 关键词，匹配 title 或 externalProblemKey，最大 100 字符 |
+| creatorUserId | long | — | 创建者 ID，仅返回该创建者的公开题目 |
 
-示例：`?page=1&size=20&platform=CODEFORCES&difficulty=1200&keyword=two`
+示例：`?page=1&size=20&platform=CODEFORCES&difficulty=1200&keyword=two&creatorUserId=5`
 
 ### 成功响应
 
@@ -444,6 +445,86 @@ GET 请求不需要 CSRF Token。
 
 - status=0 的题目在任何条件下都不会出现在列表中
 - 使用 MyBatis-Plus 分页插件，数据库层兜底 maxLimit=100
+
+## GET /api/admin/problems
+
+管理员查询全站题目，支持按状态、创建者、平台、难度、关键词筛选。响应中包含创建者信息（username、nickname），由服务端批量加载。
+
+### 认证
+
+需要管理员（ROLE_ADMIN）角色。
+
+### CSRF
+
+GET 请求不需要 CSRF Token。
+
+### 查询参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| page | long | 1 | 页码，最小 1 |
+| size | long | 20 | 每页数量，1-100 |
+| status | string | ALL | 状态筛选：ALL / ACTIVE / INACTIVE |
+| creatorUserId | long | — | 创建者 ID 精确匹配 |
+| platform | string | — | 平台筛选：CUSTOM / CODEFORCES / NOWCODER / OTHER |
+| difficulty | string | — | 难度精确匹配 |
+| keyword | string | — | 关键词，匹配 title 或 externalProblemKey，最大 100 字符 |
+
+示例：`?status=ACTIVE&platform=CODEFORCES&keyword=two`
+
+### 成功响应
+
+**200 OK**
+
+```json
+{
+  "page": 1,
+  "size": 20,
+  "total": 2,
+  "pages": 1,
+  "records": [
+    {
+      "id": 1,
+      "platform": "CUSTOM",
+      "externalProblemKey": "EXT-1",
+      "title": "Two Sum",
+      "sourceUrl": "https://example.com/1",
+      "difficulty": "800",
+      "tags": "dp,greedy",
+      "status": "ACTIVE",
+      "creatorUserId": 10,
+      "creatorUsername": "testuser",
+      "creatorNickname": "Test User",
+      "createTime": "2026-07-25T12:00:00",
+      "updateTime": "2026-07-26T12:00:00"
+    }
+  ]
+}
+```
+
+### 错误响应
+
+**400 Bad Request** — 参数校验失败（invalid status/creatorUserId ≤ 0）
+
+**401 Unauthorized** — 未登录
+
+**403 Forbidden** — 非管理员
+
+### 过滤规则
+
+- ALL：不附加 status 条件，查看正常和停用全部题目
+- ACTIVE：附加 status=1
+- INACTIVE：附加 status=0
+- creatorUserId、platform、difficulty 精确匹配
+- keyword 括号组合匹配 title 或 externalProblemKey
+- 按 createTime DESC、id DESC 排序
+
+### 实现说明
+
+- 创建者信息（username、nickname）通过 selectBatchIds 批量加载，避免 N+1
+- 创建者数据缺失时 username 和 nickname 返回 null，不抛异常
+- 与 /api/problems/mine 共享 MineProblemStatusFilter 枚举
+- 权限在 SecurityFilterChain 中通过 hasRole("ADMIN") 控制
 
 ## POST /api/problems
 

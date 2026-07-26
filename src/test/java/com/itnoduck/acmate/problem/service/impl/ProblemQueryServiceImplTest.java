@@ -313,4 +313,79 @@ class ProblemQueryServiceImplTest {
         String sql = captor.getValue().getTargetSql();
         assertTrue(sql.contains("status"), "Public list should still filter status=1");
     }
+
+    // --- listProblems with creatorUserId ---
+
+    @Test
+    void shouldFilterByCreatorUserId() {
+        Page<Problem> mpPage = new Page<>(1, 20);
+        mpPage.setRecords(List.of());
+        mpPage.setTotal(0);
+        when(problemMapper.selectPage(any(), any(LambdaQueryWrapper.class))).thenReturn(mpPage);
+
+        ProblemQueryRequest request = new ProblemQueryRequest();
+        request.setCreatorUserId(12L);
+        service.listProblems(request);
+
+        ArgumentCaptor<LambdaQueryWrapper<Problem>> captor = ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        verify(problemMapper).selectPage(any(), captor.capture());
+        String sql = captor.getValue().getTargetSql();
+        assertTrue(sql.contains("creator_user_id"), "Should contain creator_user_id");
+    }
+
+    @Test
+    void shouldReturn400WhenCreatorUserIdIsZero() {
+        ProblemQueryRequest request = new ProblemQueryRequest();
+        request.setCreatorUserId(0L);
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.listProblems(request));
+        assertEquals(400, ex.getCode());
+    }
+
+    @Test
+    void shouldReturn400WhenCreatorUserIdIsNegative() {
+        ProblemQueryRequest request = new ProblemQueryRequest();
+        request.setCreatorUserId(-1L);
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.listProblems(request));
+        assertEquals(400, ex.getCode());
+    }
+
+    @Test
+    void shouldStillFilterStatus1WhenCreatorUserIdSpecified() {
+        Page<Problem> mpPage = new Page<>(1, 20);
+        mpPage.setRecords(List.of());
+        mpPage.setTotal(0);
+        when(problemMapper.selectPage(any(), any(LambdaQueryWrapper.class))).thenReturn(mpPage);
+
+        ProblemQueryRequest request = new ProblemQueryRequest();
+        request.setCreatorUserId(12L);
+        service.listProblems(request);
+
+        ArgumentCaptor<LambdaQueryWrapper<Problem>> captor = ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        verify(problemMapper).selectPage(any(), captor.capture());
+        String sql = captor.getValue().getTargetSql();
+        assertTrue(sql.contains("status"), "Should still filter status=1");
+    }
+
+    @Test
+    void shouldCombineCreatorUserIdWithKeyword() {
+        Page<Problem> mpPage = new Page<>(1, 20);
+        mpPage.setRecords(List.of());
+        mpPage.setTotal(0);
+        when(problemMapper.selectPage(any(), any(LambdaQueryWrapper.class))).thenReturn(mpPage);
+
+        ProblemQueryRequest request = new ProblemQueryRequest();
+        request.setCreatorUserId(12L);
+        request.setKeyword("two");
+        service.listProblems(request);
+
+        ArgumentCaptor<LambdaQueryWrapper<Problem>> captor = ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        verify(problemMapper).selectPage(any(), captor.capture());
+        String sql = captor.getValue().getTargetSql();
+        assertTrue(sql.contains("creator_user_id"));
+        assertTrue(sql.contains("LIKE"));
+    }
 }
