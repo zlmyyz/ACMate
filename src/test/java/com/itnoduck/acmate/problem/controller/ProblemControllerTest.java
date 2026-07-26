@@ -177,14 +177,37 @@ class ProblemControllerTest {
     }
 
     @Test
-    void shouldReturn403WhenNormalUserPostsWithCsrf() throws Exception {
+    void shouldReturn201WhenNormalUserPostsWithCsrf() throws Exception {
+        ProblemDetailResponse detail = new ProblemDetailResponse(1L, "CUSTOM", null,
+                "Test", null, "800", "dp", "## Content", 2L,
+                LocalDateTime.of(2026, 7, 25, 12, 0),
+                LocalDateTime.of(2026, 7, 25, 12, 0));
+        when(problemCommandService.createProblem(any(), eq(2L))).thenReturn(detail);
+
         mockMvc.perform(post("/api/problems")
                         .with(user(buildNormalUser()))
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"platform\":\"CUSTOM\",\"title\":\"Test\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.platform").value("CUSTOM"))
+                .andExpect(jsonPath("$.title").value("Test"))
+                .andExpect(jsonPath("$.creatorUserId").value(2));
+
+        verify(problemCommandService).createProblem(any(), eq(2L));
+    }
+
+    @Test
+    void shouldReturn403WhenNormalUserPostsWithoutCsrf() throws Exception {
+        mockMvc.perform(post("/api/problems")
+                        .with(user(buildNormalUser()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"platform\":\"CUSTOM\",\"title\":\"Test\"}"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value(403));
+
+        verify(problemCommandService, org.mockito.Mockito.never()).createProblem(any(), anyLong());
     }
 
     @Test

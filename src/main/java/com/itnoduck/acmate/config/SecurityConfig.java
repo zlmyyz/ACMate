@@ -36,7 +36,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/users/me").authenticated()
-                .requestMatchers(HttpMethod.POST, "/api/problems").hasRole("ADMIN")
+                // 题目查询和创建属于所有登录用户的基础权限；资源所有权由 creatorUserId 记录
+                // 后续针对具体题目的管理权限应在查询资源后判断"创建者或管理员"
+                .requestMatchers(HttpMethod.POST, "/api/problems").authenticated()
                 .anyRequest().authenticated()
             )
             .csrf(csrf -> csrf.ignoringRequestMatchers(

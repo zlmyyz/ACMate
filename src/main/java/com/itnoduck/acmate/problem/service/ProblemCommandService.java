@@ -9,7 +9,10 @@ import com.itnoduck.acmate.problem.dto.ProblemDetailResponse;
 public interface ProblemCommandService {
 
     /**
-     * 管理员创建题目。
+     * 由当前登录用户创建题目。
+     *
+     * <p>普通用户和管理员均可创建，creatorUserId 来自认证主体。
+     * Service 不负责区分普通用户和管理员。</p>
      *
      * @param request       请求 DTO（不含 creatorUserId 和 status）
      * @param creatorUserId 由 Controller 从当前认证用户获取，客户端不能指定

@@ -355,11 +355,11 @@ GET 请求不受 CSRF 保护。不要求携带 CSRF Token。
 
 ## POST /api/problems
 
-管理员创建题目。
+由当前登录用户创建题目。普通用户和管理员都可以创建，创建后普通用户成为该题目的创建者。
 
 ### 认证
 
-需要登录后携带 JSESSIONID Cookie，且登录用户必须具有 ROLE_ADMIN。
+需要登录后携带 JSESSIONID Cookie。
 
 ### CSRF
 
@@ -429,7 +429,7 @@ GET 请求不受 CSRF 保护。不要求携带 CSRF Token。
 {"code": 401, "message": "未登录或登录已失效", "timestamp": "..."}
 ```
 
-**403 Forbidden** — 缺少/无效 CSRF Token 或当前用户非 ADMIN
+**403 Forbidden** — 缺少/无效 CSRF Token
 
 ```json
 {"code": 403, "message": "无权执行该操作", "timestamp": "..."}
@@ -447,4 +447,5 @@ GET 请求不受 CSRF 保护。不要求携带 CSRF Token。
 - status 由服务端固定为 1，不在请求中暴露
 - 前置查重（selectCount by platform + externalProblemKey）提供友好错误信息
 - 数据库唯一索引 uk_platform_problem 作为并发兜底，只捕获 DuplicateKeyException
-- 权限控制在 SecurityFilterChain 中通过 hasRole("ADMIN") 实现，不使用 @PreAuthorize
+- 权限控制在 SecurityFilterChain 中使用 authenticated()，所有登录用户均可创建
+- 后续资源级管理操作（修改、停用等）将在获取资源后判断"创建者或管理员"

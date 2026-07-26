@@ -675,6 +675,41 @@ Tests run: 88, Failures: 0, Errors: 0, Skipped: 0
 - 普通用户 GET /api/problems 可正常分页查询
 - 验收数据已全部删除，数据库恢复验收前状态
 
+## 2026-07-26：权限模型修正 — 允许所有登录用户创建题目
+
+### 本次目标
+
+将 POST /api/problems 的权限从 ROLE_ADMIN 修正为所有已登录用户（authenticated），使普通用户也能创建题目。
+
+### 修改文件
+
+- src/main/java/com/itnoduck/acmate/config/SecurityConfig.java — hasRole("ADMIN") → authenticated()
+- src/main/java/com/itnoduck/acmate/problem/controller/ProblemController.java — 补全类级和方法级中文 Javadoc
+- src/main/java/com/itnoduck/acmate/problem/service/ProblemCommandService.java — 注释修正为"当前登录用户创建题目"
+- src/test/java/com/itnoduck/acmate/problem/controller/ProblemControllerTest.java — 普通用户 403 → 201，新增 CSRF+普通用户测试
+- docs/API.md — 权限描述修正为"所有已登录用户"
+- docs/DEVLOG.md — 追加本记录
+
+### 权限模型
+
+- 题目查询和创建是所有登录用户的基础权限
+- 管理员是普通用户权限的超集
+- 资源所有权由 creatorUserId 记录
+- 后续资源级管理操作将基于"创建者或管理员"判断
+- CSRF 规则没有放宽
+- 没有修改数据库结构
+- 没有实现新的接口
+
+### 测试结果
+
+```
+Tests run: 89, Failures: 0, Errors: 0, Skipped: 0
+```
+
+- ProblemControllerTest: 18 tests（新增 shouldReturn201WhenNormalUserPostsWithCsrf、shouldReturn403WhenNormalUserPostsWithoutCsrf；原 403 测试改为 201）
+- ProblemCommandServiceImplTest: 12 tests 全部通过（Service 逻辑未改动）
+- 原有测试全部通过
+
 ### 已知限制
 
 - 尚未实现修改、删除题目
