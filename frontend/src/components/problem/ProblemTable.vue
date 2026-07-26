@@ -1,14 +1,31 @@
 <script setup lang="ts">
+import { computed, useSlots } from 'vue'
 import { useRouter } from 'vue-router'
-import type { ProblemSummary } from '@/types/problem'
+import type { ProblemSummary, MyProblemSummary } from '@/types/problem'
 import PlatformBadge from '@/components/common/PlatformBadge.vue'
 import DifficultyBadge from '@/components/common/DifficultyBadge.vue'
 import TagList from '@/components/common/TagList.vue'
 
-defineProps<{
-  problems: ProblemSummary[]
+const props = defineProps<{
+  problems: (ProblemSummary | MyProblemSummary)[]
   loading: boolean
+  getRowClass?: (problem: ProblemSummary | MyProblemSummary) => Record<string, boolean>
 }>()
+
+const slots = useSlots()
+
+const showCreatorCol = computed(() => {
+  if (props.problems.length === 0) return false
+  return 'creatorUserId' in props.problems[0]!
+})
+
+const loadingColspan = computed(() => {
+  let n = 6
+  if (showCreatorCol.value) n++
+  if (slots.status) n++
+  if (slots.actions) n++
+  return n
+})
 
 const router = useRouter()
 
@@ -27,18 +44,21 @@ function goToDetail(id: number) {
           <th class="col-platform">平台</th>
           <th class="col-difficulty">难度</th>
           <th class="col-tags">标签</th>
-          <th class="col-creator">创建者</th>
+          <th v-if="showCreatorCol" class="col-creator">创建者</th>
+          <th v-if="slots.status" class="col-status">状态</th>
           <th class="col-time">创建时间</th>
+          <th v-if="slots.actions" class="col-actions">操作</th>
         </tr>
       </thead>
       <tbody>
         <tr v-if="loading">
-          <td colspan="7" class="loading-cell">加载中...</td>
+          <td :colspan="loadingColspan" class="loading-cell">加载中...</td>
         </tr>
         <tr
           v-for="problem in problems"
           :key="problem.id"
           class="problem-row"
+          :class="getRowClass ? getRowClass(problem) : {}"
           @click="goToDetail(problem.id)"
         >
           <td class="col-id">
@@ -63,13 +83,19 @@ function goToDetail(id: number) {
           <td class="col-tags">
             <TagList :tags="problem.tags" />
           </td>
-          <td class="col-creator">
+          <td v-if="showCreatorCol" class="col-creator">
             <span class="creator-text">
-              用户 #{{ problem.creatorUserId }}
+              用户 #{{ (problem as ProblemSummary).creatorUserId }}
             </span>
+          </td>
+          <td v-if="slots.status" class="col-status" @click.stop>
+            <slot name="status" :problem="problem" />
           </td>
           <td class="col-time">
             {{ new Date(problem.createTime).toLocaleDateString('zh-CN') }}
+          </td>
+          <td v-if="slots.actions" class="col-actions" @click.stop>
+            <slot name="actions" :problem="problem" />
           </td>
         </tr>
       </tbody>
@@ -137,9 +163,17 @@ function goToDetail(id: number) {
   width: 120px;
 }
 
+.col-status {
+  width: 110px;
+}
+
 .col-time {
   width: 110px;
   white-space: nowrap;
+}
+
+.col-actions {
+  width: 160px;
 }
 
 .problem-id {
@@ -177,6 +211,12 @@ function goToDetail(id: number) {
 .loading-cell {
   text-align: center;
   padding: 48px 16px;
+  color: var(--color-on-surface-variant);
+}
+
+.row-inactive .problem-title {
+  text-decoration: line-through;
+  opacity: 0.7;
   color: var(--color-on-surface-variant);
 }
 </style>

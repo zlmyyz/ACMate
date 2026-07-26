@@ -52,3 +52,29 @@ export interface CreateProblemRequest {
 }
 
 export type UpdateProblemRequest = CreateProblemRequest
+
+export type ProblemStatusView = 'ACTIVE' | 'INACTIVE'
+
+export type MineProblemStatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE'
+
+export interface MyProblemSummary {
+  id: number
+  platform: string
+  externalProblemKey: string | null
+  title: string
+  sourceUrl: string | null
+  difficulty: string | null
+  tags: string | null
+  status: ProblemStatusView
+  createTime: string
+  updateTime: string
+}
+
+export interface MyProblemQueryParams {
+  page?: number
+  size?: number
+  platform?: string
+  difficulty?: string
+  keyword?: string
+  status?: MineProblemStatusFilter
+}

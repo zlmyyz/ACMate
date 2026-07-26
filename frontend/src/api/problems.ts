@@ -7,6 +7,8 @@ import type {
   ProblemQueryParams,
   CreateProblemRequest,
   UpdateProblemRequest,
+  MyProblemSummary,
+  MyProblemQueryParams,
 } from '@/types/problem'
 
 export async function getProblems(
@@ -43,5 +45,28 @@ export async function updateProblem(
         headers: { [headerName]: token },
       })
       .then((r) => r.data),
+  )
+}
+
+export async function getMyProblems(
+  params: MyProblemQueryParams,
+): Promise<PageResponse<MyProblemSummary>> {
+  const response = await apiClient.get<PageResponse<MyProblemSummary>>('/problems/mine', { params })
+  return response.data
+}
+
+export async function deactivateProblem(id: number): Promise<void> {
+  return withCsrf((headerName, token) =>
+    apiClient.post(`/problems/${id}/deactivate`, null, {
+      headers: { [headerName]: token },
+    }),
+  )
+}
+
+export async function restoreProblem(id: number): Promise<void> {
+  return withCsrf((headerName, token) =>
+    apiClient.post(`/problems/${id}/restore`, null, {
+      headers: { [headerName]: token },
+    }),
   )
 }

@@ -1015,8 +1015,49 @@ BUILD SUCCESS（type-check + lint + build + test 全部通过）
 
 ### 已知限制
 
-- 尚未实现我的题目、管理员全部题库、用户主页
-- 尚未实现停用和恢复题目前端操作
+- 尚未实现管理员全部题库、用户主页
 - 公共列表创建者显示"用户 #ID"（需用户公开信息接口）
 - 尚未实现训练计划、讨论区、排行榜、OJ 账号
 - 尚未进行后端联调
+
+---
+
+## 2026-07-26：个人题目管理与停用/恢复
+
+### 本次目标
+
+实现"我的题目"页面（/my/problems）、题目停用与恢复功能。
+
+### 修改/新增文件
+
+**新增组件：**
+
+- `frontend/src/components/problem/StatusBadge.vue` — 题目状态徽章（ACTIVE/INACTIVE），带颜色圆点和标签
+- `frontend/src/components/problem/ProblemStatusTabs.vue` — 状态筛选选项卡（全部/正常/已停用），支持 v-model
+- `frontend/src/components/problem/ProblemActionButtons.vue` — 题目操作按钮（编辑 + 停用/恢复），根据状态切换
+- `frontend/src/components/common/ConfirmDialog.vue` — 确认对话框（标题、消息、确认/取消按钮、loading 状态）
+
+**新增页面：**
+
+- `frontend/src/views/MyProblemsView.vue` — 个人题目管理页，含状态选项卡、关键词搜索、分页、停用/恢复确认流程。处理 400/401/403/404/500 错误。
+
+**修改文件：**
+
+- `frontend/src/types/problem.ts` — 新增 `ProblemStatusView`、`MineProblemStatusFilter`、`MyProblemSummary`、`MyProblemQueryParams` 类型
+- `frontend/src/api/problems.ts` — 新增 `getMyProblems()`、`deactivateProblem()`、`restoreProblem()` API 函数（deactivate/restore 使用 withCsrf）
+- `frontend/src/components/problem/ProblemTable.vue` — 新增 status 和 actions 插槽支持，新增 getRowClass 属性（用于停用行删除线样式），creator 列根据数据自动显示/隐藏
+- `frontend/src/router/index.ts` — 新增 `/my/problems` 路由（requiresAuth）
+- `frontend/src/components/layout/AppHeader.vue` — 导航栏新增"我的题目"链接
+
+**测试：**
+
+- `frontend/src/__tests__/problems.test.ts` — 新增 23 个测试用例，覆盖 getMyProblems API、deactivateProblem/restoreProblem API、StatusBadge、ProblemStatusTabs、ProblemActionButtons、ConfirmDialog、ProblemTable 插槽功能。总测试数从 33 增至 56。
+
+### 构建结果
+
+BUILD SUCCESS（type-check + lint + build + test 全部通过，56 个测试）
+
+### 已知限制
+
+- ConfirmDialog 未使用 Teleport（为测试兼容性）
+- 尚未实现管理员全部题库、用户主页
