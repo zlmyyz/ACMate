@@ -12,9 +12,27 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/leaderboard',
+      name: 'leaderboard',
+      component: () => import('@/views/LeaderboardView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/settings/oj-account',
+      name: 'oj-account',
+      component: () => import('@/views/OJAccountView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/admin/problems',
       name: 'admin-problems',
       component: () => import('@/views/AdminProblemsView.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/admin/users',
+      name: 'admin-users',
+      component: () => import('@/views/AdminUsersView.vue'),
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
@@ -51,6 +69,30 @@ const router = createRouter({
       path: '/training-plans/:id/edit',
       name: 'edit-plan',
       component: () => import('@/views/EditPlanView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/posts',
+      name: 'posts',
+      component: () => import('@/views/PostListView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/posts/create',
+      name: 'create-post',
+      component: () => import('@/views/CreatePostView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/posts/:id',
+      name: 'post-detail',
+      component: () => import('@/views/PostDetailView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/posts/:id/edit',
+      name: 'edit-post',
+      component: () => import('@/views/EditPostView.vue'),
       meta: { requiresAuth: true },
     },
     {

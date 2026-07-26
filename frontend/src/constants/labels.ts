@@ -57,6 +57,7 @@ export const navLabels = {
   discussions: '讨论区',
   leaderboard: '排行榜',
   adminProblems: '全部题库',
+  adminUsers: '用户管理',
 }
 
 export const actionLabels = {

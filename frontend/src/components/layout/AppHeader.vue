@@ -33,8 +33,17 @@ async function handleLogout() {
           <RouterLink to="/training-plans" class="nav-link" active-class="nav-link-active">
             {{ navLabels.trainingPlans }}
           </RouterLink>
+          <RouterLink to="/posts" class="nav-link" active-class="nav-link-active">
+            {{ navLabels.discussions }}
+          </RouterLink>
+          <RouterLink to="/leaderboard" class="nav-link" active-class="nav-link-active">
+            {{ navLabels.leaderboard }}
+          </RouterLink>
           <RouterLink v-if="auth.isAdmin" to="/admin/problems" class="nav-link" active-class="nav-link-active">
             {{ navLabels.adminProblems }}
+          </RouterLink>
+          <RouterLink v-if="auth.isAdmin" to="/admin/users" class="nav-link" active-class="nav-link-active">
+            {{ navLabels.adminUsers }}
           </RouterLink>
         </nav>
       </div>

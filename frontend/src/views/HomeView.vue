@@ -41,6 +41,14 @@ const auth = useAuthStore()
             <span class="link-icon">&#128220;</span>
             <span class="link-label">{{ navLabels.trainingPlans }}</span>
           </RouterLink>
+          <RouterLink to="/posts" class="quick-link">
+            <span class="link-icon">&#128172;</span>
+            <span class="link-label">{{ navLabels.discussions }}</span>
+          </RouterLink>
+          <RouterLink to="/leaderboard" class="quick-link">
+            <span class="link-icon">&#127942;</span>
+            <span class="link-label">{{ navLabels.leaderboard }}</span>
+          </RouterLink>
         </div>
       </section>
 
@@ -54,20 +62,7 @@ const auth = useAuthStore()
 
       <section class="home-card">
         <h2 class="card-title">后续功能</h2>
-        <ul class="upcoming-list">
-          <li class="upcoming-item">
-            <span class="upcoming-badge">即将推出</span>
-            {{ navLabels.discussions }}
-          </li>
-          <li class="upcoming-item">
-            <span class="upcoming-badge">即将推出</span>
-            {{ navLabels.discussions }}
-          </li>
-          <li class="upcoming-item">
-            <span class="upcoming-badge">即将推出</span>
-            {{ navLabels.leaderboard }}
-          </li>
-        </ul>
+        <p class="card-text">更多功能即将推出，敬请期待。</p>
       </section>
     </div>
   </PageContainer>
