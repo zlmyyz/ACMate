@@ -1154,3 +1154,57 @@ BUILD SUCCESS（后端编译通过，前端 type-check + lint + build + test 全
 
 - 头像固定尺寸 96×96，未提供缩放/裁剪
 - CF 账号、训练计划、公开题目列表待后续阶段补充
+
+## 2026-07-26：Phase 3 — 训练计划
+
+### 本次目标
+
+实现训练计划的 CRUD、类型管理（个人/公开）、时间状态计算、计划题目编排、成员加入与移除。
+
+### 修改文件
+
+**数据库迁移（新建）：**
+- `V7__restructure_training_plan.sql` — 重构 training_plan 表（去掉旧 status 列，增加 plan_type/is_active），新建 training_plan_member 表
+
+**后端新建：**
+- `training/entity/TrainingPlan.java` — 计划实体
+- `training/entity/TrainingPlanProblem.java` — 计划题目关联
+- `training/entity/TrainingPlanMember.java` — 计划成员关联
+- `training/mapper/` — 3 个 Mapper 接口
+- `training/dto/CreatePlanRequest.java` — 创建计划 DTO（含 planType）
+- `training/dto/UpdatePlanRequest.java` — 更新计划 DTO
+- `training/dto/PlanSummaryResponse.java` — 列表摘要
+- `training/dto/PlanDetailResponse.java` — 详情（含题目列表）
+- `training/dto/PlanProblemResponse.java` — 计划题目项
+- `training/dto/AddProblemRequest.java` — 添加题目 DTO
+- `training/service/TrainingPlanService.java` — 服务接口
+- `training/service/impl/TrainingPlanServiceImpl.java` — 服务实现
+- `training/controller/TrainingPlanController.java` — REST 控制器
+
+**前端新建：**
+- `types/training.ts` — 类型定义
+- `api/training.ts` — API 客户端
+- `views/TrainingPlanListView.vue` — /training-plans 列表页
+- `views/TrainingPlanDetailView.vue` — /training-plans/:id 详情页
+- `views/CreatePlanView.vue` — /training-plans/create 创建
+- `views/EditPlanView.vue` — /training-plans/:id/edit 编辑
+- `__tests__/training.test.ts` — 10 测试
+
+**前端修改：**
+- `router/index.ts` — 新增 5 条路由
+- `components/layout/AppHeader.vue` — 新增训练计划导航
+- `views/HomeView.vue` — 新增快速入口，移除"即将推出"
+
+### 核心规则
+
+- 只有管理员可创建公开计划
+- 个人计划仅创建者可见
+- 公开计划所有用户可见，可自由加入
+- 时间状态（未开始/进行中/已结束）由系统自动计算
+- 停用计划不接受新成员
+- 用户不能主动退出，管理员可移除
+- 计划类型创建后不可更改
+
+### 构建结果
+
+编译通过，后端/前端 type-check + build + test 全部通过（83 测试）。

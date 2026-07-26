@@ -30,6 +30,30 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/training-plans',
+      name: 'training-plans',
+      component: () => import('@/views/TrainingPlanListView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/training-plans/create',
+      name: 'create-plan',
+      component: () => import('@/views/CreatePlanView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/training-plans/:id',
+      name: 'plan-detail',
+      component: () => import('@/views/TrainingPlanDetailView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/training-plans/:id/edit',
+      name: 'edit-plan',
+      component: () => import('@/views/EditPlanView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/login',
       name: 'login',
       component: () => import('@/views/LoginView.vue'),

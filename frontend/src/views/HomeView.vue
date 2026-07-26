@@ -37,6 +37,10 @@ const auth = useAuthStore()
             <span class="link-icon">&#128202;</span>
             <span class="link-label">{{ navLabels.adminProblems }}</span>
           </RouterLink>
+          <RouterLink to="/training-plans" class="quick-link">
+            <span class="link-icon">&#128220;</span>
+            <span class="link-label">{{ navLabels.trainingPlans }}</span>
+          </RouterLink>
         </div>
       </section>
 
@@ -53,7 +57,7 @@ const auth = useAuthStore()
         <ul class="upcoming-list">
           <li class="upcoming-item">
             <span class="upcoming-badge">即将推出</span>
-            {{ navLabels.trainingPlans }}
+            {{ navLabels.discussions }}
           </li>
           <li class="upcoming-item">
             <span class="upcoming-badge">即将推出</span>
