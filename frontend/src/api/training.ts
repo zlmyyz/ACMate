@@ -1,7 +1,6 @@
 import apiClient from './client'
 import { withCsrf } from './csrf'
 import type {
-  PlanSummary,
   PlanDetail,
   PlanListResponse,
   CreatePlanRequest,

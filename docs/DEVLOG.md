@@ -1278,3 +1278,52 @@ BUILD SUCCESS（后端编译通过，前端 type-check + lint + build + test 全
 
 后端编译通过（116个源文件），前端 type-check + build + test 全部通过（107测试）
 
+## 2026-07-27：发布前审计
+
+### 审计范围
+
+对 ACMate 全站执行发布前审计：git 状态、安全审计、测试修复、Codeforces 能力审计、文档更新。
+
+### 修复内容
+
+**测试修复（影响 5 个文件）：**
+- `ProblemControllerTest.java` / `AdminProblemControllerTest.java` — AuthenticatedUser 构造函数增加 bio 参数
+- `AdminProblemControllerTest.java` — 增加 ProblemCommandService MockitoBean
+- `SessionLoginTest.java` / `LogoutTest.java` — 增加 UserProfileService MockitoBean
+- 从 81 个 ApplicationContext 加载错误修复为 0 错误
+
+**CSV 公式注入修复：**
+- `DataExportServiceImpl.java` — escapeCsv() 对 =、+、-、@ 开头的单元格自动前缀单引号
+
+**Git 安全：**
+- `.gitignore` 补充 `uploads/` 和 `logs/` 目录
+
+**前端 Lint 修复：**
+- `phases567.test.ts` / `training.test.ts` / `users.test.ts` — 修复 oxlint vitest 规则
+- `.oxlintrc.json` — 关闭 vitest/require-mock-type-parameters 规则
+- `training.ts` — 移除未使用的 PlanSummary import
+- `TrainingPlanListView.vue` — 移除未使用的 TimeStatus 和 auth
+- `problems.test.ts` — 移除未使用变量
+
+### 测试结果
+
+```
+后端 Tests run: 214, Failures: 0, Errors: 0, Skipped: 0
+前端 Tests run: 107, Failures: 0
+前端 type-check + lint + build 全部通过
+```
+
+### 审计发现（已知阻塞项）
+
+| 问题 | 严重程度 |
+|---|---|
+| Codeforces API 未集成（无 RestTemplate/WebClient/@Scheduled） | 高 |
+| 通知事件触发未实现（CRUD 就绪，事件发送代码不存在） | 中 |
+| 禁用用户 Session 不失效（AdminUserService 仅改数据库） | 中 |
+| 操作日志未写入（AuditLogService.log() 存在但未被调用） | 低 |
+| V1-V10 迁移未经 MySQL 8 验证（本地无 MySQL） | 低 |
+
+### 文档更新
+
+- `IMPLEMENTATION_STATUS.md` — 完整重写，审计发现记录
+

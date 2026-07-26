@@ -74,13 +74,13 @@ class ProblemControllerTest {
 
     private AuthenticatedUser buildAdminUser() {
         return new AuthenticatedUser(1L, "admin", "hash", "Admin",
-                null, null, true, true,
+                null, null, null, true, true,
                 List.of(new SimpleGrantedAuthority("ROLE_USER"), new SimpleGrantedAuthority("ROLE_ADMIN")));
     }
 
     private AuthenticatedUser buildNormalUser() {
         return new AuthenticatedUser(2L, "user", "hash", "User",
-                null, null, false, true,
+                null, null, null, false, true,
                 List.of(new SimpleGrantedAuthority("ROLE_USER")));
     }
 

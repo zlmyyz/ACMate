@@ -33,3 +33,5 @@ build/
 .vscode/
 
 src/main/resources/application-local.yml
+uploads/
+logs/

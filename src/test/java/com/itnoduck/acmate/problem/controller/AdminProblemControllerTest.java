@@ -7,6 +7,7 @@ import com.itnoduck.acmate.problem.dto.AdminProblemSummaryResponse;
 import com.itnoduck.acmate.problem.dto.MineProblemStatusFilter;
 import com.itnoduck.acmate.problem.dto.ProblemStatusView;
 import com.itnoduck.acmate.problem.service.AdminProblemQueryService;
+import com.itnoduck.acmate.problem.service.ProblemCommandService;
 import com.itnoduck.acmate.security.AuthenticatedUser;
 import com.itnoduck.acmate.security.DatabaseUserDetailsService;
 import com.itnoduck.acmate.user.service.UserAuthenticationService;
@@ -45,6 +46,9 @@ class AdminProblemControllerTest {
     private AdminProblemQueryService adminProblemQueryService;
 
     @MockitoBean
+    private ProblemCommandService problemCommandService;
+
+    @MockitoBean
     private DatabaseUserDetailsService databaseUserDetailsService;
 
     @MockitoBean
@@ -55,13 +59,13 @@ class AdminProblemControllerTest {
 
     private AuthenticatedUser buildAdminUser() {
         return new AuthenticatedUser(1L, "admin", "hash", "Admin",
-                null, null, true, true,
+                null, null, null, true, true,
                 List.of(new SimpleGrantedAuthority("ROLE_USER"), new SimpleGrantedAuthority("ROLE_ADMIN")));
     }
 
     private AuthenticatedUser buildNormalUser() {
         return new AuthenticatedUser(2L, "user", "hash", "User",
-                null, null, false, true,
+                null, null, null, false, true,
                 List.of(new SimpleGrantedAuthority("ROLE_USER")));
     }
 
@@ -140,6 +144,7 @@ class AdminProblemControllerTest {
         PageResponse<AdminProblemSummaryResponse> page = new PageResponse<>(1, 20, 1, 1,
                 List.of(new AdminProblemSummaryResponse(1L, "CUSTOM", "EXT-1", "Test",
                         "https://example.com", "800", "dp", ProblemStatusView.ACTIVE,
+                        null, null, null, null,
                         10L, "testuser", "Test User",
                         LocalDateTime.of(2026, 7, 25, 12, 0),
                         LocalDateTime.of(2026, 7, 26, 12, 0))));

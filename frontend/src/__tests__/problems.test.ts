@@ -520,7 +520,6 @@ describe('ProblemTable with slots', () => {
 
   it('should render status slot content', async () => {
     const { default: ProblemTable } = await import('@/components/problem/ProblemTable.vue')
-    const { default: StatusBadge } = await import('@/components/problem/StatusBadge.vue')
     const wrapper = mount(ProblemTable, {
       props: {
         problems: [{ id: 1, platform: 'CUSTOM', externalProblemKey: null, title: 'T', sourceUrl: null, difficulty: null, tags: null, status: 'ACTIVE', createTime: '2026-01-01T00:00:00', updateTime: '2026-01-01T00:00:00' }],
@@ -636,7 +635,7 @@ describe('Admin route guard', () => {
     await auth.init()
 
     const { default: router } = await import('@/router/index')
-    const result = router.resolve('/admin/problems')
+    router.resolve('/admin/problems')
 
     expect(auth.isAdmin).toBe(false)
     expect(auth.isLoggedIn).toBe(true)

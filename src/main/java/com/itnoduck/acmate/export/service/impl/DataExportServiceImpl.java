@@ -64,7 +64,9 @@ public class DataExportServiceImpl implements DataExportService {
 
     private String escapeCsv(String s) {
         if (s == null) return "";
-        if (s.contains(",") || s.contains("\"") || s.contains("\n")) return '"' + s.replace("\"", "\"\"") + '"';
-        return s;
+        String escaped = s;
+        if (escaped.contains(",") || escaped.contains("\"") || escaped.contains("\n")) escaped = '"' + escaped.replace("\"", "\"\"") + '"';
+        if (escaped.startsWith("=") || escaped.startsWith("+") || escaped.startsWith("-") || escaped.startsWith("@")) escaped = "'" + escaped;
+        return escaped;
     }
 }

@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
 import { listPlans } from '@/api/training'
-import type { PlanSummary, PlanType, TimeStatus } from '@/types/training'
+import type { PlanSummary, PlanType } from '@/types/training'
 import { trainingTypeLabels, trainingTimeStatusLabels } from '@/constants/labels'
 import PageContainer from '@/components/layout/PageContainer.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
@@ -11,7 +10,6 @@ import ErrorState from '@/components/common/ErrorState.vue'
 import PaginationBar from '@/components/common/PaginationBar.vue'
 
 const router = useRouter()
-const auth = useAuthStore()
 
 const plans = ref<PlanSummary[]>([])
 const loading = ref(true)
