@@ -1,0 +1,310 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>ACMate - My Problems</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#5c5e64",
+                        "on-tertiary-fixed": "#3f0300",
+                        "tertiary": "#9e4131",
+                        "surface-container-high": "#e3eae5",
+                        "inverse-surface": "#2b322f",
+                        "status-active": "#25BB9B",
+                        "status-ended": "#BCBFC4",
+                        "primary-fixed": "#74f9d6",
+                        "on-error-container": "#93000a",
+                        "status-inactive": "#9499A0",
+                        "tertiary-fixed-dim": "#ffb4a6",
+                        "on-primary-fixed": "#002019",
+                        "surface-background": "#F4F5F7",
+                        "surface-container-highest": "#dde4e0",
+                        "secondary-container": "#e1e2e9",
+                        "secondary-fixed-dim": "#c4c6cd",
+                        "outline-variant": "#bbcac3",
+                        "inverse-on-surface": "#ecf2ee",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#7f2a1c",
+                        "secondary-fixed": "#e1e2e9",
+                        "tertiary-fixed": "#ffdad4",
+                        "on-surface-variant": "#3c4a45",
+                        "surface-container": "#e9efeb",
+                        "on-primary": "#ffffff",
+                        "on-secondary-container": "#62646a",
+                        "surface-dim": "#d5dcd7",
+                        "on-background": "#161d1b",
+                        "surface-tint": "#006b57",
+                        "status-ongoing": "#3A8BFF",
+                        "on-error": "#ffffff",
+                        "on-primary-container": "#004537",
+                        "border-subtle": "#E3E5E7",
+                        "on-primary-fixed-variant": "#005141",
+                        "primary-fixed-dim": "#54dcba",
+                        "tertiary-container": "#f88671",
+                        "on-surface": "#161d1b",
+                        "error-container": "#ffdad6",
+                        "inverse-primary": "#54dcba",
+                        "status-pending": "#F3A13C",
+                        "on-tertiary-container": "#701f12",
+                        "outline": "#6c7a75",
+                        "on-secondary": "#ffffff",
+                        "surface-bright": "#f4fbf6",
+                        "primary-container": "#25bb9b",
+                        "on-secondary-fixed-variant": "#44474c",
+                        "primary": "#006b57",
+                        "surface-container-low": "#eff5f1",
+                        "surface-variant": "#dde4e0",
+                        "on-secondary-fixed": "#191c20",
+                        "surface-container-lowest": "#ffffff",
+                        "surface": "#f4fbf6",
+                        "error": "#ba1a1a",
+                        "surface-card": "#FFFFFF",
+                        "background": "#f4fbf6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "stack-md": "16px",
+                        "stack-lg": "24px",
+                        "margin-page": "24px",
+                        "stack-sm": "8px",
+                        "container-max": "1280px",
+                        "gutter": "20px"
+                    },
+                    "fontFamily": {
+                        "headline-md-mobile": ["Hanken Grotesk"],
+                        "label-caps": ["Inter"],
+                        "code-sm": ["JetBrains Mono"],
+                        "body-lg": ["Inter"],
+                        "headline-sm": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "body-md": ["Inter"],
+                        "display-lg": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "headline-md-mobile": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "code-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "display-lg": ["36px", { "lineHeight": "48px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .table-row-hover:hover { background-color: #f4fbf6; }
+    </style>
+</head>
+<body class="bg-surface-background text-on-surface font-body-md min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<header class="bg-surface-container-lowest border-b border-border-subtle shadow-sm docked full-width top-0 sticky z-50">
+<div class="flex justify-between items-center h-16 px-margin-page max-w-container-max mx-auto w-full">
+<div class="flex items-center gap-8">
+<div class="font-headline-md text-headline-md font-bold text-primary flex items-center gap-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">code</span>
+                    ACMate
+                </div>
+<nav class="hidden md:flex gap-6 h-full items-end">
+<a class="text-on-surface-variant font-medium pb-2 hover:text-primary transition-colors duration-200" href="#">Home</a>
+<a class="text-on-surface-variant font-medium pb-2 hover:text-primary transition-colors duration-200" href="#">Problems</a>
+<a class="text-primary border-b-2 border-primary font-bold pb-2 opacity-80 scale-95 transition-all" href="#">My Problems</a>
+<a class="text-on-surface-variant font-medium pb-2 hover:text-primary transition-colors duration-200" href="#">Training</a>
+<a class="text-on-surface-variant font-medium pb-2 hover:text-primary transition-colors duration-200" href="#">Discussion</a>
+<a class="text-on-surface-variant font-medium pb-2 hover:text-primary transition-colors duration-200" href="#">Leaderboard</a>
+</nav>
+</div>
+<div class="flex items-center gap-4 text-primary">
+<button class="hover:bg-surface-container-low p-2 rounded-full transition-colors"><span class="material-symbols-outlined">notifications</span></button>
+<button class="hover:bg-surface-container-low p-2 rounded-full transition-colors"><span class="material-symbols-outlined">mail</span></button>
+<button class="hover:bg-surface-container-low p-2 rounded-full transition-colors"><span class="material-symbols-outlined">account_circle</span></button>
+<img alt="User profile avatar" class="w-8 h-8 rounded-full ml-2 border border-border-subtle object-cover" data-alt="A small circular avatar image of a user profile. Modern, clear, and professional." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA31BfWJxg2jzk6d3aECFbILybi8-jXW9a_lGxVhZ-6eprW7_5m9JA2214k2PIZkTF5ZKoeAJYiHpjojp9zpgdidBMTC1StcWXyTpkkQb8JJTLla2Cps5wqqieZRUwWMTTanJvOwQO4mYW41AZc010t8Ji7K6isutxMjyRDG797R0sTbD49xra61h2OG8vQI7haRMmSpLFRH6MiC0Y6aYUiYcuCjtFZOYuVFr47cMKdvKHyu6fZKMjBqNnUCVfVz8Tn5dQwYkiIRRI">
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-grow max-w-container-max mx-auto w-full px-margin-page py-stack-lg flex gap-gutter flex-col md:flex-row">
+<!-- Sidebar -->
+<aside class="w-full md:w-[320px] flex-shrink-0">
+<div class="bg-surface-card rounded-xl border border-border-subtle shadow-sm flex flex-col gap-stack-md w-full p-4 mb-stack-md">
+<div class="flex items-center gap-4 mb-2">
+<img alt="User profile preview" class="w-16 h-16 rounded-full object-cover border-2 border-surface-container-highest" data-alt="A professional user avatar image representing a programmer. High quality, well-lit." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAB7-h7alTqkiEvi31bO61S_JEOZ3QiijX2TbZnZKKijnUW0m2V_mx1J-vdOZ66bTU2IuvEpCGsVIpWyMgrbwN2Ux1bXpQYlpPpjTuuiOibRvyjjR-QtyrYRnBAcNzUkCrwm3EnTgNih_xosLmCeDmFOrwFz7_LZxW6BEidDstKHaVxuEbFMCgc1BfC7G-cxLwZ5x2qBqetndntO_giMEhWEKN0_cI7_axo0vEfB9LTR5eAtwmarm-47vMv5BlDIGN5mFgLSHSHTD4">
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Programmer Stats</h2>
+<p class="text-on-surface-variant text-sm mt-1">Rating: 1525 (Expert)</p>
+</div>
+</div>
+<button class="w-full bg-primary-container text-on-primary-container font-semibold py-2 px-4 rounded-lg hover:bg-primary-fixed-dim transition-colors mb-2">Start Training</button>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">list</span> Problem List
+                    </a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">analytics</span> Status
+                    </a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">leaderboard</span> Rankings
+                    </a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">article</span> Editorial
+                    </a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">query_stats</span> Statistics
+                    </a>
+</nav>
+</div>
+<!-- Trending / Pinned (Optional extra sidebar content to match layout style) -->
+<div class="bg-surface-card rounded-xl border border-border-subtle shadow-sm p-4">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary">local_fire_department</span> Trending Collections
+                </h3>
+<div class="flex flex-col gap-4">
+<div class="flex items-start gap-3">
+<div class="w-12 h-16 bg-surface-container rounded-DEFAULT flex items-center justify-center flex-shrink-0 text-primary-fixed-dim font-bold">DP</div>
+<div>
+<h4 class="font-semibold text-sm text-on-surface line-clamp-2 hover:text-primary cursor-pointer">Advanced Dynamic Programming Patterns</h4>
+<p class="text-xs text-on-surface-variant mt-1">255 Problems</p>
+</div>
+</div>
+<div class="flex items-start gap-3">
+<div class="w-12 h-16 bg-surface-container rounded-DEFAULT flex items-center justify-center flex-shrink-0 text-status-ongoing font-bold">GR</div>
+<div>
+<h4 class="font-semibold text-sm text-on-surface line-clamp-2 hover:text-primary cursor-pointer">Graph Theory Fundamentals</h4>
+<p class="text-xs text-on-surface-variant mt-1">120 Problems</p>
+</div>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<div class="flex-grow flex flex-col gap-stack-lg min-w-0">
+<!-- Header & Actions -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-surface-card p-6 rounded-xl border border-border-subtle shadow-sm">
+<div>
+<h1 class="font-display-lg text-display-lg text-on-surface">My Problems</h1>
+<p class="text-on-surface-variant mt-1">Manage and track the programming challenges you've authored.</p>
+</div>
+<button class="bg-primary text-on-primary px-4 py-2 rounded-lg font-semibold flex items-center gap-2 hover:bg-surface-tint transition-colors shadow-sm">
+<span class="material-symbols-outlined text-sm">add</span> Create New Problem
+                </button>
+</div>
+<!-- Data Table Container -->
+<div class="bg-surface-card rounded-xl border border-border-subtle shadow-sm overflow-hidden flex flex-col">
+<!-- Toolbar / Filters -->
+<div class="p-4 border-b border-border-subtle flex flex-wrap gap-4 items-center justify-between bg-surface-container-lowest">
+<div class="flex items-center gap-4">
+<div class="relative w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+<input class="w-full pl-9 pr-3 py-1.5 bg-surface-background border border-border-subtle rounded-lg text-sm focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none" placeholder="Search by ID or Title..." type="text">
+</div>
+</div>
+<div class="flex items-center gap-2 bg-surface-background p-1 rounded-lg border border-border-subtle">
+<button class="px-3 py-1 text-sm font-medium rounded-DEFAULT bg-surface-card shadow-sm text-on-surface">All Status</button>
+<button class="px-3 py-1 text-sm font-medium rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-low transition-colors">Active</button>
+<button class="px-3 py-1 text-sm font-medium rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-low transition-colors">Inactive</button>
+</div>
+</div>
+<!-- Table -->
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low text-on-surface-variant font-label-caps text-label-caps border-b border-border-subtle">
+<th class="p-4 font-semibold w-24">Problem ID <span class="material-symbols-outlined text-[10px] align-middle">unfold_more</span></th>
+<th class="p-4 font-semibold">Title</th>
+<th class="p-4 font-semibold w-24 text-center">Difficulty</th>
+<th class="p-4 font-semibold w-24 text-center">Solved By</th>
+<th class="p-4 font-semibold w-32 text-center">Status</th>
+<th class="p-4 font-semibold w-32 text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="text-sm font-body-md">
+<tr class="border-b border-border-subtle table-row-hover transition-colors">
+<td class="p-4 font-code-sm text-code-sm text-secondary">NC319875</td>
+<td class="p-4 font-medium text-on-surface">Red's Grid Construction 2.0</td>
+<td class="p-4 text-center"><span class="text-tertiary-container font-code-sm">1400</span></td>
+<td class="p-4 text-center text-on-surface-variant font-code-sm">590</td>
+<td class="p-4 text-center">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-container/20 text-on-primary-container">
+<span class="w-1.5 h-1.5 rounded-full bg-status-active mr-1.5"></span> Active
+                                    </span>
+</td>
+<td class="p-4 text-right flex justify-end gap-2">
+<button class="text-on-surface-variant hover:text-primary transition-colors p-1" title="Edit"><span class="material-symbols-outlined text-[18px]">edit</span></button>
+<button class="text-on-surface-variant hover:text-status-inactive transition-colors p-1" title="Deactivate"><span class="material-symbols-outlined text-[18px]">visibility_off</span></button>
+</td>
+</tr>
+<tr class="border-b border-border-subtle table-row-hover transition-colors">
+<td class="p-4 font-code-sm text-code-sm text-secondary">NC319819</td>
+<td class="p-4 font-medium text-on-surface">Red's Grid Construction 1.0</td>
+<td class="p-4 text-center"><span class="text-tertiary font-code-sm">1800</span></td>
+<td class="p-4 text-center text-on-surface-variant font-code-sm">271</td>
+<td class="p-4 text-center">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-container/20 text-on-primary-container">
+<span class="w-1.5 h-1.5 rounded-full bg-status-active mr-1.5"></span> Active
+                                    </span>
+</td>
+<td class="p-4 text-right flex justify-end gap-2">
+<button class="text-on-surface-variant hover:text-primary transition-colors p-1" title="Edit"><span class="material-symbols-outlined text-[18px]">edit</span></button>
+<button class="text-on-surface-variant hover:text-status-inactive transition-colors p-1" title="Deactivate"><span class="material-symbols-outlined text-[18px]">visibility_off</span></button>
+</td>
+</tr>
+<tr class="border-b border-border-subtle table-row-hover transition-colors">
+<td class="p-4 font-code-sm text-code-sm text-secondary">NC319817</td>
+<td class="p-4 font-medium text-on-surface text-on-surface-variant line-through opacity-70">Red's Swap (Hard)</td>
+<td class="p-4 text-center"><span class="text-status-ongoing font-code-sm opacity-70">800</span></td>
+<td class="p-4 text-center text-on-surface-variant font-code-sm opacity-70">1051</td>
+<td class="p-4 text-center">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-surface-container-highest text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-status-inactive mr-1.5"></span> Inactive
+                                    </span>
+</td>
+<td class="p-4 text-right flex justify-end gap-2">
+<button class="text-on-surface-variant hover:text-primary transition-colors p-1" title="Edit"><span class="material-symbols-outlined text-[18px]">edit</span></button>
+<button class="text-status-inactive hover:text-primary transition-colors p-1" title="Restore"><span class="material-symbols-outlined text-[18px]">restore</span></button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="p-4 border-t border-border-subtle flex justify-between items-center bg-surface-container-lowest text-sm text-on-surface-variant">
+<div>Showing 1 to 3 of 12 problems</div>
+<div class="flex gap-1">
+<button class="px-2 py-1 rounded border border-border-subtle hover:bg-surface-container-low disabled:opacity-50" disabled="">&lt;</button>
+<button class="px-3 py-1 rounded border border-primary bg-primary-container text-on-primary-container font-medium">1</button>
+<button class="px-3 py-1 rounded border border-border-subtle hover:bg-surface-container-low">2</button>
+<button class="px-3 py-1 rounded border border-border-subtle hover:bg-surface-container-low">3</button>
+<button class="px-2 py-1 rounded border border-border-subtle hover:bg-surface-container-low">&gt;</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-low border-t border-border-subtle mt-auto">
+<div class="w-full py-stack-lg px-margin-page flex flex-col md:flex-row justify-between items-center max-w-container-max mx-auto gap-4">
+<div class="font-headline-sm text-headline-sm text-secondary">ACMate</div>
+<p class="text-secondary font-body-md text-sm">© 2024 ACMate Competition Platform. Built for excellence.</p>
+<div class="flex gap-4">
+<a class="text-on-secondary-container hover:text-primary hover:underline transition-colors text-sm" href="#">About Us</a>
+<a class="text-on-secondary-container hover:text-primary hover:underline transition-colors text-sm" href="#">Guidelines</a>
+<a class="text-on-secondary-container hover:text-primary hover:underline transition-colors text-sm" href="#">API Docs</a>
+<a class="text-on-secondary-container hover:text-primary hover:underline transition-colors text-sm" href="#">Privacy Policy</a>
+</div>
+</div>
+</footer>
+</body></html>

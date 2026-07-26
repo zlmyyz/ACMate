@@ -1,0 +1,358 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>ACMate - Training Plans</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700&amp;family=Inter:wght@400;600&amp;family=JetBrains+Mono&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed": "#3f0300",
+                        "on-tertiary-fixed-variant": "#7f2a1c",
+                        "status-active": "#25BB9B",
+                        "status-ended": "#BCBFC4",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-container": "#701f12",
+                        "on-primary-fixed-variant": "#005141",
+                        "on-surface-variant": "#3c4a45",
+                        "surface-container": "#e9efeb",
+                        "surface-container-lowest": "#ffffff",
+                        "outline": "#6c7a75",
+                        "on-secondary-fixed-variant": "#44474c",
+                        "inverse-on-surface": "#ecf2ee",
+                        "primary": "#006b57",
+                        "status-ongoing": "#3A8BFF",
+                        "surface-container-high": "#e3eae5",
+                        "secondary-container": "#e1e2e9",
+                        "on-primary": "#ffffff",
+                        "tertiary": "#9e4131",
+                        "secondary-fixed": "#e1e2e9",
+                        "tertiary-fixed-dim": "#ffb4a6",
+                        "error": "#ba1a1a",
+                        "inverse-surface": "#2b322f",
+                        "primary-fixed-dim": "#54dcba",
+                        "on-error": "#ffffff",
+                        "on-surface": "#161d1b",
+                        "surface-variant": "#dde4e0",
+                        "surface-background": "#F4F5F7",
+                        "on-tertiary": "#ffffff",
+                        "outline-variant": "#bbcac3",
+                        "status-inactive": "#9499A0",
+                        "secondary-fixed-dim": "#c4c6cd",
+                        "tertiary-fixed": "#ffdad4",
+                        "surface": "#f4fbf6",
+                        "on-primary-fixed": "#002019",
+                        "on-primary-container": "#004537",
+                        "surface-tint": "#006b57",
+                        "surface-container-highest": "#dde4e0",
+                        "surface-dim": "#d5dcd7",
+                        "on-secondary-container": "#62646a",
+                        "on-secondary-fixed": "#191c20",
+                        "inverse-primary": "#54dcba",
+                        "tertiary-container": "#f88671",
+                        "status-pending": "#F3A13C",
+                        "on-background": "#161d1b",
+                        "surface-container-low": "#eff5f1",
+                        "surface-card": "#FFFFFF",
+                        "secondary": "#5c5e64",
+                        "on-secondary": "#ffffff",
+                        "primary-container": "#25bb9b",
+                        "on-error-container": "#93000a",
+                        "border-subtle": "#E3E5E7",
+                        "surface-bright": "#f4fbf6",
+                        "background": "#f4fbf6",
+                        "primary-fixed": "#74f9d6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-page": "24px",
+                        "stack-sm": "8px",
+                        "container-max": "1280px",
+                        "stack-lg": "24px",
+                        "gutter": "20px",
+                        "stack-md": "16px"
+                    },
+                    "fontFamily": {
+                        "label-caps": ["Inter"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "code-sm": ["JetBrains Mono"],
+                        "headline-sm": ["Hanken Grotesk"],
+                        "headline-md-mobile": ["Hanken Grotesk"],
+                        "display-lg": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "code-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-md-mobile": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-lg": ["36px", { "lineHeight": "48px", "fontWeight": "700" }]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { background-color: #F4F5F7; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .fill-icon .material-symbols-outlined { font-variation-settings: 'FILL' 1; }
+        .nav-scrollbar::-webkit-scrollbar { display: none; }
+        .nav-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="text-on-surface font-body-md min-h-screen flex flex-col md:flex-row">
+<!-- SideNavBar (Hidden on Mobile, Visible on Desktop) -->
+<aside class="hidden md:flex flex-col h-screen w-64 fixed left-0 top-0 bg-surface-container border-r border-border-subtle p-stack-md z-40">
+<div class="flex items-center gap-3 mb-8">
+<img class="w-10 h-10 rounded-lg object-cover" data-alt="A clean, minimalist logo for a high-performance tech platform, featuring sharp geometric shapes in teal and dark grey against a white background, exuding institutional reliability and speed." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgLYG7Od8PUTU4wrMzHiRlM145be-IQqqPXRrhB2ukNAlsfwCioi1CD3RvzNxC53lfOpqQukHOebm3I8BvgXckeN7OZm-0EXfs63XNprGpb178jcWkJ2khTuhYQTdyONzMa5pXRNMCT8jAYSQn4SGqwNB0Wlyz6-5nGcU_16Yvib0Jr3YrEYmv1by9ferd8-o-u5pyfP6_djRGC1n5XgJnV6VImhs5hsIe0KVzIi6_OnmkmNWXM3e1HfLflnqBv0zVh695UKjqR14">
+<div>
+<h1 class="font-headline-sm text-headline-sm text-on-surface">Training Center</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant">Academic Excellence</p>
+</div>
+</div>
+<button class="w-full bg-primary-container text-on-primary font-label-caps text-label-caps py-3 rounded-lg mb-8 hover:bg-opacity-90 transition-opacity flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" style="font-size: 18px;">add</span>
+            Create New Plan
+        </button>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-all font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+                Overview
+            </a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-primary-container text-on-primary-container font-body-md text-body-md transition-transform scale-95 active:scale-100" href="#">
+<span class="material-symbols-outlined">list_alt</span>
+                Plan List
+            </a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-all font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">assignment_ind</span>
+                My Plans
+            </a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-all font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">leaderboard</span>
+                Rankings
+            </a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-all font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">settings</span>
+                Settings
+            </a>
+</nav>
+<div class="mt-auto space-y-1 pt-4 border-t border-border-subtle">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-highest transition-all font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" style="font-size: 18px;">description</span>
+                Documentation
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-highest transition-all font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" style="font-size: 18px;">contact_support</span>
+                Support
+            </a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-64 flex flex-col min-h-screen relative">
+<!-- TopNavBar (Visible on Mobile, replaces SideNav) -->
+<header class="md:hidden w-full h-16 bg-white flex justify-between items-center px-margin-page border-b border-border-subtle shadow-sm z-30 sticky top-0">
+<h1 class="text-headline-md-mobile font-headline-md-mobile text-primary">ACMate</h1>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors cursor-pointer transition-all duration-200">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<img alt="User profile avatar" class="w-8 h-8 rounded-full bg-surface-container-high object-cover" data-alt="A small, generic avatar image representing a user profile, rendered in a clean, modern digital style suitable for a professional software platform." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_Iw8gFU4jwrMwfUTpyI6QTw2PZUt8ZyHvpakM1z4soMuX_PRUIb8uJrvPRkVtPouZKleP00Au-EL9mlAgfxW5rhX8FmolBY62ZVifiIWPycRIzzcBjVzZ5KPup45UUOU3oF2AIT_1PfqswWSvmSfPuWt-2qtp6lm-bfavuB6GNnAut7tGyR5F6lu4Im2TR72P1600zfUVFGezezExQUpIjlEHOaLce_d8379p_uqP5iyLxk439o52nuxSW1KjpD89L2QexCPfx_M">
+</div>
+</header>
+<!-- Page Header & Actions -->
+<div class="px-margin-page pt-stack-lg pb-stack-md bg-white border-b border-border-subtle sticky top-0 md:top-0 z-20">
+<div class="max-w-container-max mx-auto">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface">Training Plans</h2>
+<p class="text-on-surface-variant mt-1">Discover, manage, and participate in competitive programming tracks.</p>
+</div>
+<div class="flex gap-3">
+<div class="relative w-full md:w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" style="font-size: 20px;">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-background border border-outline-variant rounded-lg text-body-md font-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="Search plans..." type="text">
+</div>
+</div>
+</div>
+<!-- Tabs & Filters -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+<div class="flex gap-6 border-b border-border-subtle w-full sm:w-auto overflow-x-auto nav-scrollbar">
+<button class="text-primary font-bold border-b-2 border-primary pb-3 px-1 whitespace-nowrap">All Plans</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors pb-3 px-1 whitespace-nowrap">Public Plans</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors pb-3 px-1 whitespace-nowrap">My Plans</button>
+</div>
+<div class="flex gap-2">
+<select class="bg-surface-background border border-outline-variant rounded-md px-3 py-1.5 text-body-md font-body-md text-on-surface focus:border-primary outline-none">
+<option>Status: All</option>
+<option>Ongoing</option>
+<option>Not Started</option>
+<option>Ended</option>
+</select>
+<button class="bg-surface-background border border-outline-variant rounded-md px-3 py-1.5 text-body-md font-body-md text-on-surface hover:bg-surface-container-high transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined" style="font-size: 18px;">filter_list</span>
+                            More Filters
+                        </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Plan Grid -->
+<div class="p-margin-page max-w-container-max mx-auto w-full flex-1">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+<!-- Card 1 -->
+<div class="bg-surface-card rounded-xl p-6 shadow-sm border border-border-subtle hover:shadow-md transition-shadow flex flex-col h-full group">
+<div class="flex justify-between items-start mb-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-label-caps font-label-caps bg-blue-100 text-status-ongoing">Ongoing</span>
+<span class="text-on-surface-variant font-code-sm text-code-sm">ID: 8492</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-2 group-hover:text-primary transition-colors">Advanced Dynamic Programming</h3>
+<p class="text-on-surface-variant text-body-md font-body-md mb-6 line-clamp-2">Master complex DP state transitions, optimization techniques (Convex Hull, Divide &amp; Conquer), and tree DP over 6 weeks of intense practice.</p>
+<div class="mt-auto space-y-3">
+<div class="flex items-center justify-between text-body-md font-body-md text-on-surface-variant">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined" style="font-size: 18px;">person</span>
+<span>Prof. Alan</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined" style="font-size: 18px;">group</span>
+<span>124 Participants</span>
+</div>
+</div>
+<div class="flex items-center justify-between text-body-md font-body-md text-on-surface-variant pt-3 border-t border-border-subtle">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined" style="font-size: 18px;">task</span>
+<span>45 Problems</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined" style="font-size: 18px;">calendar_month</span>
+<span>Oct 1 - Nov 15</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-card rounded-xl p-6 shadow-sm border border-border-subtle hover:shadow-md transition-shadow flex flex-col h-full group">
+<div class="flex justify-between items-start mb-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-label-caps font-label-caps bg-orange-100 text-status-pending">Not Started</span>
+<span class="text-on-surface-variant font-code-sm text-code-sm">ID: 8501</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-2 group-hover:text-primary transition-colors">Graph Theory Mastery</h3>
+<p class="text-on-surface-variant text-body-md font-body-md mb-6 line-clamp-2">Comprehensive coverage of shortest paths, network flow, bipartite matching, and advanced connectivity algorithms.</p>
+<div class="mt-auto space-y-3">
+<div class="flex items-center justify-between text-body-md font-body-md text-on-surface-variant">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined" style="font-size: 18px;">person</span>
+<span>Dr. Chen</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined" style="font-size: 18px;">group</span>
+<span>89 Enrolled</span>
+</div>
+</div>
+<div class="flex items-center justify-between text-body-md font-body-md text-on-surface-variant pt-3 border-t border-border-subtle">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined" style="font-size: 18px;">task</span>
+<span>30 Problems</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined" style="font-size: 18px;">calendar_month</span>
+<span>Starts Nov 20</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-card rounded-xl p-6 shadow-sm border border-border-subtle hover:shadow-md transition-shadow flex flex-col h-full group opacity-80">
+<div class="flex justify-between items-start mb-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-label-caps font-label-caps bg-gray-200 text-status-ended">Ended</span>
+<span class="text-on-surface-variant font-code-sm text-code-sm">ID: 8322</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-2 group-hover:text-primary transition-colors">Regional Contest Prep 2023</h3>
+<p class="text-on-surface-variant text-body-md font-body-md mb-6 line-clamp-2">Intensive mock contests and problem-solving strategies focused on ICPC regional level difficulty. Archives available for review.</p>
+<div class="mt-auto space-y-3">
+<div class="flex items-center justify-between text-body-md font-body-md text-on-surface-variant">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined" style="font-size: 18px;">person</span>
+<span>ICPC Coach</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined" style="font-size: 18px;">group</span>
+<span>210 Finished</span>
+</div>
+</div>
+<div class="flex items-center justify-between text-body-md font-body-md text-on-surface-variant pt-3 border-t border-border-subtle">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined" style="font-size: 18px;">task</span>
+<span>60 Problems</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined" style="font-size: 18px;">calendar_month</span>
+<span>Ended Sep 30</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Pagination Placeholder -->
+<div class="flex justify-center mt-8">
+<div class="flex items-center gap-2">
+<button class="p-2 rounded-md border border-border-subtle text-on-surface-variant hover:bg-surface-container transition-colors disabled:opacity-50"><span class="material-symbols-outlined" style="font-size: 18px;">chevron_left</span></button>
+<button class="w-8 h-8 rounded-md bg-primary text-on-primary font-body-md flex items-center justify-center">1</button>
+<button class="w-8 h-8 rounded-md border border-border-subtle text-on-surface hover:bg-surface-container font-body-md flex items-center justify-center transition-colors">2</button>
+<button class="w-8 h-8 rounded-md border border-border-subtle text-on-surface hover:bg-surface-container font-body-md flex items-center justify-center transition-colors">3</button>
+<span class="text-on-surface-variant">...</span>
+<button class="p-2 rounded-md border border-border-subtle text-on-surface-variant hover:bg-surface-container transition-colors"><span class="material-symbols-outlined" style="font-size: 18px;">chevron_right</span></button>
+</div>
+</div>
+</div>
+<!-- Footer -->
+<footer class="w-full py-stack-lg bg-surface-container-lowest border-t border-border-subtle mt-auto">
+<div class="flex flex-col md:flex-row justify-between items-center px-margin-page max-w-container-max mx-auto gap-4">
+<p class="font-body-md text-body-md text-on-surface-variant text-center md:text-left">© 2024 ACMate Competitive Programming Platform. All rights reserved.</p>
+<div class="flex flex-wrap justify-center gap-6">
+<a class="font-body-md text-body-md text-on-secondary-container hover:text-primary transition-opacity hover:opacity-80" href="#">Terms of Service</a>
+<a class="font-body-md text-body-md text-on-secondary-container hover:text-primary transition-opacity hover:opacity-80" href="#">Privacy Policy</a>
+<a class="font-body-md text-body-md text-on-secondary-container hover:text-primary transition-opacity hover:opacity-80" href="#">API Docs</a>
+<a class="font-body-md text-body-md text-on-secondary-container hover:text-primary transition-opacity hover:opacity-80" href="#">Contact</a>
+</div>
+</div>
+</footer>
+</main>
+<!-- BottomNavBar for Mobile (Visible only on md:hidden if appropriate) -->
+<nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-border-subtle flex justify-around items-center h-16 z-40 pb-safe shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+<a class="flex flex-col items-center justify-center w-full h-full text-on-surface-variant" href="#">
+<span class="material-symbols-outlined mb-1">dashboard</span>
+<span class="text-[10px] font-label-caps">Overview</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full text-primary font-bold" href="#">
+<span class="material-symbols-outlined mb-1 fill-icon">list_alt</span>
+<span class="text-[10px] font-label-caps">Plans</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full text-on-surface-variant" href="#">
+<span class="material-symbols-outlined mb-1">leaderboard</span>
+<span class="text-[10px] font-label-caps">Rankings</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full text-on-surface-variant" href="#">
+<span class="material-symbols-outlined mb-1">settings</span>
+<span class="text-[10px] font-label-caps">Settings</span>
+</a>
+</nav>
+<!-- Mobile FAB (Create Plan) -->
+<button class="md:hidden fixed bottom-20 right-4 w-14 h-14 bg-primary-container text-on-primary rounded-full shadow-lg flex items-center justify-center z-40 active:scale-95 transition-transform">
+<span class="material-symbols-outlined">add</span>
+</button>
+</body></html>

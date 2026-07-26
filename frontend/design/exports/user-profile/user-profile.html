@@ -1,0 +1,268 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>ACMate - User Profile</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#5c5e64",
+                        "on-tertiary-fixed": "#3f0300",
+                        "tertiary": "#9e4131",
+                        "surface-container-high": "#e3eae5",
+                        "inverse-surface": "#2b322f",
+                        "status-active": "#25BB9B",
+                        "status-ended": "#BCBFC4",
+                        "primary-fixed": "#74f9d6",
+                        "on-error-container": "#93000a",
+                        "status-inactive": "#9499A0",
+                        "tertiary-fixed-dim": "#ffb4a6",
+                        "on-primary-fixed": "#002019",
+                        "surface-background": "#F4F5F7",
+                        "surface-container-highest": "#dde4e0",
+                        "secondary-container": "#e1e2e9",
+                        "secondary-fixed-dim": "#c4c6cd",
+                        "outline-variant": "#bbcac3",
+                        "inverse-on-surface": "#ecf2ee",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#7f2a1c",
+                        "secondary-fixed": "#e1e2e9",
+                        "tertiary-fixed": "#ffdad4",
+                        "on-surface-variant": "#3c4a45",
+                        "surface-container": "#e9efeb",
+                        "on-primary": "#ffffff",
+                        "on-secondary-container": "#62646a",
+                        "surface-dim": "#d5dcd7",
+                        "on-background": "#161d1b",
+                        "surface-tint": "#006b57",
+                        "status-ongoing": "#3A8BFF",
+                        "on-error": "#ffffff",
+                        "on-primary-container": "#004537",
+                        "border-subtle": "#E3E5E7",
+                        "on-primary-fixed-variant": "#005141",
+                        "primary-fixed-dim": "#54dcba",
+                        "tertiary-container": "#f88671",
+                        "on-surface": "#161d1b",
+                        "error-container": "#ffdad6",
+                        "inverse-primary": "#54dcba",
+                        "status-pending": "#F3A13C",
+                        "on-tertiary-container": "#701f12",
+                        "outline": "#6c7a75",
+                        "on-secondary": "#ffffff",
+                        "surface-bright": "#f4fbf6",
+                        "primary-container": "#25bb9b",
+                        "on-secondary-fixed-variant": "#44474c",
+                        "primary": "#006b57",
+                        "surface-container-low": "#eff5f1",
+                        "surface-variant": "#dde4e0",
+                        "on-secondary-fixed": "#191c20",
+                        "surface-container-lowest": "#ffffff",
+                        "surface": "#f4fbf6",
+                        "error": "#ba1a1a",
+                        "surface-card": "#FFFFFF",
+                        "background": "#f4fbf6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "stack-md": "16px",
+                        "stack-lg": "24px",
+                        "margin-page": "24px",
+                        "stack-sm": "8px",
+                        "container-max": "1280px",
+                        "gutter": "20px"
+                    },
+                    "fontFamily": {
+                        "headline-md-mobile": ["Hanken Grotesk"],
+                        "label-caps": ["Inter"],
+                        "code-sm": ["JetBrains Mono"],
+                        "body-lg": ["Inter"],
+                        "headline-sm": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "body-md": ["Inter"],
+                        "display-lg": ["Hanken Grotesk"]
+                    },
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        @layer utilities {
+            .font-headline-md-mobile { font-family: theme('fontFamily.headline-md-mobile'); font-size: 20px; line-height: 28px; font-weight: 600; }
+            .font-label-caps { font-family: theme('fontFamily.label-caps'); font-size: 12px; line-height: 16px; letter-spacing: 0.05em; font-weight: 600; text-transform: uppercase; }
+            .font-code-sm { font-family: theme('fontFamily.code-sm'); font-size: 13px; line-height: 18px; font-weight: 400; }
+            .font-body-lg { font-family: theme('fontFamily.body-lg'); font-size: 16px; line-height: 24px; font-weight: 400; }
+            .font-headline-sm { font-family: theme('fontFamily.headline-sm'); font-size: 20px; line-height: 28px; font-weight: 600; }
+            .font-headline-md { font-family: theme('fontFamily.headline-md'); font-size: 24px; line-height: 32px; font-weight: 600; }
+            .font-body-md { font-family: theme('fontFamily.body-md'); font-size: 14px; line-height: 22px; font-weight: 400; }
+            .font-display-lg { font-family: theme('fontFamily.display-lg'); font-size: 36px; line-height: 48px; font-weight: 700; }
+        }
+    </style>
+</head>
+<body class="bg-surface-background text-on-surface font-body-md min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<nav class="bg-surface-container-lowest dark:bg-inverse-surface w-full top-0 shadow-sm border-b border-border-subtle dark:border-outline-variant sticky z-50">
+<div class="flex justify-between items-center h-16 px-margin-page max-w-container-max mx-auto w-full">
+<div class="flex items-center gap-8">
+<div class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed">ACMate</div>
+<div class="hidden md:flex gap-6">
+<a class="text-on-surface-variant dark:text-surface-variant font-medium font-body-md hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200" href="#">Home</a>
+<a class="text-on-surface-variant dark:text-surface-variant font-medium font-body-md hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200" href="#">Problems</a>
+<a class="text-primary dark:text-primary-fixed border-b-2 border-primary dark:border-primary-fixed font-bold pb-[22px] font-body-md opacity-80 scale-95 transition-all mt-[24px]" href="#">My Problems</a>
+<a class="text-on-surface-variant dark:text-surface-variant font-medium font-body-md hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200" href="#">Training</a>
+<a class="text-on-surface-variant dark:text-surface-variant font-medium font-body-md hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200" href="#">Discussion</a>
+<a class="text-on-surface-variant dark:text-surface-variant font-medium font-body-md hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200" href="#">Leaderboard</a>
+</div>
+</div>
+<div class="flex items-center gap-4 text-primary dark:text-primary-fixed">
+<button class="hover:bg-surface-container rounded-full p-2 transition-colors"><span class="material-symbols-outlined">notifications</span></button>
+<button class="hover:bg-surface-container rounded-full p-2 transition-colors"><span class="material-symbols-outlined">mail</span></button>
+<img alt="User profile avatar" class="w-8 h-8 rounded-full border border-border-subtle object-cover" data-alt="A detailed headshot portrait of a professional programmer, subtle light mode aesthetic, clean and modern corporate style, neutral lighting, 50-100 words." src="https://lh3.googleusercontent.com/aida-public/AB6AXuALCErZd_yiPp1LGRhY7Gn2MffxF690qj9k_HD-_r-1BN6YOUnDcGP5fC9HluITZkQYP-gTDP2IKYhnrAnPWWwj95rALnP3WRSMRzoaHIiIYjt8k3uGn2ODRwOaDCCHtCWEYCP3WWiWDiDM0c_pUm2oAEnqEZDuIF8amrUgcuZhP49YFV0YVseA28X10EJnmzpMve26lmZei1YXp904qWf2WMxdzZErm7g_JFYNPc4QJA1xK_6_rND_jqqhSL5zWdzlUriAR3oQPTs">
+</div>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="flex-grow w-full max-w-container-max mx-auto px-margin-page py-stack-lg flex flex-col md:flex-row gap-gutter">
+<!-- Left Column: SideNavBar & Profile Overview -->
+<aside class="w-full md:w-[320px] shrink-0 flex flex-col gap-stack-md">
+<!-- Profile Card -->
+<div class="bg-surface-card rounded-xl p-6 shadow-sm border border-border-subtle flex flex-col items-center text-center">
+<img alt="User Avatar" class="w-24 h-24 rounded-full border-4 border-surface-background mb-4 object-cover" data-alt="A majestic landscape digital painting of a tranquil lake at sunset, vibrant orange and purple sky reflecting on calm water, subtle silhouette of a solitary figure, high resolution, modern light mode aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVVOp0HjHai8Ql0aX6WmwISmVks_wu0C8ltKp8W__ci_TmRJAjs82d6HCLuhqvQ2brfcTydbb0v0W-aOd1bJaQThJHpvXunPQzBgd5zPplIVhpLBke_E6cs8Y5UoU2LlWzeDjOi98ZXHPizqA3jf_SowgT2cu5LtxYBJo3zR8gIm2uIUC7jJXqClEgC3ss8KOeUIa2MuChcQZGCAhQCoo4_iSqX-e6_-iTQi41o2hOx8o7yLH2vCuZD7vc70wXKoRLmKu7dW68s0k">
+<h2 class="font-headline-md text-on-surface mb-1">Alex Chen</h2>
+<p class="text-on-surface-variant font-body-md mb-4">Rating: <span class="text-status-active font-semibold">1525</span> <span class="text-secondary text-sm ml-1">(Expert)</span></p>
+<div class="w-full grid grid-cols-2 gap-4 border-t border-border-subtle pt-4 text-left">
+<div>
+<p class="font-label-caps text-on-surface-variant mb-1">Solved</p>
+<p class="font-body-lg font-semibold text-on-surface">409</p>
+</div>
+<div>
+<p class="font-label-caps text-on-surface-variant mb-1">Submissions</p>
+<p class="font-body-lg font-semibold text-on-surface">2,264</p>
+</div>
+</div>
+<button class="w-full mt-6 bg-primary text-on-primary py-2 rounded-lg font-semibold hover:bg-surface-tint transition-colors">Follow</button>
+</div>
+<!-- SideNavBar -->
+<div class="bg-surface-card dark:bg-surface-container rounded-xl shadow-sm border border-border-subtle dark:border-outline-variant flex flex-col gap-stack-md w-full p-4">
+<nav class="flex flex-col gap-1 font-body-md text-body-md">
+<a class="bg-primary-container text-on-primary-container font-semibold rounded-lg flex items-center gap-3 p-3 scale-98" href="#"><span class="material-symbols-outlined">list</span>Problem List</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-inverse-surface rounded-lg transition-all flex items-center gap-3 p-3" href="#"><span class="material-symbols-outlined">analytics</span>Status</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-inverse-surface rounded-lg transition-all flex items-center gap-3 p-3" href="#"><span class="material-symbols-outlined">leaderboard</span>Rankings</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-inverse-surface rounded-lg transition-all flex items-center gap-3 p-3" href="#"><span class="material-symbols-outlined">article</span>Editorial</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-inverse-surface rounded-lg transition-all flex items-center gap-3 p-3" href="#"><span class="material-symbols-outlined">query_stats</span>Statistics</a>
+</nav>
+</div>
+</aside>
+<!-- Right Column: Dashboard Canvas -->
+<div class="flex-grow flex flex-col gap-stack-lg">
+<!-- Quick Actions Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="bg-surface-card rounded-xl p-4 shadow-sm border border-border-subtle flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer">
+<div class="bg-error-container text-on-error-container p-3 rounded-lg"><span class="material-symbols-outlined">assignment</span></div>
+<span class="font-semibold text-on-surface">By Topic</span>
+</div>
+<div class="bg-surface-card rounded-xl p-4 shadow-sm border border-border-subtle flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer">
+<div class="bg-surface-container-highest text-on-surface-variant p-3 rounded-lg"><span class="material-symbols-outlined">route</span></div>
+<span class="font-semibold text-on-surface">By Path</span>
+</div>
+<div class="bg-surface-card rounded-xl p-4 shadow-sm border border-border-subtle flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer">
+<div class="bg-tertiary-container text-on-tertiary-container p-3 rounded-lg"><span class="material-symbols-outlined">school</span></div>
+<span class="font-semibold text-on-surface">Beginner</span>
+</div>
+<div class="bg-surface-card rounded-xl p-4 shadow-sm border border-border-subtle flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer">
+<div class="bg-primary-fixed-dim text-on-primary-fixed-variant p-3 rounded-lg"><span class="material-symbols-outlined">video_library</span></div>
+<span class="font-semibold text-on-surface">Lectures</span>
+</div>
+</div>
+<!-- Main Data Table Container -->
+<div class="bg-surface-card rounded-xl shadow-sm border border-border-subtle overflow-hidden flex flex-col">
+<!-- Filters & Tabs -->
+<div class="border-b border-border-subtle bg-surface-background/50 px-6 pt-4">
+<div class="flex gap-6 mb-4 font-headline-sm">
+<button class="text-on-surface font-semibold border-b-2 border-primary pb-2">Selected</button>
+<button class="text-on-surface-variant hover:text-on-surface pb-2">Other</button>
+<button class="text-on-surface-variant hover:text-on-surface pb-2">All Problems</button>
+</div>
+<div class="flex justify-between items-center pb-4">
+<div class="relative w-72">
+<span class="material-symbols-outlined absolute left-3 top-2 text-on-surface-variant text-sm">search</span>
+<input class="w-full pl-9 pr-3 py-1.5 bg-surface-container-lowest border border-border-subtle rounded-md text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary" placeholder="Search keywords or ID" type="text">
+</div>
+<div class="flex gap-4 text-sm text-on-surface-variant">
+<button class="flex items-center gap-1 hover:text-on-surface">Knowledge Point <span class="material-symbols-outlined text-sm">expand_more</span></button>
+<button class="flex items-center gap-1 hover:text-on-surface">Status <span class="material-symbols-outlined text-sm">expand_more</span></button>
+</div>
+</div>
+</div>
+<!-- Table -->
+<div class="w-full overflow-x-auto">
+<table class="w-full text-left font-body-md">
+<thead class="bg-surface-background text-on-surface-variant font-label-caps border-b border-border-subtle">
+<tr>
+<th class="px-6 py-3 font-semibold">ID</th>
+<th class="px-6 py-3 font-semibold">Title</th>
+<th class="px-6 py-3 font-semibold text-right">Difficulty</th>
+<th class="px-6 py-3 font-semibold text-right">Passed</th>
+<th class="px-6 py-3 font-semibold text-center">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-subtle">
+<tr class="hover:bg-surface-bright transition-colors group">
+<td class="px-6 py-4 font-code-sm text-on-surface-variant">NC319875</td>
+<td class="px-6 py-4 font-medium text-on-surface group-hover:text-primary transition-colors">Grid Graph Construction 2.0</td>
+<td class="px-6 py-4 text-right text-status-pending">1400</td>
+<td class="px-6 py-4 text-right text-on-surface-variant">590</td>
+<td class="px-6 py-4 text-center">
+<button class="text-primary hover:bg-primary-container/20 p-1.5 rounded-md transition-colors"><span class="material-symbols-outlined text-[20px]">add_task</span></button>
+</td>
+</tr>
+<tr class="hover:bg-surface-bright transition-colors group">
+<td class="px-6 py-4 font-code-sm text-on-surface-variant">NC319819</td>
+<td class="px-6 py-4 font-medium text-on-surface group-hover:text-primary transition-colors">Grid Graph Construction 1.0</td>
+<td class="px-6 py-4 text-right text-tertiary">1800</td>
+<td class="px-6 py-4 text-right text-on-surface-variant">271</td>
+<td class="px-6 py-4 text-center">
+<button class="text-primary hover:bg-primary-container/20 p-1.5 rounded-md transition-colors"><span class="material-symbols-outlined text-[20px]">add_task</span></button>
+</td>
+</tr>
+<tr class="hover:bg-surface-bright transition-colors group">
+<td class="px-6 py-4 font-code-sm text-on-surface-variant">NC319817</td>
+<td class="px-6 py-4 font-medium text-on-surface group-hover:text-primary transition-colors">Swap (hard)</td>
+<td class="px-6 py-4 text-right text-status-active">800</td>
+<td class="px-6 py-4 text-right text-on-surface-variant">1051</td>
+<td class="px-6 py-4 text-center">
+<button class="text-primary hover:bg-primary-container/20 p-1.5 rounded-md transition-colors"><span class="material-symbols-outlined text-[20px]">add_task</span></button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-low dark:bg-on-background w-full py-stack-lg px-margin-page border-t border-border-subtle dark:border-outline-variant mt-auto">
+<div class="flex flex-col md:flex-row justify-between items-center max-w-container-max mx-auto font-body-md text-body-md text-secondary dark:text-secondary-fixed">
+<div class="mb-4 md:mb-0">
+<span class="font-headline-sm text-headline-sm text-secondary block mb-1">ACMate</span>
+<span>© 2024 ACMate Competition Platform. Built for excellence.</span>
+</div>
+<div class="flex gap-6">
+<a class="text-on-secondary-container dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed underline transition-colors" href="#">About Us</a>
+<a class="text-on-secondary-container dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed underline transition-colors" href="#">Guidelines</a>
+<a class="text-on-secondary-container dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed underline transition-colors" href="#">API Docs</a>
+<a class="text-on-secondary-container dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed underline transition-colors" href="#">Privacy Policy</a>
+</div>
+</div>
+</footer>
+</body></html>

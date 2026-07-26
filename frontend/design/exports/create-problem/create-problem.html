@@ -1,0 +1,250 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>ACMate - Create Problem</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#5c5e64",
+                        "on-tertiary-fixed": "#3f0300",
+                        "tertiary": "#9e4131",
+                        "surface-container-high": "#e3eae5",
+                        "inverse-surface": "#2b322f",
+                        "status-active": "#25BB9B",
+                        "status-ended": "#BCBFC4",
+                        "primary-fixed": "#74f9d6",
+                        "on-error-container": "#93000a",
+                        "status-inactive": "#9499A0",
+                        "tertiary-fixed-dim": "#ffb4a6",
+                        "on-primary-fixed": "#002019",
+                        "surface-background": "#F4F5F7",
+                        "surface-container-highest": "#dde4e0",
+                        "secondary-container": "#e1e2e9",
+                        "secondary-fixed-dim": "#c4c6cd",
+                        "outline-variant": "#bbcac3",
+                        "inverse-on-surface": "#ecf2ee",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#7f2a1c",
+                        "secondary-fixed": "#e1e2e9",
+                        "tertiary-fixed": "#ffdad4",
+                        "on-surface-variant": "#3c4a45",
+                        "surface-container": "#e9efeb",
+                        "on-primary": "#ffffff",
+                        "on-secondary-container": "#62646a",
+                        "surface-dim": "#d5dcd7",
+                        "on-background": "#161d1b",
+                        "surface-tint": "#006b57",
+                        "status-ongoing": "#3A8BFF",
+                        "on-error": "#ffffff",
+                        "on-primary-container": "#004537",
+                        "border-subtle": "#E3E5E7",
+                        "on-primary-fixed-variant": "#005141",
+                        "primary-fixed-dim": "#54dcba",
+                        "tertiary-container": "#f88671",
+                        "on-surface": "#161d1b",
+                        "error-container": "#ffdad6",
+                        "inverse-primary": "#54dcba",
+                        "status-pending": "#F3A13C",
+                        "on-tertiary-container": "#701f12",
+                        "outline": "#6c7a75",
+                        "on-secondary": "#ffffff",
+                        "surface-bright": "#f4fbf6",
+                        "primary-container": "#25bb9b",
+                        "on-secondary-fixed-variant": "#44474c",
+                        "primary": "#006b57",
+                        "surface-container-low": "#eff5f1",
+                        "surface-variant": "#dde4e0",
+                        "on-secondary-fixed": "#191c20",
+                        "surface-container-lowest": "#ffffff",
+                        "surface": "#f4fbf6",
+                        "error": "#ba1a1a",
+                        "surface-card": "#FFFFFF",
+                        "background": "#f4fbf6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "stack-md": "16px",
+                        "stack-lg": "24px",
+                        "margin-page": "24px",
+                        "stack-sm": "8px",
+                        "container-max": "1280px",
+                        "gutter": "20px"
+                    },
+                    "fontFamily": {
+                        "headline-md-mobile": ["Hanken Grotesk"],
+                        "label-caps": ["Inter"],
+                        "code-sm": ["JetBrains Mono"],
+                        "body-lg": ["Inter"],
+                        "headline-sm": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "body-md": ["Inter"],
+                        "display-lg": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "headline-md-mobile": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "code-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "display-lg": ["36px", { "lineHeight": "48px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: theme('colors.surface-background'); color: theme('colors.on-surface'); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-body-md text-body-md">
+<!-- TopNavBar -->
+<nav class="bg-surface-container-lowest dark:bg-inverse-surface text-primary dark:text-primary-fixed font-body-md text-body-md font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed docked full-width top-0 border-b border-border-subtle dark:border-outline-variant shadow-sm flex justify-between items-center h-16 px-margin-page max-w-container-max mx-auto w-full sticky z-50">
+<div class="flex items-center gap-6">
+<a class="font-headline-md text-headline-md font-bold text-primary flex items-center gap-2" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">terminal</span>
+                ACMate
+            </a>
+<div class="hidden md:flex items-center gap-6 mt-1">
+<a class="text-on-surface-variant dark:text-surface-variant font-medium hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200" href="#">Home</a>
+<a class="text-primary dark:text-primary-fixed border-b-2 border-primary dark:border-primary-fixed font-bold pb-2 hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200" href="#">Problems</a>
+<a class="text-on-surface-variant dark:text-surface-variant font-medium hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200" href="#">My Problems</a>
+<a class="text-on-surface-variant dark:text-surface-variant font-medium hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200" href="#">Training</a>
+<a class="text-on-surface-variant dark:text-surface-variant font-medium hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200" href="#">Discussion</a>
+<a class="text-on-surface-variant dark:text-surface-variant font-medium hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200" href="#">Leaderboard</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">mail</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors flex items-center">
+<img alt="User profile avatar" class="w-8 h-8 rounded-full border border-border-subtle object-cover" data-alt="A small circular avatar placeholder image for a user profile in a clean, modern web interface. The image should be a minimalist representation, perhaps a subtle geometric pattern or a simple generic user icon, fitting a professional institutional tool aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuByDOT4KmCNVnAkC495RFkza15c7hrlD5x6qUonkZuEK3roaf5twqYPTN5vF2XHQGSz0ZzsnMjHnNThrUQjmVYUNh0ca8B1nSwY-jK2wTpi1k82q1rFq9jRt-y9lCalBZsny8Wn1E3YYXGK9TkM7FpOoHx5pIV23ry4KFTusqB_OqIAAi4Ya_pKNNW2Mfzu-7wkQ3AOaiVoiw5NOcYcBGuViD0HTfXaOXs5pdr8NsoApxUz4MnQ9dFpYrgXGM2cWwvk3dSB8FdAdac">
+</button>
+</div>
+</nav>
+<main class="flex-grow w-full max-w-container-max mx-auto px-margin-page py-stack-lg flex flex-col md:flex-row gap-gutter">
+<!-- Main Content Canvas -->
+<div class="flex-grow w-full md:w-9/12 flex flex-col gap-stack-lg">
+<div class="bg-surface-card rounded-xl shadow-[0px_2px_8px_rgba(0,0,0,0.05)] p-stack-lg">
+<div class="mb-stack-lg border-b border-border-subtle pb-stack-md flex justify-between items-center">
+<h1 class="font-headline-md text-headline-md text-on-surface">Create New Problem</h1>
+</div>
+<form class="flex flex-col gap-stack-md">
+<!-- Basic Info Group -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-stack-md">
+<div class="flex flex-col gap-1">
+<label class="font-label-caps text-label-caps text-on-surface-variant">Title *</label>
+<input class="w-full h-10 px-3 rounded-DEFAULT border border-outline-variant bg-surface-lowest text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors font-body-md text-body-md" placeholder="e.g. A + B Problem" type="text">
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-caps text-label-caps text-on-surface-variant">Difficulty *</label>
+<select class="w-full h-10 px-3 rounded-DEFAULT border border-outline-variant bg-surface-lowest text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors font-body-md text-body-md appearance-none">
+<option>Beginner</option>
+<option>Easy</option>
+<option>Medium</option>
+<option>Hard</option>
+<option>Expert</option>
+</select>
+</div>
+</div>
+<!-- Meta Data Group -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-stack-md">
+<div class="flex flex-col gap-1">
+<label class="font-label-caps text-label-caps text-on-surface-variant">Platform</label>
+<input class="w-full h-10 px-3 rounded-DEFAULT border border-outline-variant bg-surface-lowest text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors font-body-md text-body-md" placeholder="e.g. Codeforces" type="text">
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-caps text-label-caps text-on-surface-variant">External ID</label>
+<input class="w-full h-10 px-3 rounded-DEFAULT border border-outline-variant bg-surface-lowest text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors font-body-md text-body-md" placeholder="e.g. 1A" type="text">
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-caps text-label-caps text-on-surface-variant">Source Link</label>
+<input class="w-full h-10 px-3 rounded-DEFAULT border border-outline-variant bg-surface-lowest text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors font-body-md text-body-md" placeholder="https://" type="url">
+</div>
+</div>
+<!-- Tags -->
+<div class="flex flex-col gap-1">
+<label class="font-label-caps text-label-caps text-on-surface-variant">Tags</label>
+<div class="w-full p-2 rounded-DEFAULT border border-outline-variant bg-surface-lowest flex flex-wrap gap-2 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-colors">
+<!-- Placeholder for tag input area -->
+<span class="inline-flex items-center gap-1 bg-surface-container px-2 py-1 rounded-DEFAULT text-sm text-on-surface-variant">
+                                  dp <button class="material-symbols-outlined text-[16px] hover:text-error transition-colors" type="button">close</button>
+</span>
+<span class="inline-flex items-center gap-1 bg-surface-container px-2 py-1 rounded-DEFAULT text-sm text-on-surface-variant">
+                                  math <button class="material-symbols-outlined text-[16px] hover:text-error transition-colors" type="button">close</button>
+</span>
+<input class="flex-grow min-w-[100px] border-none bg-transparent focus:ring-0 p-0 text-on-surface font-body-md text-body-md outline-none" placeholder="Add tags..." type="text">
+</div>
+</div>
+<!-- Editor -->
+<div class="flex flex-col gap-1 mt-stack-sm flex-grow">
+<label class="font-label-caps text-label-caps text-on-surface-variant">Problem Statement (Markdown)</label>
+<div class="border border-outline-variant rounded-DEFAULT overflow-hidden flex flex-col flex-grow min-h-[400px]">
+<!-- Editor Toolbar Placeholder -->
+<div class="bg-surface-container-low border-b border-outline-variant p-2 flex gap-2 items-center text-on-surface-variant">
+<button class="p-1 hover:bg-surface-variant rounded transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">format_bold</span></button>
+<button class="p-1 hover:bg-surface-variant rounded transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">format_italic</span></button>
+<div class="w-px h-4 bg-outline-variant mx-1"></div>
+<button class="p-1 hover:bg-surface-variant rounded transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">code</span></button>
+<button class="p-1 hover:bg-surface-variant rounded transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">link</span></button>
+<button class="p-1 hover:bg-surface-variant rounded transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">image</span></button>
+<div class="flex-grow"></div>
+<button class="text-xs font-semibold px-2 py-1 bg-surface-variant rounded text-on-surface-variant hover:bg-surface-dim transition-colors" type="button">Preview</button>
+</div>
+<textarea class="w-full flex-grow p-3 bg-surface-lowest text-on-surface font-code-sm text-code-sm resize-y outline-none border-none focus:ring-0" placeholder="Write the problem description here..."></textarea>
+</div>
+</div>
+<!-- Actions -->
+<div class="flex justify-end gap-3 mt-stack-md pt-stack-md border-t border-border-subtle">
+<button class="px-4 py-2 rounded-DEFAULT font-medium text-on-surface-variant border border-outline-variant hover:bg-surface-container transition-colors" type="button">Cancel</button>
+<button class="px-4 py-2 rounded-DEFAULT font-medium text-on-primary bg-primary hover:bg-surface-tint transition-colors shadow-sm" type="submit">Create Problem</button>
+</div>
+</form>
+</div>
+</div>
+<!-- Sidebar / Guidance -->
+<div class="hidden md:flex w-3/12 flex-col gap-stack-md">
+<div class="bg-surface-card rounded-xl shadow-sm border border-border-subtle dark:border-outline-variant p-4">
+<h3 class="font-headline-sm text-headline-sm text-on-surface border-b border-border-subtle pb-2 mb-3">Formatting Guide</h3>
+<div class="text-sm text-on-surface-variant space-y-3">
+<p>Use standard Markdown for formatting.</p>
+<div>
+<strong class="text-on-surface">Math Formulas:</strong>
+<p class="font-code-sm text-code-sm bg-surface-container-low p-1 rounded mt-1">$...$ for inline, $$...$$ for block</p>
+</div>
+<div>
+<strong class="text-on-surface">Code Blocks:</strong>
+<pre class="font-code-sm text-code-sm bg-surface-container-low p-1 rounded mt-1">cpp\n...\n</pre>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-low dark:bg-on-background text-secondary dark:text-secondary-fixed font-body-md text-body-md font-headline-sm text-headline-sm text-secondary full-width border-t border-border-subtle dark:border-outline-variant flat no shadows w-full py-stack-lg px-margin-page flex flex-col md:flex-row justify-between items-center max-w-container-max mx-auto mt-auto">
+<p class="text-sm mb-4 md:mb-0">© 2024 ACMate Competition Platform. Built for excellence.</p>
+<div class="flex gap-6 text-sm">
+<a class="text-on-secondary-container dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed underline transition-colors" href="#">About Us</a>
+<a class="text-on-secondary-container dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed underline transition-colors" href="#">Guidelines</a>
+<a class="text-on-secondary-container dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed underline transition-colors" href="#">API Docs</a>
+<a class="text-on-secondary-container dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed underline transition-colors" href="#">Privacy Policy</a>
+</div>
+</footer>
+</body></html>

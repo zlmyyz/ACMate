@@ -1,0 +1,104 @@
+:root {
+  /* Primary */
+  --color-primary: #006b57;
+  --color-primary-container: #25bb9b;
+  --color-primary-fixed: #74f9d6;
+  --color-primary-fixed-dim: #54dcba;
+  --color-on-primary: #ffffff;
+  --color-on-primary-container: #004537;
+  --color-on-primary-fixed: #002019;
+  --color-on-primary-fixed-variant: #005141;
+
+  /* Secondary */
+  --color-secondary: #5c5e64;
+  --color-secondary-container: #e1e2e9;
+  --color-on-secondary: #ffffff;
+  --color-on-secondary-container: #62646a;
+
+  /* Tertiary */
+  --color-tertiary: #9e4131;
+  --color-tertiary-container: #f88671;
+
+  /* Surface & Background */
+  --color-background: #f4fbf6;
+  --color-surface: #f4fbf6;
+  --color-surface-background: #F4F5F7;
+  --color-surface-card: #FFFFFF;
+  --color-surface-container: #e9efeb;
+  --color-surface-container-low: #eff5f1;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-high: #e3eae5;
+  --color-surface-container-highest: #dde4e0;
+  --color-surface-dim: #d5dcd7;
+  --color-surface-bright: #f4fbf6;
+
+  /* Text */
+  --color-on-surface: #161d1b;
+  --color-on-surface-variant: #3c4a45;
+  --color-on-background: #161d1b;
+
+  /* Border & Outline */
+  --color-border-subtle: #E3E5E7;
+  --color-outline: #6c7a75;
+  --color-outline-variant: #bbcac3;
+
+  /* Status */
+  --color-status-active: #25BB9B;
+  --color-status-inactive: #9499A0;
+  --color-status-ongoing: #3A8BFF;
+  --color-status-ended: #BCBFC4;
+  --color-status-pending: #F3A13C;
+
+  /* Error */
+  --color-error: #ba1a1a;
+  --color-error-container: #ffdad6;
+  --color-on-error: #ffffff;
+  --color-on-error-container: #93000a;
+
+  /* Inverse */
+  --color-inverse-surface: #2b322f;
+  --color-inverse-primary: #54dcba;
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 12px;
+
+  /* Shadows */
+  --shadow-card: 0px 2px 8px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0px 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-header: 0px 1px 3px rgba(0, 0, 0, 0.06);
+
+  /* Spacing */
+  --space-stack-sm: 8px;
+  --space-stack-md: 16px;
+  --space-stack-lg: 24px;
+  --space-gutter: 20px;
+  --space-margin-page: 24px;
+
+  /* Layout */
+  --container-max: 1280px;
+  --header-height: 64px;
+
+  /* Typography */
+  --font-headline: 'Hanken Grotesk', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-body: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+
+  --text-display-lg: 36px;
+  --text-headline-md: 24px;
+  --text-headline-sm: 20px;
+  --text-body-lg: 16px;
+  --text-body-md: 14px;
+  --text-label-sm: 12px;
+  --text-code-sm: 13px;
+
+  --leading-display-lg: 48px;
+  --leading-headline-md: 32px;
+  --leading-headline-sm: 28px;
+  --leading-body-lg: 24px;
+  --leading-body-md: 22px;
+  --leading-label-sm: 16px;
+  --leading-code-sm: 18px;
+}

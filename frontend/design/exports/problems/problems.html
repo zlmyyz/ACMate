@@ -1,0 +1,354 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>ACMate - Problem Set</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Hanken+Grotesk:wght@600;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary": "#5c5e64",
+                      "on-tertiary-fixed": "#3f0300",
+                      "tertiary": "#9e4131",
+                      "surface-container-high": "#e3eae5",
+                      "inverse-surface": "#2b322f",
+                      "status-active": "#25BB9B",
+                      "status-ended": "#BCBFC4",
+                      "primary-fixed": "#74f9d6",
+                      "on-error-container": "#93000a",
+                      "status-inactive": "#9499A0",
+                      "tertiary-fixed-dim": "#ffb4a6",
+                      "on-primary-fixed": "#002019",
+                      "surface-background": "#F4F5F7",
+                      "surface-container-highest": "#dde4e0",
+                      "secondary-container": "#e1e2e9",
+                      "secondary-fixed-dim": "#c4c6cd",
+                      "outline-variant": "#bbcac3",
+                      "inverse-on-surface": "#ecf2ee",
+                      "on-tertiary": "#ffffff",
+                      "on-tertiary-fixed-variant": "#7f2a1c",
+                      "secondary-fixed": "#e1e2e9",
+                      "tertiary-fixed": "#ffdad4",
+                      "on-surface-variant": "#3c4a45",
+                      "surface-container": "#e9efeb",
+                      "on-primary": "#ffffff",
+                      "on-secondary-container": "#62646a",
+                      "surface-dim": "#d5dcd7",
+                      "on-background": "#161d1b",
+                      "surface-tint": "#006b57",
+                      "status-ongoing": "#3A8BFF",
+                      "on-error": "#ffffff",
+                      "on-primary-container": "#004537",
+                      "border-subtle": "#E3E5E7",
+                      "on-primary-fixed-variant": "#005141",
+                      "primary-fixed-dim": "#54dcba",
+                      "tertiary-container": "#f88671",
+                      "on-surface": "#161d1b",
+                      "error-container": "#ffdad6",
+                      "inverse-primary": "#54dcba",
+                      "status-pending": "#F3A13C",
+                      "on-tertiary-container": "#701f12",
+                      "outline": "#6c7a75",
+                      "on-secondary": "#ffffff",
+                      "surface-bright": "#f4fbf6",
+                      "primary-container": "#25bb9b",
+                      "on-secondary-fixed-variant": "#44474c",
+                      "primary": "#006b57",
+                      "surface-container-low": "#eff5f1",
+                      "surface-variant": "#dde4e0",
+                      "on-secondary-fixed": "#191c20",
+                      "surface-container-lowest": "#ffffff",
+                      "surface": "#f4fbf6",
+                      "error": "#ba1a1a",
+                      "surface-card": "#FFFFFF",
+                      "background": "#f4fbf6"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "stack-md": "16px",
+                      "stack-lg": "24px",
+                      "margin-page": "24px",
+                      "stack-sm": "8px",
+                      "container-max": "1280px",
+                      "gutter": "20px"
+              },
+              "fontFamily": {
+                      "headline-md-mobile": [
+                              "Hanken Grotesk"
+                      ],
+                      "label-caps": [
+                              "Inter"
+                      ],
+                      "code-sm": [
+                              "JetBrains Mono"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "headline-sm": [
+                              "Hanken Grotesk"
+                      ],
+                      "headline-md": [
+                              "Hanken Grotesk"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Hanken Grotesk"
+                      ]
+              },
+              "fontSize": {
+                      "headline-md-mobile": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "code-sm": [
+                              "13px",
+                              {
+                                      "lineHeight": "18px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-sm": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "22px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "36px",
+                              {
+                                      "lineHeight": "48px",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        body { background-color: theme('colors.surface-background'); color: theme('colors.on-surface'); font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<header class="bg-surface-container-lowest dark:bg-inverse-surface border-b border-border-subtle dark:border-outline-variant shadow-sm docked full-width top-0 z-50">
+<div class="flex justify-between items-center h-16 px-margin-page max-w-container-max mx-auto w-full">
+<div class="flex items-center gap-6">
+<a class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed" href="#">ACMate</a>
+<nav class="hidden md:flex gap-6 items-center h-full">
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-surface-variant font-medium hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200" href="#">Home</a>
+<a class="font-body-md text-body-md text-primary dark:text-primary-fixed border-b-2 border-primary dark:border-primary-fixed font-bold pb-2 opacity-80 scale-95 transition-all h-full flex items-center mt-2" href="#">Problems</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-surface-variant font-medium hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200" href="#">My Problems</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-surface-variant font-medium hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200" href="#">Training</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-surface-variant font-medium hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200" href="#">Discussion</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-surface-variant font-medium hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200" href="#">Leaderboard</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="mail">mail</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</div>
+</header>
+<main class="flex-grow w-full max-w-container-max mx-auto px-margin-page py-stack-lg grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Main Content Area -->
+<div class="md:col-span-9 flex flex-col gap-stack-lg">
+<!-- Category Cards (Bento Style) -->
+<div class="grid grid-cols-2 md:grid-cols-5 gap-stack-md">
+<div class="bg-surface-card border border-border-subtle rounded-xl p-4 flex flex-col items-center justify-center gap-2 hover:shadow-md transition-shadow cursor-pointer">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="assignment">assignment</span>
+<span class="font-body-md text-on-surface font-medium">Practice by Tag</span>
+</div>
+<div class="bg-surface-card border border-border-subtle rounded-xl p-4 flex flex-col items-center justify-center gap-2 hover:shadow-md transition-shadow cursor-pointer">
+<span class="material-symbols-outlined text-status-ongoing text-3xl" data-icon="school">school</span>
+<span class="font-body-md text-on-surface font-medium">Knowledge Points</span>
+</div>
+<div class="bg-surface-card border border-border-subtle rounded-xl p-4 flex flex-col items-center justify-center gap-2 hover:shadow-md transition-shadow cursor-pointer">
+<span class="material-symbols-outlined text-status-pending text-3xl" data-icon="military_tech">military_tech</span>
+<span class="font-body-md text-on-surface font-medium">Clearance Challenge</span>
+</div>
+<div class="bg-surface-card border border-border-subtle rounded-xl p-4 flex flex-col items-center justify-center gap-2 hover:shadow-md transition-shadow cursor-pointer">
+<span class="material-symbols-outlined text-tertiary text-3xl" data-icon="child_care">child_care</span>
+<span class="font-body-md text-on-surface font-medium">Beginner Guide</span>
+</div>
+<div class="bg-surface-card border border-border-subtle rounded-xl p-4 flex flex-col items-center justify-center gap-2 hover:shadow-md transition-shadow cursor-pointer">
+<span class="material-symbols-outlined text-primary-fixed-dim text-3xl" data-icon="ondemand_video">ondemand_video</span>
+<span class="font-body-md text-on-surface font-medium">Video Solutions</span>
+</div>
+</div>
+<!-- Problem List Section -->
+<div class="bg-surface-card border border-border-subtle rounded-xl shadow-sm flex flex-col">
+<!-- Filters Header -->
+<div class="p-6 border-b border-border-subtle bg-surface-container-low rounded-t-xl">
+<div class="flex flex-col gap-4">
+<!-- Search & Basic Filters -->
+<div class="flex flex-wrap gap-4 items-center justify-between">
+<div class="relative flex-grow max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 transform -translate-y-1/2 text-on-surface-variant" data-icon="search">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-card border border-border-subtle rounded-lg font-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="Search by ID or Title..." type="text">
+</div>
+<div class="flex items-center gap-4">
+<select class="bg-surface-card border border-border-subtle rounded-lg px-4 py-2 font-body-md text-on-surface-variant outline-none focus:border-primary">
+<option>Knowledge Point</option>
+<option>DP</option>
+<option>Graph Theory</option>
+</select>
+<select class="bg-surface-card border border-border-subtle rounded-lg px-4 py-2 font-body-md text-on-surface-variant outline-none focus:border-primary">
+<option>Status</option>
+<option>Unsolved</option>
+<option>Solved</option>
+</select>
+</div>
+</div>
+</div>
+</div>
+<!-- Data Table -->
+<div class="w-full overflow-x-auto">
+<table class="w-full text-left border-collapse min-w-[800px]">
+<thead>
+<tr class="border-b border-border-subtle bg-surface-container-lowest">
+<th class="py-4 px-6 font-label-caps text-on-surface-variant font-semibold">ID</th>
+<th class="py-4 px-6 font-label-caps text-on-surface-variant font-semibold">Title</th>
+<th class="py-4 px-6 font-label-caps text-on-surface-variant font-semibold">Platform</th>
+<th class="py-4 px-6 font-label-caps text-on-surface-variant font-semibold text-center">Difficulty</th>
+<th class="py-4 px-6 font-label-caps text-on-surface-variant font-semibold text-right">Passes</th>
+<th class="py-4 px-6 font-label-caps text-on-surface-variant font-semibold text-center">Action</th>
+</tr>
+</thead>
+<tbody class="font-body-md text-on-surface">
+<tr class="border-b border-border-subtle hover:bg-surface-container-low transition-colors">
+<td class="py-4 px-6 font-code-sm text-secondary">NC319875</td>
+<td class="py-4 px-6 font-medium text-primary hover:underline cursor-pointer">Network Grid Construction 2.0</td>
+<td class="py-4 px-6"><span class="px-2 py-1 bg-surface-container-high rounded-full text-xs font-semibold text-on-surface-variant">NowCoder</span></td>
+<td class="py-4 px-6 text-center"><span class="text-tertiary font-code-sm font-semibold">1400</span></td>
+<td class="py-4 px-6 text-right font-code-sm">590</td>
+<td class="py-4 px-6 text-center">
+<button class="text-primary hover:text-primary-fixed-dim transition-colors"><span class="material-symbols-outlined" data-icon="post_add">post_add</span></button>
+</td>
+</tr>
+<tr class="border-b border-border-subtle hover:bg-surface-container-low transition-colors">
+<td class="py-4 px-6 font-code-sm text-secondary">NC319819</td>
+<td class="py-4 px-6 font-medium text-primary hover:underline cursor-pointer">Network Grid Construction 1.0</td>
+<td class="py-4 px-6"><span class="px-2 py-1 bg-surface-container-high rounded-full text-xs font-semibold text-on-surface-variant">NowCoder</span></td>
+<td class="py-4 px-6 text-center"><span class="text-tertiary-fixed-dim font-code-sm font-semibold">1800</span></td>
+<td class="py-4 px-6 text-right font-code-sm">271</td>
+<td class="py-4 px-6 text-center">
+<button class="text-primary hover:text-primary-fixed-dim transition-colors"><span class="material-symbols-outlined" data-icon="post_add">post_add</span></button>
+</td>
+</tr>
+<tr class="border-b border-border-subtle hover:bg-surface-container-low transition-colors">
+<td class="py-4 px-6 font-code-sm text-secondary">NC319817</td>
+<td class="py-4 px-6 font-medium text-primary hover:underline cursor-pointer">Xiao Hong's Swap (Hard)</td>
+<td class="py-4 px-6"><span class="px-2 py-1 bg-surface-container-high rounded-full text-xs font-semibold text-on-surface-variant">NowCoder</span></td>
+<td class="py-4 px-6 text-center"><span class="text-status-active font-code-sm font-semibold">800</span></td>
+<td class="py-4 px-6 text-right font-code-sm">1051</td>
+<td class="py-4 px-6 text-center">
+<button class="text-primary hover:text-primary-fixed-dim transition-colors"><span class="material-symbols-outlined" data-icon="post_add">post_add</span></button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- Sidebar Area -->
+<aside class="md:col-span-3 flex flex-col gap-stack-md">
+<!-- User Profile Widget (Derived from SideNavBar concept) -->
+<div class="bg-surface-card border border-border-subtle rounded-xl shadow-sm p-4 flex flex-col items-center text-center gap-4">
+<img class="w-16 h-16 rounded-full object-cover border-2 border-surface-container" data-alt="A small circular avatar of a user profile picture, a minimalist landscape scene with warm evening colors in a corporate clean style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDjWuTh4nE3GBoCvuWtc2Cavfn8qdlLLi3VDbURfn8ud3J-XzKtH9LUB3oDgL8HjnYOxeQlJGIfH091FRTwOl2QTcTy9lrNdma5-a640ddINrmD4TOjN_2RuyPa1-TvkZ2qDoqkJV8VhL_zbzze8A5EwPXTl3j_yaAN5-WKoZmGmnoOhvBybNSFecLvNWDqZ3S4sOnM3i1hN0b-LUW8ssIEcsM3Mg9rvdVakt6zgXUIQ9kp03HpeUpgeeKzjWwvecd8kuYTc-jlRM0">
+<div>
+<h3 class="font-headline-sm text-on-surface">Programmer Stats</h3>
+<p class="font-body-md text-on-surface-variant mt-1">Rating: 1525 (Expert)</p>
+<p class="font-body-md text-secondary mt-1">Solved: 409 / 2264</p>
+</div>
+<button class="w-full bg-primary text-on-primary py-2 rounded-lg font-semibold hover:bg-primary-container hover:text-on-primary-container transition-colors">Start Training</button>
+</div>
+<!-- Trending Problem Sets -->
+<div class="bg-surface-card border border-border-subtle rounded-xl shadow-sm p-4">
+<h3 class="font-headline-sm text-on-surface mb-4 flex items-center gap-2"><span class="w-1 h-4 bg-tertiary rounded-full"></span> Popular Sets</h3>
+<div class="flex flex-col gap-4">
+<div class="flex gap-3 items-center hover:bg-surface-container-low p-2 rounded-lg cursor-pointer transition-colors">
+<div class="w-12 h-16 bg-surface-container-high rounded flex items-center justify-center font-bold text-tertiary">Set A</div>
+<div class="flex-grow">
+<h4 class="font-body-md font-semibold text-on-surface">Olympiad in Informatics - Advanced</h4>
+<p class="font-label-caps text-secondary mt-1">251 Problems</p>
+</div>
+</div>
+<div class="flex gap-3 items-center hover:bg-surface-container-low p-2 rounded-lg cursor-pointer transition-colors">
+<div class="w-12 h-16 bg-primary-container rounded flex items-center justify-center font-bold text-on-primary-container text-xs text-center p-1">Algorithm Guide</div>
+<div class="flex-grow">
+<h4 class="font-body-md font-semibold text-on-surface">Algorithm Competition Guide</h4>
+<p class="font-label-caps text-secondary mt-1">255 Problems</p>
+</div>
+</div>
+</div>
+</div>
+</aside>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-low dark:bg-on-background border-t border-border-subtle dark:border-outline-variant w-full py-stack-lg px-margin-page mt-auto">
+<div class="max-w-container-max mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+<span class="font-headline-sm text-secondary">ACMate</span>
+<p class="font-body-md text-on-secondary-container dark:text-secondary-fixed-dim">© 2024 ACMate Competition Platform. Built for excellence.</p>
+<div class="flex gap-4">
+<a class="font-body-md text-on-secondary-container dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed underline transition-colors" href="#">About Us</a>
+<a class="font-body-md text-on-secondary-container dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed underline transition-colors" href="#">Guidelines</a>
+<a class="font-body-md text-on-secondary-container dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed underline transition-colors" href="#">API Docs</a>
+<a class="font-body-md text-on-secondary-container dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed underline transition-colors" href="#">Privacy Policy</a>
+</div>
+</div>
+</footer>
+</body></html>

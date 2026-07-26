@@ -1,0 +1,374 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Post Details - ACMate</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries,typography"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=Hanken+Grotesk:wght@600;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "status-ended": "#BCBFC4",
+                        "tertiary-fixed": "#ffdad4",
+                        "on-background": "#161d1b",
+                        "tertiary": "#9e4131",
+                        "background": "#f4fbf6",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-container": "#004537",
+                        "surface-variant": "#dde4e0",
+                        "primary-fixed": "#74f9d6",
+                        "primary-container": "#25bb9b",
+                        "inverse-on-surface": "#ecf2ee",
+                        "on-tertiary-fixed": "#3f0300",
+                        "on-tertiary-fixed-variant": "#7f2a1c",
+                        "surface-card": "#FFFFFF",
+                        "error": "#ba1a1a",
+                        "surface-container-high": "#e3eae5",
+                        "on-secondary-fixed-variant": "#44474c",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-container": "#f88671",
+                        "on-secondary-fixed": "#191c20",
+                        "status-inactive": "#9499A0",
+                        "surface-tint": "#006b57",
+                        "secondary-fixed": "#e1e2e9",
+                        "on-surface-variant": "#3c4a45",
+                        "on-surface": "#161d1b",
+                        "on-primary": "#ffffff",
+                        "surface": "#f4fbf6",
+                        "status-active": "#25BB9B",
+                        "outline-variant": "#bbcac3",
+                        "secondary-container": "#e1e2e9",
+                        "on-error": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "surface-bright": "#f4fbf6",
+                        "error-container": "#ffdad6",
+                        "surface-background": "#F4F5F7",
+                        "primary": "#006b57",
+                        "inverse-surface": "#2b322f",
+                        "surface-container-low": "#eff5f1",
+                        "border-subtle": "#E3E5E7",
+                        "tertiary-fixed-dim": "#ffb4a6",
+                        "on-secondary-container": "#62646a",
+                        "on-primary-fixed": "#002019",
+                        "primary-fixed-dim": "#54dcba",
+                        "surface-container": "#e9efeb",
+                        "status-ongoing": "#3A8BFF",
+                        "status-pending": "#F3A13C",
+                        "on-secondary": "#ffffff",
+                        "secondary": "#5c5e64",
+                        "inverse-primary": "#54dcba",
+                        "secondary-fixed-dim": "#c4c6cd",
+                        "surface-dim": "#d5dcd7",
+                        "on-primary-fixed-variant": "#005141",
+                        "on-tertiary-container": "#701f12",
+                        "surface-container-highest": "#dde4e0",
+                        "outline": "#6c7a75"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "container-max": "1280px",
+                        "stack-md": "16px",
+                        "stack-sm": "8px",
+                        "margin-page": "24px",
+                        "stack-lg": "24px",
+                        "gutter": "20px"
+                    },
+                    "fontFamily": {
+                        "code-sm": ["JetBrains Mono"],
+                        "body-lg": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-md-mobile": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "display-lg": ["Hanken Grotesk"],
+                        "headline-sm": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "code-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "headline-md-mobile": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "display-lg": ["36px", { "lineHeight": "48px", "fontWeight": "700" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .markdown-body pre {
+            background-color: #f4f5f7;
+            border-radius: 4px;
+            padding: 16px;
+            overflow-x: auto;
+        }
+        .markdown-body code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body class="bg-surface-background text-on-surface font-body-md min-h-screen flex flex-col">
+<!-- TopNavBar (Shared Component) -->
+<header class="w-full top-0 sticky bg-surface dark:bg-on-background border-b border-border-subtle dark:border-outline-variant z-50">
+<div class="flex items-center justify-between px-margin-page py-4 max-w-container-max mx-auto">
+<div class="flex items-center gap-8">
+<a class="text-headline-md font-headline-md text-primary dark:text-primary-fixed tracking-tight hover:opacity-80 transition-opacity" href="#">ACMate</a>
+<nav class="hidden md:flex gap-6">
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors font-body-md text-body-md" href="#">Problems</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors font-body-md text-body-md" href="#">Contests</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors font-body-md text-body-md" href="#">Training</a>
+<a class="text-primary dark:text-primary-fixed font-bold border-b-2 border-primary dark:border-primary-fixed pb-2 font-body-md text-body-md active:opacity-80 transition-opacity" href="#">Discussion</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors font-body-md text-body-md" href="#">Leaderboard</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-variant transition-all rounded-full">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-variant transition-all rounded-full">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-variant transition-all rounded-full">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-grow w-full max-w-container-max mx-auto px-margin-page py-8 grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Left Column: Post Details (9 cols on md) -->
+<div class="md:col-span-9 flex flex-col gap-stack-lg">
+<!-- Breadcrumbs -->
+<div class="flex items-center gap-2 text-on-surface-variant text-body-md font-body-md">
+<a class="hover:text-primary transition-colors" href="#">Discussion</a>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<a class="hover:text-primary transition-colors" href="#">Algorithm Optimization</a>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="text-on-surface">Optimizing Dijkstra's with a Fibonacci Heap</span>
+</div>
+<!-- Post Header Card -->
+<article class="bg-surface-card rounded-xl shadow-[0px_2px_8px_rgba(0,0,0,0.05)] p-stack-lg flex flex-col gap-stack-md">
+<div class="flex justify-between items-start">
+<h1 class="font-display-lg text-display-lg text-on-surface leading-tight">Optimizing Dijkstra's Algorithm with a Fibonacci Heap: A Deep Dive</h1>
+<div class="flex gap-2">
+<span class="bg-primary-container/10 text-primary px-3 py-1 rounded-full font-label-caps text-label-caps uppercase tracking-wider">Tutorial</span>
+<span class="bg-surface-container-high text-on-surface-variant px-3 py-1 rounded-full font-label-caps text-label-caps uppercase tracking-wider">Graph Theory</span>
+</div>
+</div>
+<!-- Author Meta -->
+<div class="flex items-center gap-4 py-4 border-b border-border-subtle">
+<img class="w-12 h-12 rounded-full object-cover" data-alt="A professional headshot of a young male programmer in a modern, well-lit studio. He wears a neutral dark grey t-shirt. The background is slightly blurred, showing hints of computer monitors displaying code. High-key lighting, corporate tech aesthetic, conveying competence and approachability." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAjr2Gzu7h5SbtKW-IqR53yk39rdaAcdxk5oZ1lIf4K9sOq3OPGQePdW-Tcscru3OH86WRYRIHXNgbMBaFGcnOQBlCfGNoW7ehQNZhkp4nz9Evo68oXXJL5ja_4jkle0mohqEEilpkIdqVQOAO1Krwdpnp1-Bi9_SkKpRdbfB1xOm-NikMBkXk01lVDSv_NDEuueA0wuziapjQ-emJ5T_ZxZqgeZLAyBcpIBtxiKE-WsYieTh_GNiAOYbtdAfxl5cYzcZKWgeAu0IU">
+<div class="flex-grow">
+<div class="font-body-lg text-body-lg text-on-surface font-semibold flex items-center gap-2">
+                            AlexChen_Dev
+                            <span class="material-symbols-outlined text-primary text-[16px]" data-icon="verified" data-weight="fill" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<div class="font-body-md text-body-md text-on-surface-variant">Posted 2 hours ago • 15 min read • 1.2k views</div>
+</div>
+<button class="bg-surface-background border border-border-subtle hover:border-primary text-on-surface-variant hover:text-primary px-4 py-2 rounded flex items-center gap-2 transition-colors font-label-caps text-label-caps">
+<span class="material-symbols-outlined text-[18px]">person_add</span>
+                        FOLLOW
+                    </button>
+</div>
+<!-- Post Content (Markdown Rendered Style) -->
+<div class="prose prose-slate max-w-none font-body-lg text-body-lg text-on-surface markdown-body mt-4">
+<p>When dealing with dense graphs, the standard implementation of Dijkstra's algorithm using a binary heap can sometimes become a bottleneck due to the $O(E \log V)$ time complexity. In competitive programming scenarios where execution time is strictly bound, shaving off those precious milliseconds is crucial.</p>
+<h3 class="font-headline-sm text-headline-sm mt-6 mb-4">Why Fibonacci Heap?</h3>
+<p>A Fibonacci heap offers amortized $O(1)$ time complexity for the <code>decrease-key</code> operation, which is the most frequent operation in Dijkstra's when the graph is dense. This brings the theoretical complexity down to $O(V \log V + E)$.</p>
+<pre><code class="language-cpp">
+// A simplified C++ snippet illustrating the integration
+void dijkstra_fibonacci(int source, int n, vector&lt;vector&lt;pair&lt;int, int&gt;&gt;&gt;&amp; adj) {
+    // Initialization omitted for brevity
+    FibonacciHeap pq;
+    vector&lt;FibonacciNode*&gt; nodes(n, nullptr);
+    
+    dist[source] = 0;
+    nodes[source] = pq.insert(0, source);
+
+    while (!pq.isEmpty()) {
+        int u = pq.extractMin()-&gt;vertex;
+        
+        for (auto edge : adj[u]) {
+            int v = edge.first;
+            int weight = edge.second;
+            
+            if (dist[v] &gt; dist[u] + weight) {
+                dist[v] = dist[u] + weight;
+                if (nodes[v] == nullptr) {
+                    nodes[v] = pq.insert(dist[v], v);
+                } else {
+                    pq.decreaseKey(nodes[v], dist[v]); // Amortized O(1)
+                }
+            }
+        }
+    }
+}
+                    </code></pre>
+<p>As you can see, while the constant factor is higher than a binary heap, for large dense graphs (e.g., $E \approx V^2$), the theoretical advantage often translates into practical performance gains, provided the implementation of the Fibonacci heap itself is heavily optimized and avoids unnecessary object allocations.</p>
+</div>
+<!-- Action Bar -->
+<div class="flex items-center justify-between pt-6 mt-4 border-t border-border-subtle">
+<div class="flex items-center gap-6">
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors group">
+<span class="material-symbols-outlined group-hover:text-primary group-hover:scale-110 transition-transform" data-icon="thumb_up">thumb_up</span>
+<span class="font-label-caps text-label-caps">245</span>
+</button>
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors group">
+<span class="material-symbols-outlined group-hover:text-primary" data-icon="chat_bubble_outline">chat_bubble_outline</span>
+<span class="font-label-caps text-label-caps">32</span>
+</button>
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors group">
+<span class="material-symbols-outlined group-hover:text-primary" data-icon="share">share</span>
+<span class="font-label-caps text-label-caps">SHARE</span>
+</button>
+</div>
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="bookmark_border">bookmark_border</span>
+</button>
+</div>
+</article>
+<!-- Comments Section -->
+<section class="bg-surface-card rounded-xl shadow-[0px_2px_8px_rgba(0,0,0,0.05)] p-stack-lg flex flex-col gap-stack-md">
+<h3 class="font-headline-md text-headline-md text-on-surface border-b border-border-subtle pb-4 mb-2">Comments (32)</h3>
+<!-- Comment Input -->
+<div class="flex gap-4 items-start mb-6">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center flex-shrink-0 text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+</div>
+<div class="flex-grow flex flex-col gap-2">
+<textarea class="w-full border border-border-subtle rounded-lg p-3 font-body-md text-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors min-h-[100px] resize-y bg-surface-lowest" placeholder="Write a highly technical and pedantic comment..."></textarea>
+<div class="flex justify-end">
+<button class="bg-primary-container text-on-primary px-6 py-2 rounded font-label-caps text-label-caps hover:bg-primary transition-colors">POST COMMENT</button>
+</div>
+</div>
+</div>
+<!-- Comment Thread 1 -->
+<div class="flex flex-col gap-4 border-b border-border-subtle pb-6">
+<div class="flex gap-4">
+<img class="w-10 h-10 rounded-full object-cover" data-alt="A minimal geometric avatar showing overlapping blue and teal triangles on a light gray background. High contrast, sharp edges, conveying a technical and precise identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBR2eX8twd0xHDS4y9un0C0iRrI6ttUlpp28M-Cc4FSYy6eHFVTM4EaOwYQN8wiBbXZinKwj7x3fxKE0BVoGTCfx_bEZIOuhrCLEE6q5j5DmlGEPyahi7gE5daDjCaE64y2jbcnzHlGu7KhD0nyQi5GXrir1sTOMMZKxRCh9YQyCY1lwexxZbAETX_O6qCbKXm_5PZuJlf8Oa-nFruJslguyopQHyVl5UNH8tC6J9VF7NnBM56gikhPMmZKEIcgGw1z52dUsmFE1BM">
+<div class="flex-grow">
+<div class="flex items-baseline justify-between mb-1">
+<span class="font-body-lg text-body-lg font-semibold text-on-surface">GraphMaster99</span>
+<span class="font-body-md text-body-md text-on-surface-variant">1 hour ago</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface mb-2">I find that in most modern OJs, the constant factor for Fibonacci heaps completely destroys any asymptotic advantage unless $V &gt; 10^5$ and the graph is extremely dense. Often, a pairing heap or even just a well-optimized binary heap (e.g., using a flat array) performs better in practice due to cache locality.</p>
+<div class="flex gap-4 items-center mt-2">
+<button class="text-on-surface-variant hover:text-primary text-[14px] flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">thumb_up</span> 14</button>
+<button class="text-on-surface-variant hover:text-primary text-[14px] font-label-caps">REPLY</button>
+</div>
+</div>
+</div>
+<!-- Nested Reply -->
+<div class="flex gap-4 ml-14 border-l-2 border-border-subtle pl-4">
+<img class="w-8 h-8 rounded-full object-cover" data-alt="A professional headshot of a young male programmer in a modern, well-lit studio. He wears a neutral dark grey t-shirt. The background is slightly blurred, showing hints of computer monitors displaying code. High-key lighting, corporate tech aesthetic, conveying competence and approachability." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBgcX3w_36dD-1kOWjODYZgry7lVW75pCdEEWLD41eT2ojA4vFigULCf7Wur42LY3HKfBTQjwkkuPsjMJjVbJ97M53gVE92HxKOkL9nQcaQhA8BC_5oy4BmsPDuELr4hdTSqDIDRqGSPrwoyqzwz6gmFKZpfeIvJxHHGm4FF1sShOUTdMxW-SThwhQYTJaFfS6PcYsS2jz4wXyeruvjGqRkGSkfi-wehuZ4PXCdM16BMAuTQrSJSbT7KeuWTHTCLxWCfQCvs0e7fho">
+<div class="flex-grow">
+<div class="flex items-baseline justify-between mb-1">
+<span class="font-body-lg text-body-lg font-semibold text-on-surface flex items-center gap-1">AlexChen_Dev <span class="material-symbols-outlined text-primary text-[14px]" data-icon="verified" data-weight="fill">verified</span> <span class="bg-surface-container-high text-on-surface-variant text-[10px] px-2 py-0.5 rounded ml-1 uppercase">Author</span></span>
+<span class="font-body-md text-body-md text-on-surface-variant">45 mins ago</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface">That's a very valid point regarding cache locality. Pairing heaps are indeed often faster in practice. I focused on Fibonacci here for the theoretical amortized bound, but I should probably add a section comparing it to Pairing heaps with empirical benchmarks. Thanks for the feedback!</p>
+<div class="flex gap-4 items-center mt-2">
+<button class="text-on-surface-variant hover:text-primary text-[14px] flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">thumb_up</span> 5</button>
+<button class="text-on-surface-variant hover:text-primary text-[14px] font-label-caps">REPLY</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column: Sidebar (3 cols on md) -->
+<aside class="md:col-span-3 flex flex-col gap-stack-lg">
+<!-- Related Problems Card -->
+<div class="bg-surface-card rounded-xl shadow-[0px_2px_8px_rgba(0,0,0,0.05)] p-stack-md flex flex-col">
+<h4 class="font-headline-sm text-headline-sm text-on-surface mb-4 border-b border-border-subtle pb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="extension">extension</span>
+                    Related Problems
+                </h4>
+<ul class="flex flex-col gap-3">
+<li class="group">
+<a class="flex flex-col gap-1 hover:bg-surface-container-low p-2 rounded transition-colors -mx-2" href="#">
+<div class="flex justify-between items-center">
+<span class="font-body-md text-body-md text-on-surface font-semibold group-hover:text-primary">Shortest Path on Dense Grid</span>
+<span class="text-status-ongoing text-[12px] font-bold">Hard</span>
+</div>
+<span class="font-code-sm text-code-sm text-on-surface-variant">AC Rate: 12.4%</span>
+</a>
+</li>
+<li class="group">
+<a class="flex flex-col gap-1 hover:bg-surface-container-low p-2 rounded transition-colors -mx-2" href="#">
+<div class="flex justify-between items-center">
+<span class="font-body-md text-body-md text-on-surface font-semibold group-hover:text-primary">Network Routing Ops</span>
+<span class="text-status-ongoing text-[12px] font-bold">Hard</span>
+</div>
+<span class="font-code-sm text-code-sm text-on-surface-variant">AC Rate: 8.9%</span>
+</a>
+</li>
+<li class="group">
+<a class="flex flex-col gap-1 hover:bg-surface-container-low p-2 rounded transition-colors -mx-2" href="#">
+<div class="flex justify-between items-center">
+<span class="font-body-md text-body-md text-on-surface font-semibold group-hover:text-primary">Dijkstra's Revenge</span>
+<span class="text-status-pending text-[12px] font-bold">Medium</span>
+</div>
+<span class="font-code-sm text-code-sm text-on-surface-variant">AC Rate: 34.2%</span>
+</a>
+</li>
+</ul>
+</div>
+<!-- Recommended Reading -->
+<div class="bg-surface-card rounded-xl shadow-[0px_2px_8px_rgba(0,0,0,0.05)] p-stack-md flex flex-col">
+<h4 class="font-headline-sm text-headline-sm text-on-surface mb-4 border-b border-border-subtle pb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="library_books">library_books</span>
+                    Recommended Reading
+                </h4>
+<div class="flex flex-col gap-4">
+<a class="flex items-start gap-3 hover:opacity-80 transition-opacity" href="#">
+<div class="w-16 h-12 bg-surface-container-high rounded flex-shrink-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="article">article</span>
+</div>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md font-semibold text-on-surface leading-snug">Why Pairing Heaps Win in Practice</span>
+<span class="text-[12px] text-on-surface-variant mt-1">By DataStructs_Daily</span>
+</div>
+</a>
+<a class="flex items-start gap-3 hover:opacity-80 transition-opacity" href="#">
+<div class="w-16 h-12 bg-surface-container-high rounded flex-shrink-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="play_circle">play_circle</span>
+</div>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md font-semibold text-on-surface leading-snug">Video: Amortized Analysis Explained</span>
+<span class="text-[12px] text-on-surface-variant mt-1">By AlgoProf</span>
+</div>
+</a>
+</div>
+</div>
+</aside>
+</main>
+<!-- Footer (Shared Component) -->
+<footer class="w-full mt-auto bg-surface-container dark:bg-inverse-surface border-t border-border-subtle dark:border-outline-variant">
+<div class="flex flex-col md:flex-row justify-between items-center px-margin-page py-stack-lg max-w-container-max mx-auto gap-stack-md">
+<div class="text-headline-sm font-headline-sm text-on-surface dark:text-inverse-on-surface">
+                © 2024 ACMate Elite. All rights reserved.
+            </div>
+<nav class="flex flex-wrap gap-4 justify-center">
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:underline transition-all font-body-md text-body-md" href="#">About</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:underline transition-all font-body-md text-body-md" href="#">Terms</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:underline transition-all font-body-md text-body-md" href="#">Privacy</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:underline transition-all font-body-md text-body-md" href="#">API</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:underline transition-all font-body-md text-body-md" href="#">GitHub</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:underline transition-all font-body-md text-body-md" href="#">Support</a>
+</nav>
+</div>
+</footer>
+</body></html>

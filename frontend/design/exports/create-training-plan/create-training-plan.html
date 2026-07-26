@@ -1,0 +1,337 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>ACMate - Create/Edit Training Plan</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700&amp;family=Inter:wght@400;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed": "#3f0300",
+                        "on-tertiary-fixed-variant": "#7f2a1c",
+                        "status-active": "#25BB9B",
+                        "status-ended": "#BCBFC4",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-container": "#701f12",
+                        "on-primary-fixed-variant": "#005141",
+                        "on-surface-variant": "#3c4a45",
+                        "surface-container": "#e9efeb",
+                        "surface-container-lowest": "#ffffff",
+                        "outline": "#6c7a75",
+                        "on-secondary-fixed-variant": "#44474c",
+                        "inverse-on-surface": "#ecf2ee",
+                        "primary": "#006b57",
+                        "status-ongoing": "#3A8BFF",
+                        "surface-container-high": "#e3eae5",
+                        "secondary-container": "#e1e2e9",
+                        "on-primary": "#ffffff",
+                        "tertiary": "#9e4131",
+                        "secondary-fixed": "#e1e2e9",
+                        "tertiary-fixed-dim": "#ffb4a6",
+                        "error": "#ba1a1a",
+                        "inverse-surface": "#2b322f",
+                        "primary-fixed-dim": "#54dcba",
+                        "on-error": "#ffffff",
+                        "on-surface": "#161d1b",
+                        "surface-variant": "#dde4e0",
+                        "surface-background": "#F4F5F7",
+                        "on-tertiary": "#ffffff",
+                        "outline-variant": "#bbcac3",
+                        "status-inactive": "#9499A0",
+                        "secondary-fixed-dim": "#c4c6cd",
+                        "tertiary-fixed": "#ffdad4",
+                        "surface": "#f4fbf6",
+                        "on-primary-fixed": "#002019",
+                        "on-primary-container": "#004537",
+                        "surface-tint": "#006b57",
+                        "surface-container-highest": "#dde4e0",
+                        "surface-dim": "#d5dcd7",
+                        "on-secondary-container": "#62646a",
+                        "on-secondary-fixed": "#191c20",
+                        "inverse-primary": "#54dcba",
+                        "tertiary-container": "#f88671",
+                        "status-pending": "#F3A13C",
+                        "on-background": "#161d1b",
+                        "surface-container-low": "#eff5f1",
+                        "surface-card": "#FFFFFF",
+                        "secondary": "#5c5e64",
+                        "on-secondary": "#ffffff",
+                        "primary-container": "#25bb9b",
+                        "on-error-container": "#93000a",
+                        "border-subtle": "#E3E5E7",
+                        "surface-bright": "#f4fbf6",
+                        "background": "#f4fbf6",
+                        "primary-fixed": "#74f9d6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-page": "24px",
+                        "stack-sm": "8px",
+                        "container-max": "1280px",
+                        "stack-lg": "24px",
+                        "gutter": "20px",
+                        "stack-md": "16px"
+                    },
+                    "fontFamily": {
+                        "label-caps": ["Inter"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "code-sm": ["JetBrains Mono"],
+                        "headline-sm": ["Hanken Grotesk"],
+                        "headline-md-mobile": ["Hanken Grotesk"],
+                        "display-lg": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "code-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-md-mobile": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-lg": ["36px", { "lineHeight": "48px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #F4F5F7; }
+        .hanken { font-family: 'Hanken Grotesk', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .card-shadow { box-shadow: 0px 2px 8px rgba(0,0,0,0.05); }
+    </style>
+</head>
+<body class="bg-surface-background text-on-surface min-h-screen flex flex-col md:flex-row">
+<!-- TopNavBar for Mobile -->
+<header class="md:hidden w-full h-16 flex justify-between items-center px-margin-page bg-white dark:bg-inverse-surface border-b border-border-subtle dark:border-outline-variant shadow-sm z-50 sticky top-0">
+<div class="font-headline-md-mobile text-headline-md-mobile text-primary dark:text-primary-fixed-dim">ACMate</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer" data-icon="menu">menu</span>
+</div>
+</header>
+<!-- SideNavBar for Desktop -->
+<nav class="hidden md:flex flex-col h-screen w-64 fixed left-0 top-0 bg-surface-container dark:bg-surface-dim border-r border-border-subtle dark:border-outline-variant p-stack-md z-40">
+<div class="mb-stack-lg">
+<h1 class="font-headline-sm text-headline-sm text-on-surface dark:text-inverse-on-surface">Training Center</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Academic Excellence</p>
+</div>
+<button class="w-full bg-primary-container text-on-primary-container font-label-caps text-label-caps py-2 rounded-lg mb-stack-lg flex items-center justify-center gap-2 hover:bg-opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-sm">add</span> Create New Plan
+        </button>
+<ul class="flex-1 space-y-2">
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-inverse-surface transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-caps text-label-caps">Overview</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary-container dark:bg-on-primary-container text-on-primary-container dark:text-primary-fixed transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="list_alt">list_alt</span>
+<span class="font-label-caps text-label-caps">Plan List</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-inverse-surface transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="assignment_ind">assignment_ind</span>
+<span class="font-label-caps text-label-caps">My Plans</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-inverse-surface transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="leaderboard">leaderboard</span>
+<span class="font-label-caps text-label-caps">Rankings</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-inverse-surface transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-caps text-label-caps">Settings</span>
+</a>
+</li>
+</ul>
+<div class="mt-auto border-t border-border-subtle pt-4 space-y-2">
+<a class="flex items-center gap-3 px-4 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-highest transition-colors" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="description">description</span>
+<span class="font-label-caps text-label-caps">Documentation</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-highest transition-colors" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="contact_support">contact_support</span>
+<span class="font-label-caps text-label-caps">Support</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-64 p-margin-page max-w-container-max mx-auto w-full">
+<!-- Page Header -->
+<div class="flex justify-between items-end mb-stack-lg border-b border-border-subtle pb-4">
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface hanken">Create Training Plan</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Configure a new set of problems for focused practice.</p>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 border border-outline text-on-surface font-label-caps text-label-caps rounded-lg hover:bg-surface-container-high transition-colors">Cancel</button>
+<button class="px-4 py-2 bg-status-active text-white font-label-caps text-label-caps rounded-lg hover:bg-primary transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">save</span> Save Plan
+                </button>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Left Column: Plan Details (8 cols) -->
+<div class="lg:col-span-8 space-y-stack-md">
+<!-- Basic Info Card -->
+<div class="bg-surface-card rounded-xl p-stack-lg card-shadow">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-4 hanken border-b border-border-subtle pb-2">Plan Details</h3>
+<div class="space-y-4">
+<div>
+<label class="block font-label-caps text-label-caps text-on-surface-variant mb-1">Plan Name</label>
+<input class="w-full border border-border-subtle rounded-lg px-3 py-2 font-body-md text-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" placeholder="e.g., Dynamic Programming Masters" type="text">
+</div>
+<div>
+<label class="block font-label-caps text-label-caps text-on-surface-variant mb-1 flex justify-between">
+                                Description
+                                <span class="text-secondary text-[10px] font-normal">Markdown supported</span>
+</label>
+<textarea class="w-full border border-border-subtle rounded-lg px-3 py-2 font-mono text-code-sm h-32 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors resize-y" placeholder="Describe the focus of this plan..."></textarea>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div>
+<label class="block font-label-caps text-label-caps text-on-surface-variant mb-1">Start Date</label>
+<input class="w-full border border-border-subtle rounded-lg px-3 py-2 font-body-md text-body-md focus:outline-none focus:border-primary" type="date">
+</div>
+<div>
+<label class="block font-label-caps text-label-caps text-on-surface-variant mb-1">End Date</label>
+<input class="w-full border border-border-subtle rounded-lg px-3 py-2 font-body-md text-body-md focus:outline-none focus:border-primary" type="date">
+</div>
+</div>
+<div>
+<label class="block font-label-caps text-label-caps text-on-surface-variant mb-2">Visibility Type</label>
+<div class="flex gap-4">
+<label class="flex items-center gap-2 cursor-pointer">
+<input checked="" class="text-primary focus:ring-primary" name="plan_type" type="radio" value="public">
+<span class="font-body-md text-body-md">Public</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input class="text-primary focus:ring-primary" name="plan_type" type="radio" value="personal">
+<span class="font-body-md text-body-md">Personal</span>
+</label>
+</div>
+</div>
+</div>
+</div>
+<!-- Problem Selection Card -->
+<div class="bg-surface-card rounded-xl p-stack-lg card-shadow">
+<div class="flex justify-between items-center border-b border-border-subtle pb-2 mb-4">
+<h3 class="font-headline-sm text-headline-sm text-on-surface hanken">Select Problems</h3>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm" data-icon="search">search</span>
+<input class="pl-8 pr-3 py-1.5 border border-border-subtle rounded-lg font-body-md text-body-md text-sm focus:outline-none focus:border-primary w-64" placeholder="Search problem bank..." type="text">
+</div>
+</div>
+<!-- Problem Bank List (Mock draggable) -->
+<div class="border border-border-subtle rounded-lg overflow-hidden bg-surface-background max-h-64 overflow-y-auto">
+<div class="flex items-center p-3 border-b border-border-subtle bg-white hover:bg-surface transition-colors cursor-grab">
+<span class="material-symbols-outlined text-secondary mr-3 cursor-grab" data-icon="drag_indicator">drag_indicator</span>
+<div class="flex-1 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="font-mono text-code-sm text-on-surface-variant">P1001</span>
+<span class="font-body-md text-body-md font-medium text-on-surface">A+B Problem</span>
+</div>
+<div class="flex gap-2">
+<span class="bg-surface-container-high text-on-surface-variant px-2 py-0.5 rounded text-[10px] font-semibold">Easy</span>
+<span class="bg-surface-container-high text-on-surface-variant px-2 py-0.5 rounded text-[10px] font-semibold">Math</span>
+</div>
+</div>
+<button class="ml-4 text-status-active hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-xl" data-icon="add_circle">add_circle</span>
+</button>
+</div>
+<div class="flex items-center p-3 border-b border-border-subtle bg-white hover:bg-surface transition-colors cursor-grab">
+<span class="material-symbols-outlined text-secondary mr-3" data-icon="drag_indicator">drag_indicator</span>
+<div class="flex-1 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="font-mono text-code-sm text-on-surface-variant">P2045</span>
+<span class="font-body-md text-body-md font-medium text-on-surface">Knapsack DP</span>
+</div>
+<div class="flex gap-2">
+<span class="bg-status-pending bg-opacity-20 text-status-pending px-2 py-0.5 rounded text-[10px] font-semibold">Medium</span>
+<span class="bg-surface-container-high text-on-surface-variant px-2 py-0.5 rounded text-[10px] font-semibold">DP</span>
+</div>
+</div>
+<button class="ml-4 text-status-active hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-xl" data-icon="add_circle">add_circle</span>
+</button>
+</div>
+<div class="flex items-center p-3 bg-white hover:bg-surface transition-colors cursor-grab">
+<span class="material-symbols-outlined text-secondary mr-3" data-icon="drag_indicator">drag_indicator</span>
+<div class="flex-1 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="font-mono text-code-sm text-on-surface-variant">P3099</span>
+<span class="font-body-md text-body-md font-medium text-on-surface">Network Flow Max</span>
+</div>
+<div class="flex gap-2">
+<span class="bg-error bg-opacity-10 text-error px-2 py-0.5 rounded text-[10px] font-semibold">Hard</span>
+<span class="bg-surface-container-high text-on-surface-variant px-2 py-0.5 rounded text-[10px] font-semibold">Graphs</span>
+</div>
+</div>
+<button class="ml-4 text-status-active hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-xl" data-icon="add_circle">add_circle</span>
+</button>
+</div>
+</div>
+<p class="text-xs text-on-surface-variant mt-2 text-center italic">Drag or click to add problems to your plan.</p>
+</div>
+</div>
+<!-- Right Column: Preview & Status (4 cols) -->
+<div class="lg:col-span-4 space-y-stack-md">
+<div class="bg-surface-card rounded-xl p-stack-md card-shadow sticky top-20">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-3 hanken border-b border-border-subtle pb-2">Selected Problems (2)</h3>
+<!-- Selected Problems List -->
+<div class="space-y-2 mb-4">
+<div class="flex items-center justify-between bg-surface p-2 rounded border border-primary-fixed-dim">
+<div class="flex flex-col">
+<span class="font-body-md text-body-md font-medium text-primary">Knapsack DP</span>
+<span class="font-mono text-code-sm text-on-surface-variant text-[11px]">P2045</span>
+</div>
+<button class="text-secondary hover:text-error transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="delete">delete</span>
+</button>
+</div>
+<div class="flex items-center justify-between bg-surface p-2 rounded border border-primary-fixed-dim">
+<div class="flex flex-col">
+<span class="font-body-md text-body-md font-medium text-primary">A+B Problem</span>
+<span class="font-mono text-code-sm text-on-surface-variant text-[11px]">P1001</span>
+</div>
+<button class="text-secondary hover:text-error transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="delete">delete</span>
+</button>
+</div>
+</div>
+<div class="bg-surface-background p-3 rounded-lg">
+<div class="flex justify-between items-center mb-1">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Total Points</span>
+<span class="font-mono text-code-sm font-bold text-on-surface">250</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Est. Time</span>
+<span class="font-mono text-code-sm text-on-surface">~2.5 hrs</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

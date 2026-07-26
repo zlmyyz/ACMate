@@ -1,0 +1,449 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Problem Details - ACMate</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-fill {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#5c5e64",
+                        "on-tertiary-fixed": "#3f0300",
+                        "tertiary": "#9e4131",
+                        "surface-container-high": "#e3eae5",
+                        "inverse-surface": "#2b322f",
+                        "status-active": "#25BB9B",
+                        "status-ended": "#BCBFC4",
+                        "primary-fixed": "#74f9d6",
+                        "on-error-container": "#93000a",
+                        "status-inactive": "#9499A0",
+                        "tertiary-fixed-dim": "#ffb4a6",
+                        "on-primary-fixed": "#002019",
+                        "surface-background": "#F4F5F7",
+                        "surface-container-highest": "#dde4e0",
+                        "secondary-container": "#e1e2e9",
+                        "secondary-fixed-dim": "#c4c6cd",
+                        "outline-variant": "#bbcac3",
+                        "inverse-on-surface": "#ecf2ee",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#7f2a1c",
+                        "secondary-fixed": "#e1e2e9",
+                        "tertiary-fixed": "#ffdad4",
+                        "on-surface-variant": "#3c4a45",
+                        "surface-container": "#e9efeb",
+                        "on-primary": "#ffffff",
+                        "on-secondary-container": "#62646a",
+                        "surface-dim": "#d5dcd7",
+                        "on-background": "#161d1b",
+                        "surface-tint": "#006b57",
+                        "status-ongoing": "#3A8BFF",
+                        "on-error": "#ffffff",
+                        "on-primary-container": "#004537",
+                        "border-subtle": "#E3E5E7",
+                        "on-primary-fixed-variant": "#005141",
+                        "primary-fixed-dim": "#54dcba",
+                        "tertiary-container": "#f88671",
+                        "on-surface": "#161d1b",
+                        "error-container": "#ffdad6",
+                        "inverse-primary": "#54dcba",
+                        "status-pending": "#F3A13C",
+                        "on-tertiary-container": "#701f12",
+                        "outline": "#6c7a75",
+                        "on-secondary": "#ffffff",
+                        "surface-bright": "#f4fbf6",
+                        "primary-container": "#25bb9b",
+                        "on-secondary-fixed-variant": "#44474c",
+                        "primary": "#006b57",
+                        "surface-container-low": "#eff5f1",
+                        "surface-variant": "#dde4e0",
+                        "on-secondary-fixed": "#191c20",
+                        "surface-container-lowest": "#ffffff",
+                        "surface": "#f4fbf6",
+                        "error": "#ba1a1a",
+                        "surface-card": "#FFFFFF",
+                        "background": "#f4fbf6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "stack-md": "16px",
+                        "stack-lg": "24px",
+                        "margin-page": "24px",
+                        "stack-sm": "8px",
+                        "container-max": "1280px",
+                        "gutter": "20px"
+                    },
+                    "fontFamily": {
+                        "headline-md-mobile": ["Hanken Grotesk"],
+                        "label-caps": ["Inter"],
+                        "code-sm": ["JetBrains Mono"],
+                        "body-lg": ["Inter"],
+                        "headline-sm": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "body-md": ["Inter"],
+                        "display-lg": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "headline-md-mobile": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "code-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "display-lg": ["36px", { "lineHeight": "48px", "fontWeight": "700" }]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-surface-background text-on-surface font-body-md antialiased flex flex-col min-h-screen">
+<!-- TopNavBar Component -->
+<nav class="bg-surface-container-lowest dark:bg-inverse-surface border-b border-border-subtle dark:border-outline-variant shadow-sm w-full sticky top-0 z-50">
+<div class="flex justify-between items-center h-16 px-margin-page max-w-container-max mx-auto w-full">
+<div class="flex items-center gap-6">
+<!-- Brand Logo -->
+<a class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed flex items-center gap-2" href="#">
+<span class="material-symbols-outlined icon-fill">code_blocks</span>
+                    ACMate
+                </a>
+<!-- Desktop Navigation -->
+<div class="hidden md:flex items-center gap-1 h-full">
+<a class="text-on-surface-variant dark:text-surface-variant font-medium hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200 px-3 h-full flex items-center mt-0.5" href="#">Home</a>
+<a class="text-primary dark:text-primary-fixed border-b-2 border-primary dark:border-primary-fixed font-bold pb-0.5 px-3 h-full flex items-center mt-[2px]" href="#">Problems</a>
+<a class="text-on-surface-variant dark:text-surface-variant font-medium hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200 px-3 h-full flex items-center mt-0.5" href="#">My Problems</a>
+<a class="text-on-surface-variant dark:text-surface-variant font-medium hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200 px-3 h-full flex items-center mt-0.5" href="#">Training</a>
+<a class="text-on-surface-variant dark:text-surface-variant font-medium hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200 px-3 h-full flex items-center mt-0.5" href="#">Discussion</a>
+<a class="text-on-surface-variant dark:text-surface-variant font-medium hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200 px-3 h-full flex items-center mt-0.5" href="#">Leaderboard</a>
+</div>
+</div>
+<!-- Trailing Actions -->
+<div class="flex items-center gap-4">
+<button aria-label="Notifications" class="text-on-surface-variant hover:text-primary transition-colors p-1">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button aria-label="Mail" class="text-on-surface-variant hover:text-primary transition-colors p-1">
+<span class="material-symbols-outlined">mail</span>
+</button>
+<button aria-label="User profile" class="flex items-center gap-2 hover:opacity-80 transition-opacity p-1 focus:outline-none">
+<div class="w-8 h-8 rounded-full bg-surface-container-high overflow-hidden border border-border-subtle">
+<img alt="User profile avatar" class="w-full h-full object-cover" data-alt="A professional looking avatar of a competitive programmer, illustrated in a clean, modern style with a soft light-mode color palette, featuring hints of teal and grey." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCztl0om9ujbL6oHorXPJzJoTNOdg1i77_tfPNNcujSvmMUqk95892mm2Wzo7N0nVEV5AnRXxgLTh6uhwEj5vwXanatTEEONL7yxe0fJNbRz_hO2r2mbmCmY8rD7J3a5Aa1g9axH4Rv89ZyPdu9Kvsq19yaNSUUKxY5aR8AMPBGmvfGxgSKzP5KjWFL3e1OocVR2VeKLTFrWwbX2_ogLa-g0i024PSzkNr2z_7L2hPAUnIfr45UjNLhpYd_yF7njdcZFvHa5GRmMKw">
+</div>
+</button>
+<!-- Mobile Menu Toggle -->
+<button class="md:hidden text-on-surface-variant hover:text-primary p-1">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-grow w-full max-w-container-max mx-auto px-margin-page py-stack-lg flex flex-col md:flex-row gap-gutter">
+<!-- Main Content Canvas (9 Columns) -->
+<div class="w-full md:w-9/12 flex flex-col gap-stack-lg">
+<!-- Breadcrumbs & Header -->
+<div class="flex flex-col gap-2">
+<nav aria-label="Breadcrumb" class="flex text-sm text-secondary font-medium">
+<ol class="inline-flex items-center space-x-1 md:space-x-2">
+<li class="inline-flex items-center">
+<a class="hover:text-primary transition-colors" href="#">Problems</a>
+</li>
+<li>
+<div class="flex items-center">
+<span class="material-symbols-outlined text-sm mx-1">chevron_right</span>
+<a class="hover:text-primary transition-colors" href="#">Graph Theory</a>
+</div>
+</li>
+<li aria-current="page">
+<div class="flex items-center">
+<span class="material-symbols-outlined text-sm mx-1">chevron_right</span>
+<span class="text-on-surface font-semibold">NC319875</span>
+</div>
+</li>
+</ol>
+</nav>
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-2">
+<h1 class="font-headline-md text-headline-md font-bold text-on-surface">小红的网格图构造2.0 (Grid Graph Construction)</h1>
+<div class="flex gap-2">
+<button class="px-4 py-2 bg-primary-container text-white rounded font-medium hover:bg-primary transition-colors shadow-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">play_arrow</span> Submit Code
+                        </button>
+</div>
+</div>
+<!-- Problem Meta Tags -->
+<div class="flex flex-wrap items-center gap-3 mt-2 text-sm">
+<span class="px-2 py-1 bg-surface-container rounded border border-border-subtle text-secondary font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">timer</span> Time Limit: 1000ms
+                    </span>
+<span class="px-2 py-1 bg-surface-container rounded border border-border-subtle text-secondary font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">memory</span> Memory Limit: 256MB
+                    </span>
+<span class="px-2 py-1 bg-surface-bright border border-status-pending text-status-pending rounded font-medium">Difficulty: 1400</span>
+<span class="px-2 py-1 bg-surface-bright border border-status-active text-status-active rounded font-medium">Acceptance: 42%</span>
+</div>
+</div>
+<!-- Tabs -->
+<div class="border-b border-border-subtle">
+<nav aria-label="Tabs" class="-mb-px flex space-x-6">
+<a aria-current="page" class="border-primary text-primary whitespace-nowrap py-3 px-1 border-b-2 font-semibold text-sm flex items-center gap-2" href="#">
+<span class="material-symbols-outlined text-[18px]">description</span> Description
+                    </a>
+<a class="border-transparent text-secondary hover:text-primary hover:border-border-subtle whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2" href="#">
+<span class="material-symbols-outlined text-[18px]">history</span> Submissions
+                    </a>
+<a class="border-transparent text-secondary hover:text-primary hover:border-border-subtle whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2" href="#">
+<span class="material-symbols-outlined text-[18px]">forum</span> Discussion (12)
+                    </a>
+<a class="border-transparent text-secondary hover:text-primary hover:border-border-subtle whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2" href="#">
+<span class="material-symbols-outlined text-[18px]">lightbulb</span> Editorial
+                    </a>
+</nav>
+</div>
+<!-- Problem Description Card -->
+<div class="bg-surface-card rounded-xl p-6 shadow-sm border border-border-subtle flex flex-col gap-6">
+<!-- Problem Statement -->
+<section>
+<h3 class="font-headline-sm text-headline-sm font-semibold mb-3 border-b border-border-subtle pb-2">Problem Statement</h3>
+<div class="prose prose-sm max-w-none text-on-surface-variant font-body-lg leading-relaxed">
+<p>Given an integer $N$, construct an $N \times N$ grid containing only the characters 'R', 'G', and 'B' such that:</p>
+<ul class="list-disc pl-5 mt-2 space-y-1">
+<li>No two adjacent cells (horizontally or vertically) contain the same character.</li>
+<li>The number of 'R's, 'G's, and 'B's in the grid are as close to each other as possible. Specifically, the difference between the maximum and minimum count among the three characters should be at most 1.</li>
+</ul>
+<p class="mt-4">If there are multiple valid grids, you can output any of them.</p>
+</div>
+</section>
+<!-- Input Format -->
+<section>
+<h3 class="font-headline-sm text-headline-sm font-semibold mb-3 border-b border-border-subtle pb-2">Input Format</h3>
+<div class="prose prose-sm max-w-none text-on-surface-variant font-body-lg">
+<p>A single line containing a single integer $N$ ($1 \le N \le 1000$).</p>
+</div>
+</section>
+<!-- Output Format -->
+<section>
+<h3 class="font-headline-sm text-headline-sm font-semibold mb-3 border-b border-border-subtle pb-2">Output Format</h3>
+<div class="prose prose-sm max-w-none text-on-surface-variant font-body-lg">
+<p>Print $N$ lines, each containing a string of length $N$ consisting of characters 'R', 'G', and 'B', representing the constructed grid.</p>
+</div>
+</section>
+<!-- Example 1 -->
+<section>
+<h3 class="font-headline-sm text-headline-sm font-semibold mb-3 border-b border-border-subtle pb-2">Example 1</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="bg-surface-container rounded-lg p-4 border border-border-subtle relative group">
+<div class="flex justify-between items-center mb-2">
+<span class="font-label-caps text-secondary text-xs uppercase tracking-wider">Input</span>
+<button class="text-secondary hover:text-primary transition-colors opacity-0 group-hover:opacity-100" title="Copy to clipboard">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+</button>
+</div>
+<pre class="font-code-sm text-code-sm text-on-surface bg-transparent m-0 p-0 overflow-x-auto">3</pre>
+</div>
+<div class="bg-surface-container rounded-lg p-4 border border-border-subtle relative group">
+<div class="flex justify-between items-center mb-2">
+<span class="font-label-caps text-secondary text-xs uppercase tracking-wider">Output</span>
+<button class="text-secondary hover:text-primary transition-colors opacity-0 group-hover:opacity-100" title="Copy to clipboard">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+</button>
+</div>
+<pre class="font-code-sm text-code-sm text-on-surface bg-transparent m-0 p-0 overflow-x-auto">RGB
+BRG
+GBR</pre>
+</div>
+</div>
+<div class="mt-3 text-sm text-secondary bg-surface-bright p-3 rounded border border-border-subtle border-l-4 border-l-primary-container">
+<strong>Explanation:</strong> In this $3 \times 3$ grid, there are 3 'R's, 3 'G's, and 3 'B's. No two adjacent cells share the same color.
+                    </div>
+</section>
+<!-- Tags Section -->
+<section class="mt-4 pt-4 border-t border-border-subtle flex items-center gap-2 flex-wrap">
+<span class="material-symbols-outlined text-secondary text-[18px]">sell</span>
+<a class="text-xs font-medium bg-surface-container hover:bg-surface-container-high px-2 py-1 rounded text-secondary transition-colors cursor-pointer" href="#">Constructive Algorithms</a>
+<a class="text-xs font-medium bg-surface-container hover:bg-surface-container-high px-2 py-1 rounded text-secondary transition-colors cursor-pointer" href="#">Math</a>
+<a class="text-xs font-medium bg-surface-container hover:bg-surface-container-high px-2 py-1 rounded text-secondary transition-colors cursor-pointer" href="#">Grid</a>
+</section>
+</div>
+<!-- Code Editor Placeholder -->
+<div class="bg-surface-card rounded-xl shadow-sm border border-border-subtle flex flex-col overflow-hidden h-[400px]">
+<div class="bg-surface-container-low border-b border-border-subtle px-4 py-2 flex justify-between items-center">
+<div class="flex items-center gap-3">
+<select class="form-select bg-surface-container border-border-subtle text-sm rounded-md py-1 pl-3 pr-8 focus:ring-primary focus:border-primary text-on-surface font-medium">
+<option>C++ 17</option>
+<option>Python 3</option>
+<option>Java</option>
+<option>Rust</option>
+</select>
+<select class="form-select bg-surface-container border-border-subtle text-sm rounded-md py-1 pl-3 pr-8 focus:ring-primary focus:border-primary text-on-surface font-medium hidden sm:block">
+<option>Default Theme</option>
+<option>Dark Theme</option>
+</select>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-1 text-secondary hover:text-primary transition-colors" title="Settings">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+</button>
+<button class="p-1 text-secondary hover:text-primary transition-colors" title="Fullscreen">
+<span class="material-symbols-outlined text-[20px]">fullscreen</span>
+</button>
+</div>
+</div>
+<div class="flex-grow bg-surface-background p-4 font-code-sm text-on-surface relative">
+<div class="absolute left-0 top-0 bottom-0 w-10 bg-surface-container-low border-r border-border-subtle flex flex-col items-center pt-4 text-secondary text-xs select-none">
+<span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+</div>
+<div class="pl-8">
+<span class="text-tertiary">#include</span> &lt;iostream&gt;<br>
+<span class="text-tertiary">using</span> <span class="text-primary">namespace</span> std;<br>
+<br>
+<span class="text-primary">int</span> <span class="text-status-ongoing">main</span>() {<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-secondary">// Write your code here</span><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-tertiary">return</span> 0;<br>
+                        }
+                    </div>
+</div>
+</div>
+</div>
+<!-- Sidebar (3 Columns) -->
+<aside class="w-full md:w-3/12 flex flex-col gap-stack-md">
+<!-- SideNavBar Component (Adapted for Author Stats) -->
+<div class="bg-surface-card dark:bg-surface-container rounded-xl shadow-sm border border-border-subtle dark:border-outline-variant flex flex-col gap-stack-md w-full p-4">
+<!-- Header / Author Info -->
+<div class="flex flex-col items-center pb-4 border-b border-border-subtle dark:border-outline-variant">
+<div class="w-20 h-20 rounded-full mb-3 overflow-hidden border-2 border-primary-container relative">
+<img alt="User profile preview" class="w-full h-full object-cover" data-alt="Profile picture of a competitive programming author, depicted in a modern, flat illustration style with a soft light teal background, projecting a professional and technical aura." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3ivCJr76t1J-VLreJDHiGWeOht8kk0bfAqLPqkvOusduVDJh3SZeSIyxd31VBM24yMb4y1s7Bfs6GaXQoiCkMPJQXYLEY2VDGTB9cH3qo31bsugGEu_wRLQlYA0D-8wKz0cfu--AGhr-7liabCPoUmjxs4jBe_HR6w4BQD4jk4u3sBHkylkoxLZT5MBEG1V5hE66vaQuuZlmn_nRpTw3ALIA0aezdtd_krlfY7o93Ru6JGyey0YE7g3lgW3vJ_RrVVzmeoYmiHPw">
+<!-- Rank Badge -->
+<div class="absolute bottom-0 right-0 bg-primary-container text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-surface-card">Ex</div>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface dark:text-inverse-on-surface font-semibold">tourist_fan</h2>
+<p class="text-sm text-secondary font-medium">Rating: 1525 (Expert)</p>
+<div class="flex w-full justify-around mt-4 text-center">
+<div>
+<div class="text-xs text-secondary mb-1">Problems</div>
+<div class="font-semibold">409</div>
+</div>
+<div class="w-px bg-border-subtle"></div>
+<div>
+<div class="text-xs text-secondary mb-1">Solutions</div>
+<div class="font-semibold">2,264</div>
+</div>
+</div>
+</div>
+<!-- Navigation Tabs (Stats/Links) -->
+<nav class="flex flex-col gap-1 mt-2">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-inverse-surface rounded-lg transition-all font-medium text-sm" href="#">
+<span class="material-symbols-outlined text-[20px]">list</span> Problem List
+                    </a>
+<a class="flex items-center gap-3 px-3 py-2 bg-primary-container text-on-primary-container font-semibold rounded-lg text-sm" href="#">
+<span class="material-symbols-outlined text-[20px]">analytics</span> Status
+                    </a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-inverse-surface rounded-lg transition-all font-medium text-sm" href="#">
+<span class="material-symbols-outlined text-[20px]">leaderboard</span> Rankings
+                    </a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-inverse-surface rounded-lg transition-all font-medium text-sm" href="#">
+<span class="material-symbols-outlined text-[20px]">article</span> Editorial
+                    </a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-inverse-surface rounded-lg transition-all font-medium text-sm" href="#">
+<span class="material-symbols-outlined text-[20px]">query_stats</span> Statistics
+                    </a>
+</nav>
+<button class="mt-4 w-full py-2 bg-surface-container text-on-surface font-semibold rounded-lg hover:bg-surface-container-high transition-colors border border-border-subtle text-sm">
+                    Start Training
+                </button>
+</div>
+<!-- Problem Context Box -->
+<div class="bg-surface-card rounded-xl p-4 shadow-sm border border-border-subtle">
+<h3 class="font-label-caps text-secondary text-xs uppercase tracking-wider mb-3">Contest Context</h3>
+<div class="flex flex-col gap-3">
+<div class="p-3 bg-surface-bright rounded border border-border-subtle hover:border-primary-container transition-colors cursor-pointer group">
+<div class="text-xs text-status-pending font-medium mb-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">event</span> Past Contest
+                        </div>
+<h4 class="text-sm font-semibold text-on-surface group-hover:text-primary transition-colors line-clamp-2">Nowcoder Weekly Contest 32 (Div. 2)</h4>
+</div>
+</div>
+</div>
+<!-- Related Problems (Bento Style) -->
+<div class="bg-surface-card rounded-xl p-4 shadow-sm border border-border-subtle">
+<div class="flex justify-between items-center mb-3">
+<h3 class="font-label-caps text-secondary text-xs uppercase tracking-wider">Related Problems</h3>
+<a class="text-xs text-primary font-medium hover:underline" href="#">View all</a>
+</div>
+<div class="flex flex-col gap-2">
+<a class="flex items-start gap-3 p-2 rounded hover:bg-surface-container-low transition-colors group" href="#">
+<div class="mt-0.5 w-6 h-6 rounded bg-surface-container flex items-center justify-center text-secondary group-hover:text-primary group-hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-[14px]">grid_on</span>
+</div>
+<div class="flex-1">
+<h4 class="text-sm font-medium text-on-surface group-hover:text-primary transition-colors">Grid Graph Construction 1.0</h4>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-[10px] text-secondary">NC319819</span>
+<span class="w-1 h-1 rounded-full bg-border-subtle"></span>
+<span class="text-[10px] text-status-pending">Rating: 1800</span>
+</div>
+</div>
+</a>
+<a class="flex items-start gap-3 p-2 rounded hover:bg-surface-container-low transition-colors group" href="#">
+<div class="mt-0.5 w-6 h-6 rounded bg-surface-container flex items-center justify-center text-secondary group-hover:text-primary group-hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-[14px]">swap_horiz</span>
+</div>
+<div class="flex-1">
+<h4 class="text-sm font-medium text-on-surface group-hover:text-primary transition-colors">Xiao Hong's Swap (Hard)</h4>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-[10px] text-secondary">NC319817</span>
+<span class="w-1 h-1 rounded-full bg-border-subtle"></span>
+<span class="text-[10px] text-status-active">Rating: 800</span>
+</div>
+</div>
+</a>
+</div>
+</div>
+</aside>
+</main>
+<!-- Footer Component -->
+<footer class="bg-surface-container-low dark:bg-on-background border-t border-border-subtle dark:border-outline-variant w-full mt-auto">
+<div class="w-full py-stack-lg px-margin-page flex flex-col md:flex-row justify-between items-center max-w-container-max mx-auto gap-4">
+<!-- Brand & Copyright -->
+<div class="flex flex-col items-center md:items-start gap-2">
+<span class="font-headline-sm text-headline-sm text-secondary flex items-center gap-2">
+<span class="material-symbols-outlined text-[24px]">code_blocks</span>
+                    ACMate
+                </span>
+<p class="text-sm text-on-secondary-container dark:text-secondary-fixed-dim">
+                    © 2024 ACMate Competition Platform. Built for excellence.
+                </p>
+</div>
+<!-- Links -->
+<div class="flex flex-wrap justify-center gap-6">
+<a class="text-on-secondary-container dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed underline transition-colors text-sm font-medium" href="#">About Us</a>
+<a class="text-on-secondary-container dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed underline transition-colors text-sm font-medium" href="#">Guidelines</a>
+<a class="text-on-secondary-container dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed underline transition-colors text-sm font-medium" href="#">API Docs</a>
+<a class="text-on-secondary-container dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed underline transition-colors text-sm font-medium" href="#">Privacy Policy</a>
+</div>
+</div>
+</footer>
+</body></html>

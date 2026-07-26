@@ -1,0 +1,264 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>ACMate - Leaderboard</title>
+<!-- Fonts & Icons -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700&amp;family=Inter:wght@400;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "status-ended": "#BCBFC4",
+                        "tertiary-fixed": "#ffdad4",
+                        "on-background": "#161d1b",
+                        "tertiary": "#9e4131",
+                        "background": "#f4fbf6",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-container": "#004537",
+                        "surface-variant": "#dde4e0",
+                        "primary-fixed": "#74f9d6",
+                        "primary-container": "#25bb9b",
+                        "inverse-on-surface": "#ecf2ee",
+                        "on-tertiary-fixed": "#3f0300",
+                        "on-tertiary-fixed-variant": "#7f2a1c",
+                        "surface-card": "#FFFFFF",
+                        "error": "#ba1a1a",
+                        "surface-container-high": "#e3eae5",
+                        "on-secondary-fixed-variant": "#44474c",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-container": "#f88671",
+                        "on-secondary-fixed": "#191c20",
+                        "status-inactive": "#9499A0",
+                        "surface-tint": "#006b57",
+                        "secondary-fixed": "#e1e2e9",
+                        "on-surface-variant": "#3c4a45",
+                        "on-surface": "#161d1b",
+                        "on-primary": "#ffffff",
+                        "surface": "#f4fbf6",
+                        "status-active": "#25BB9B",
+                        "outline-variant": "#bbcac3",
+                        "secondary-container": "#e1e2e9",
+                        "on-error": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "surface-bright": "#f4fbf6",
+                        "error-container": "#ffdad6",
+                        "surface-background": "#F4F5F7",
+                        "primary": "#006b57",
+                        "inverse-surface": "#2b322f",
+                        "surface-container-low": "#eff5f1",
+                        "border-subtle": "#E3E5E7",
+                        "tertiary-fixed-dim": "#ffb4a6",
+                        "on-secondary-container": "#62646a",
+                        "on-primary-fixed": "#002019",
+                        "primary-fixed-dim": "#54dcba",
+                        "surface-container": "#e9efeb",
+                        "status-ongoing": "#3A8BFF",
+                        "status-pending": "#F3A13C",
+                        "on-secondary": "#ffffff",
+                        "secondary": "#5c5e64",
+                        "inverse-primary": "#54dcba",
+                        "secondary-fixed-dim": "#c4c6cd",
+                        "surface-dim": "#d5dcd7",
+                        "on-primary-fixed-variant": "#005141",
+                        "on-tertiary-container": "#701f12",
+                        "surface-container-highest": "#dde4e0",
+                        "outline": "#6c7a75"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "container-max": "1280px",
+                        "stack-md": "16px",
+                        "stack-sm": "8px",
+                        "margin-page": "24px",
+                        "stack-lg": "24px",
+                        "gutter": "20px"
+                    },
+                    "fontFamily": {
+                        "code-sm": ["JetBrains Mono"],
+                        "body-lg": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-md-mobile": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "display-lg": ["Hanken Grotesk"],
+                        "headline-sm": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "code-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "headline-md-mobile": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "display-lg": ["36px", { "lineHeight": "48px", "fontWeight": "700" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md min-h-screen flex flex-col pb-[100px]">
+<!-- TopNavBar -->
+<header class="bg-surface dark:bg-on-background w-full top-0 sticky border-b border-border-subtle dark:border-outline-variant flat no shadows z-50">
+<div class="flex items-center justify-between px-margin-page py-4 max-w-container-max mx-auto font-body-md text-body-md">
+<div class="flex items-center gap-8">
+<div class="text-headline-md font-headline-md text-primary dark:text-primary-fixed tracking-tight">ACMate</div>
+<nav class="hidden md:flex gap-6 items-center h-full">
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors active:opacity-80 transition-opacity hover:bg-surface-container-low dark:hover:bg-surface-variant transition-all rounded px-2 py-1" href="#">Problems</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors active:opacity-80 transition-opacity hover:bg-surface-container-low dark:hover:bg-surface-variant transition-all rounded px-2 py-1" href="#">Contests</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors active:opacity-80 transition-opacity hover:bg-surface-container-low dark:hover:bg-surface-variant transition-all rounded px-2 py-1" href="#">Training</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors active:opacity-80 transition-opacity hover:bg-surface-container-low dark:hover:bg-surface-variant transition-all rounded px-2 py-1" href="#">Discussion</a>
+<a class="text-primary dark:text-primary-fixed font-bold border-b-2 border-primary dark:border-primary-fixed pb-2 active:opacity-80 transition-opacity hover:bg-surface-container-low dark:hover:bg-surface-variant transition-all px-2 pt-1" href="#">Leaderboard</a>
+</nav>
+</div>
+<div class="flex items-center gap-4 text-primary dark:text-primary-fixed">
+<span class="material-symbols-outlined cursor-pointer hover:bg-surface-container-low dark:hover:bg-surface-variant transition-all p-1 rounded-full active:opacity-80 transition-opacity" data-icon="search">search</span>
+<span class="material-symbols-outlined cursor-pointer hover:bg-surface-container-low dark:hover:bg-surface-variant transition-all p-1 rounded-full active:opacity-80 transition-opacity" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined cursor-pointer hover:bg-surface-container-low dark:hover:bg-surface-variant transition-all p-1 rounded-full active:opacity-80 transition-opacity" data-icon="account_circle">account_circle</span>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 w-full max-w-container-max mx-auto px-margin-page py-stack-lg">
+<!-- Header & Tabs -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+<div>
+<h1 class="font-display-lg text-display-lg text-on-surface mb-2">Rankings</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Track your standing among global elite programmers.</p>
+</div>
+<div class="flex p-1 bg-surface-container-low rounded-lg w-fit border border-border-subtle">
+<button class="px-4 py-2 text-sm font-semibold rounded-md bg-surface-card text-primary shadow-sm">Overall</button>
+<button class="px-4 py-2 text-sm font-medium rounded-md text-on-surface-variant hover:text-on-surface transition-colors">Last 7 Days</button>
+<button class="px-4 py-2 text-sm font-medium rounded-md text-on-surface-variant hover:text-on-surface transition-colors">Last 30 Days</button>
+</div>
+</div>
+<!-- Leaderboard Table -->
+<div class="bg-surface-card rounded-xl shadow-[0px_2px_8px_rgba(0,0,0,0.05)] border border-border-subtle overflow-hidden">
+<!-- Table Header -->
+<div class="flex items-center px-6 py-4 border-b border-border-subtle bg-surface-container-lowest">
+<div class="w-16 font-label-caps text-label-caps text-on-surface-variant">Rank</div>
+<div class="flex-1 font-label-caps text-label-caps text-on-surface-variant">User</div>
+<div class="w-32 text-right font-label-caps text-label-caps text-on-surface-variant">Solved</div>
+<div class="w-48 text-right font-label-caps text-label-caps text-on-surface-variant hidden md:block">Last Active</div>
+</div>
+<!-- List Items -->
+<div class="flex flex-col">
+<!-- Rank 1 -->
+<div class="flex items-center px-6 py-4 border-b border-border-subtle hover:bg-surface-container-low transition-colors group bg-[#FFFAF0] bg-opacity-50">
+<div class="w-16 font-headline-sm text-headline-sm text-status-pending">1</div>
+<div class="flex-1 flex items-center gap-3">
+<img class="w-10 h-10 rounded-full object-cover border border-border-subtle" data-alt="A professional, modern avatar portrait of a software engineer. The subject is depicted in a clean, brightly lit corporate environment, adhering to a light-mode aesthetic with crisp white and subtle teal accents. The styling is minimalist and functional, reflecting an institutional and highly competent persona suitable for a technical dashboard." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCOUlNXBKfMTnx84CZ9cgLKJVtxsvvxk3SlwucL8sFCLgU4p9Q_3D_JQSPgzd6vpaoDKUrSLd643ZmMLfsmgkgLfZp1YKlrZ-RoTE2Zxk8tuVxv7r5OzJiAthwso9khBKS7j5e66na1UeTk5JfWcziE95csKzbCyq8QMFBskpurKaHi8ouREstiuWOCimy1tzasL3x5ymITKKkvTjlGFacjSasZdxM0lb3oGxZxXDIZ1m1Z9SHv1qvowwDYq6QjTUcxkkvz0tCrYTw">
+<span class="font-body-lg text-body-lg font-semibold text-on-surface group-hover:text-primary transition-colors">tourist_elite</span>
+</div>
+<div class="w-32 text-right font-code-sm text-code-sm font-semibold text-primary">14,230</div>
+<div class="w-48 text-right font-body-md text-body-md text-on-surface-variant hidden md:block">Just now</div>
+</div>
+<!-- Rank 2 -->
+<div class="flex items-center px-6 py-4 border-b border-border-subtle hover:bg-surface-container-low transition-colors group">
+<div class="w-16 font-headline-sm text-headline-sm text-on-surface-variant">2</div>
+<div class="flex-1 flex items-center gap-3">
+<img class="w-10 h-10 rounded-full object-cover border border-border-subtle" data-alt="A professional, modern avatar portrait of a female software developer. She is set against a clean, softly blurred background of a modern office, emphasizing a corporate light-mode aesthetic. The color palette revolves around crisp whites, subtle grays, and professional teal accents, conveying deep technical competence and reliability." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLZo8OUjDBKv65AXrxDqKYldYkxspF7ID2oO6EV8JTDiob0rem1Tl5gdtT7Zp6k-TosVCc5a6LUq89UgZ2AKj3xTKJQGItdg5T6pm4qvgMsp0uc5HhbcL3N0mw0DG0HRnVsWbndI9lNkw8q2hoWA_01CdxXl0TzhNp_m8LFsI04cQAzCaU9c4TO8I9uYH78ICXqgvM3ZgnC_PhS3aWEunsWqWiNvqkT16a-76WRRMS41k5VvPmRJ5YTnJZ0LZD_GYf2h936C0GHuU">
+<span class="font-body-lg text-body-lg font-semibold text-on-surface group-hover:text-primary transition-colors">benq_cpp</span>
+</div>
+<div class="w-32 text-right font-code-sm text-code-sm font-semibold text-primary">13,982</div>
+<div class="w-48 text-right font-body-md text-body-md text-on-surface-variant hidden md:block">2 mins ago</div>
+</div>
+<!-- Rank 3 -->
+<div class="flex items-center px-6 py-4 border-b border-border-subtle hover:bg-surface-container-low transition-colors group">
+<div class="w-16 font-headline-sm text-headline-sm text-status-ended">3</div>
+<div class="flex-1 flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center font-headline-sm text-headline-sm text-primary">R</div>
+<span class="font-body-lg text-body-lg font-semibold text-on-surface group-hover:text-primary transition-colors">radewoosh</span>
+</div>
+<div class="w-32 text-right font-code-sm text-code-sm font-semibold text-primary">13,401</div>
+<div class="w-48 text-right font-body-md text-body-md text-on-surface-variant hidden md:block">15 mins ago</div>
+</div>
+<!-- Rank 4 -->
+<div class="flex items-center px-6 py-4 border-b border-border-subtle hover:bg-surface-container-low transition-colors group">
+<div class="w-16 font-body-lg text-body-lg text-on-surface-variant">4</div>
+<div class="flex-1 flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center font-headline-sm text-headline-sm text-on-surface-variant">M</div>
+<span class="font-body-lg text-body-lg text-on-surface group-hover:text-primary transition-colors">maroonrk</span>
+</div>
+<div class="w-32 text-right font-code-sm text-code-sm text-on-surface">12,890</div>
+<div class="w-48 text-right font-body-md text-body-md text-on-surface-variant hidden md:block">1 hour ago</div>
+</div>
+<!-- Rank 5 -->
+<div class="flex items-center px-6 py-4 hover:bg-surface-container-low transition-colors group">
+<div class="w-16 font-body-lg text-body-lg text-on-surface-variant">5</div>
+<div class="flex-1 flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center font-headline-sm text-headline-sm text-on-surface-variant">E</div>
+<span class="font-body-lg text-body-lg text-on-surface group-hover:text-primary transition-colors">ecnerwala</span>
+</div>
+<div class="w-32 text-right font-code-sm text-code-sm text-on-surface">12,504</div>
+<div class="w-48 text-right font-body-md text-body-md text-on-surface-variant hidden md:block">3 hours ago</div>
+</div>
+</div>
+</div>
+<!-- Pagination (Simple) -->
+<div class="flex justify-center mt-6 gap-2">
+<button class="w-8 h-8 flex items-center justify-center rounded border border-border-subtle bg-surface-card text-on-surface-variant hover:text-primary hover:border-primary transition-colors"><span class="material-symbols-outlined text-sm" data-icon="chevron_left">chevron_left</span></button>
+<button class="w-8 h-8 flex items-center justify-center rounded bg-primary text-on-primary font-code-sm text-code-sm">1</button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-border-subtle bg-surface-card text-on-surface font-code-sm text-code-sm hover:border-primary transition-colors">2</button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-border-subtle bg-surface-card text-on-surface font-code-sm text-code-sm hover:border-primary transition-colors">3</button>
+<span class="w-8 h-8 flex items-center justify-center text-on-surface-variant">...</span>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-border-subtle bg-surface-card text-on-surface-variant hover:text-primary hover:border-primary transition-colors"><span class="material-symbols-outlined text-sm" data-icon="chevron_right">chevron_right</span></button>
+</div>
+</main>
+<!-- Persistent Personal Rank Bar -->
+<div class="fixed bottom-0 left-0 w-full bg-surface-container shadow-[0_-4px_16px_rgba(0,0,0,0.08)] border-t border-border-subtle z-40">
+<div class="max-w-container-max mx-auto px-margin-page py-3 flex items-center">
+<div class="w-16 font-headline-sm text-headline-sm text-primary">842</div>
+<div class="flex-1 flex items-center gap-3">
+<img class="w-10 h-10 rounded-full object-cover border-2 border-primary" data-alt="A close-up abstract digital rendering representing an anonymous user profile. Minimalist geometric shapes in varied shades of corporate teal and pristine white form a stylized human silhouette. The lighting is soft and ambient, fitting perfectly within a functional, high-density professional software interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1Ujqb8zR6u7h4zydHqFcdjVg4465XAhkk4EN7mh3QfXE4Bj2A1m-fA0FxpU9zNs99UZEe_zCwi8p32C8cSDCyub_x2E-SMryQFm6c7QNEIMax1hQiEOoZDIbdiiGHejZbGrPq0EGzLRSO4Q6CVI1-VpNq5m8vkcLzwdXC49pphHkCd0Bc1t-1rDkup36jOiTlZ8d3Gm7wG_ZPhXPv8y_1EqqIVKSaU45WTlRPF-RyAtuiwT6azZTE_1Ws83Ts0JQLpkh0Fa4ZtP0">
+<div>
+<div class="font-body-lg text-body-lg font-semibold text-on-surface">You (User_991)</div>
+<div class="font-label-caps text-label-caps text-on-surface-variant">Top 5% Global</div>
+</div>
+</div>
+<div class="w-32 text-right">
+<div class="font-code-sm text-code-sm font-semibold text-primary">3,102</div>
+<div class="font-label-caps text-label-caps text-on-surface-variant">Solved</div>
+</div>
+<div class="w-48 text-right hidden md:block">
+<div class="font-body-md text-body-md text-on-surface">Online</div>
+<div class="font-label-caps text-label-caps text-status-active flex items-center justify-end gap-1"><span class="w-2 h-2 rounded-full bg-status-active"></span>Active Now</div>
+</div>
+</div>
+</div>
+<!-- Footer -->
+<footer class="bg-surface-container dark:bg-inverse-surface w-full mt-auto border-t border-border-subtle dark:border-outline-variant flat no shadows opacity-100 pb-[80px]">
+<div class="flex flex-col md:flex-row justify-between items-center px-margin-page py-stack-lg max-w-container-max mx-auto gap-stack-md font-body-md text-body-md">
+<div class="text-headline-sm font-headline-sm text-on-surface dark:text-inverse-on-surface">ACMate</div>
+<div class="text-primary dark:text-primary-fixed">© 2024 ACMate Elite. All rights reserved.</div>
+<div class="flex gap-4">
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:underline transition-all" href="#">About</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:underline transition-all" href="#">Terms</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:underline transition-all" href="#">Privacy</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:underline transition-all" href="#">API</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:underline transition-all" href="#">GitHub</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:underline transition-all" href="#">Support</a>
+</div>
+</div>
+</footer>
+</body></html>

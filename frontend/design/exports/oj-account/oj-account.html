@@ -1,0 +1,344 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>ACMate - OJ 账号绑定与管理</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=Hanken+Grotesk:wght@600;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "status-ended": "#BCBFC4",
+                        "tertiary-fixed": "#ffdad4",
+                        "on-background": "#161d1b",
+                        "tertiary": "#9e4131",
+                        "background": "#f4fbf6",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-container": "#004537",
+                        "surface-variant": "#dde4e0",
+                        "primary-fixed": "#74f9d6",
+                        "primary-container": "#25bb9b",
+                        "inverse-on-surface": "#ecf2ee",
+                        "on-tertiary-fixed": "#3f0300",
+                        "on-tertiary-fixed-variant": "#7f2a1c",
+                        "surface-card": "#FFFFFF",
+                        "error": "#ba1a1a",
+                        "surface-container-high": "#e3eae5",
+                        "on-secondary-fixed-variant": "#44474c",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-container": "#f88671",
+                        "on-secondary-fixed": "#191c20",
+                        "status-inactive": "#9499A0",
+                        "surface-tint": "#006b57",
+                        "secondary-fixed": "#e1e2e9",
+                        "on-surface-variant": "#3c4a45",
+                        "on-surface": "#161d1b",
+                        "on-primary": "#ffffff",
+                        "surface": "#f4fbf6",
+                        "status-active": "#25BB9B",
+                        "outline-variant": "#bbcac3",
+                        "secondary-container": "#e1e2e9",
+                        "on-error": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "surface-bright": "#f4fbf6",
+                        "error-container": "#ffdad6",
+                        "surface-background": "#F4F5F7",
+                        "primary": "#006b57",
+                        "inverse-surface": "#2b322f",
+                        "surface-container-low": "#eff5f1",
+                        "border-subtle": "#E3E5E7",
+                        "tertiary-fixed-dim": "#ffb4a6",
+                        "on-secondary-container": "#62646a",
+                        "on-primary-fixed": "#002019",
+                        "primary-fixed-dim": "#54dcba",
+                        "surface-container": "#e9efeb",
+                        "status-ongoing": "#3A8BFF",
+                        "status-pending": "#F3A13C",
+                        "on-secondary": "#ffffff",
+                        "secondary": "#5c5e64",
+                        "inverse-primary": "#54dcba",
+                        "secondary-fixed-dim": "#c4c6cd",
+                        "surface-dim": "#d5dcd7",
+                        "on-primary-fixed-variant": "#005141",
+                        "on-tertiary-container": "#701f12",
+                        "surface-container-highest": "#dde4e0",
+                        "outline": "#6c7a75"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "container-max": "1280px",
+                        "stack-md": "16px",
+                        "stack-sm": "8px",
+                        "margin-page": "24px",
+                        "stack-lg": "24px",
+                        "gutter": "20px"
+                    },
+                    "fontFamily": {
+                        "code-sm": ["JetBrains Mono"],
+                        "body-lg": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-md-mobile": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "display-lg": ["Hanken Grotesk"],
+                        "headline-sm": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "code-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "headline-md-mobile": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "display-lg": ["36px", { "lineHeight": "48px", "fontWeight": "700" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .ambient-shadow {
+            box-shadow: 0px 2px 8px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body class="bg-surface-background text-on-surface font-body-md min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<nav class="bg-surface dark:bg-on-background w-full top-0 sticky border-b border-border-subtle dark:border-outline-variant z-50">
+<div class="flex flex-col">
+<div class="flex items-center justify-between px-margin-page py-4 max-w-container-max mx-auto w-full">
+<div class="flex items-center gap-6">
+<span class="text-headline-md font-headline-md text-primary dark:text-primary-fixed tracking-tight">ACMate</span>
+<div class="hidden md:flex gap-6 items-center pt-2">
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors text-body-md font-body-md active:opacity-80 transition-opacity" href="#">Problems</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors text-body-md font-body-md active:opacity-80 transition-opacity" href="#">Contests</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors text-body-md font-body-md active:opacity-80 transition-opacity" href="#">Training</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors text-body-md font-body-md active:opacity-80 transition-opacity" href="#">Discussion</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors text-body-md font-body-md active:opacity-80 transition-opacity" href="#">Leaderboard</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors p-2 rounded-full hover:bg-surface-container-low">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-primary dark:text-primary-fixed p-2 rounded-full hover:bg-surface-container-low transition-all border-b-2 border-primary dark:border-primary-fixed pb-2 font-bold">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</div>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-grow w-full max-w-container-max mx-auto px-margin-page py-8">
+<div class="mb-8">
+<h1 class="text-display-lg font-display-lg text-on-surface mb-2">Platform Integrations</h1>
+<p class="text-body-lg font-body-lg text-on-surface-variant max-w-2xl">Manage your connected Online Judge accounts to synchronize submission history, ratings, and training data.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Main Content Area (9 Cols on Desktop) -->
+<div class="md:col-span-8 lg:col-span-9 flex flex-col gap-6">
+<!-- Codeforces Integration Card -->
+<div class="bg-surface-card rounded-xl ambient-shadow p-[24px] border border-border-subtle relative overflow-hidden group hover:border-outline-variant transition-colors">
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-6 border-b border-border-subtle mb-6 gap-4">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center flex-shrink-0">
+<span class="text-on-surface font-bold text-lg">CF</span>
+</div>
+<div>
+<h2 class="text-headline-sm font-headline-sm text-on-surface">Codeforces</h2>
+<p class="text-body-md font-body-md text-on-surface-variant">codeforces.com</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-label-caps font-label-caps bg-status-active/10 text-status-active">
+<span class="w-1.5 h-1.5 rounded-full bg-status-active mr-1.5"></span>
+                                VERIFIED
+                            </span>
+</div>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+<div>
+<span class="text-label-caps font-label-caps text-on-surface-variant block mb-1 uppercase tracking-wider">Connected Handle</span>
+<div class="flex items-center gap-2">
+<span class="text-body-lg font-body-lg text-on-surface font-semibold">tourist</span>
+<a class="text-primary hover:text-primary-container transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="open_in_new">open_in_new</span>
+</a>
+</div>
+</div>
+<div>
+<span class="text-label-caps font-label-caps text-on-surface-variant block mb-1 uppercase tracking-wider">Last Sync</span>
+<div class="flex items-center gap-2">
+<span class="text-body-lg font-body-lg text-on-surface">Today, 14:32</span>
+<span class="material-symbols-outlined text-[18px] text-status-active" data-icon="check_circle">check_circle</span>
+</div>
+</div>
+<div>
+<span class="text-label-caps font-label-caps text-on-surface-variant block mb-1 uppercase tracking-wider">Synced Submissions</span>
+<span class="text-body-lg font-body-lg text-on-surface">1,492</span>
+</div>
+<div>
+<span class="text-label-caps font-label-caps text-on-surface-variant block mb-1 uppercase tracking-wider">Current Rating</span>
+<span class="text-body-lg font-body-lg text-on-surface font-semibold text-[#FF0000]">3895 (Legendary Grandmaster)</span>
+</div>
+</div>
+<div class="flex flex-col sm:flex-row items-center gap-4 bg-surface-container-low p-4 rounded-lg">
+<button class="w-full sm:w-auto px-6 py-2 bg-primary-container text-on-primary rounded-lg text-body-md font-body-md font-semibold hover:bg-primary transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+<span class="material-symbols-outlined text-[20px]" data-icon="sync">sync</span>
+                            Sync Now
+                        </button>
+<p class="text-body-md font-body-md text-on-surface-variant flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]" data-icon="info">info</span>
+                            Next sync available in 45m
+                        </p>
+<div class="flex-grow"></div>
+<button class="w-full sm:w-auto px-4 py-2 border border-border-subtle text-secondary rounded-lg text-body-md font-body-md hover:bg-surface-container-high transition-colors">
+                            Unlink Account
+                        </button>
+</div>
+</div>
+<!-- AtCoder Integration Card (Pending State Example) -->
+<div class="bg-surface-card rounded-xl ambient-shadow p-[24px] border border-border-subtle">
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-6 border-b border-border-subtle mb-6 gap-4">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-[#222222] flex items-center justify-center flex-shrink-0">
+<span class="text-white font-bold text-lg">AC</span>
+</div>
+<div>
+<h2 class="text-headline-sm font-headline-sm text-on-surface">AtCoder</h2>
+<p class="text-body-md font-body-md text-on-surface-variant">atcoder.jp</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-label-caps font-label-caps bg-status-pending/10 text-status-pending">
+<span class="w-1.5 h-1.5 rounded-full bg-status-pending mr-1.5 animate-pulse"></span>
+                                VERIFYING
+                            </span>
+</div>
+</div>
+<div class="mb-6 p-4 border border-status-pending/20 bg-status-pending/5 rounded-lg flex items-start gap-3">
+<span class="material-symbols-outlined text-status-pending mt-0.5" data-icon="pending">pending</span>
+<div>
+<h4 class="text-body-md font-body-md font-semibold text-on-surface mb-1">Verification in Progress</h4>
+<p class="text-body-md font-body-md text-on-surface-variant">We are currently verifying your AtCoder handle 'tourist'. Please ensure you have added the verification code to your AtCoder profile bio.</p>
+<div class="mt-3 bg-surface-container p-2 rounded flex items-center justify-between border border-border-subtle">
+<code class="text-code-sm font-code-sm text-on-surface px-2">ACM-VERIFY-8A9F2B</code>
+<button class="text-primary hover:text-primary-container p-1 rounded hover:bg-surface-container-high transition-colors" title="Copy to clipboard">
+<span class="material-symbols-outlined text-[18px]" data-icon="content_copy">content_copy</span>
+</button>
+</div>
+</div>
+</div>
+<div class="flex justify-end gap-3">
+<button class="px-4 py-2 border border-border-subtle text-on-surface-variant rounded-lg text-body-md font-body-md hover:bg-surface-container-high transition-colors">
+                            Cancel
+                        </button>
+<button class="px-4 py-2 bg-surface-container-highest text-on-surface rounded-lg text-body-md font-body-md font-semibold hover:bg-outline-variant transition-colors flex items-center gap-2">
+                            Check Verification Status
+                        </button>
+</div>
+</div>
+<!-- LeetCode Integration Card (Unlinked State) -->
+<div class="bg-surface-card rounded-xl ambient-shadow p-[24px] border border-border-subtle opacity-75 hover:opacity-100 transition-opacity">
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 gap-4">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-[#FFA116] flex items-center justify-center flex-shrink-0">
+<span class="text-white font-bold text-lg">LC</span>
+</div>
+<div>
+<h2 class="text-headline-sm font-headline-sm text-on-surface">LeetCode</h2>
+<p class="text-body-md font-body-md text-on-surface-variant">leetcode.com</p>
+</div>
+</div>
+<button class="px-6 py-2 border border-primary text-primary rounded-lg text-body-md font-body-md font-semibold hover:bg-primary/5 transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]" data-icon="link">link</span>
+                            Connect Account
+                        </button>
+</div>
+</div>
+</div>
+<!-- Sidebar (3 Cols on Desktop) -->
+<div class="md:col-span-4 lg:col-span-3 flex flex-col gap-6">
+<!-- Sync Info Card -->
+<div class="bg-surface-card rounded-xl ambient-shadow p-[24px] border border-border-subtle">
+<h3 class="text-headline-sm font-headline-sm text-on-surface mb-4 flex items-center gap-2 border-b border-border-subtle pb-3">
+<span class="material-symbols-outlined text-primary" data-icon="cloud_sync">cloud_sync</span>
+                        Sync Policy
+                    </h3>
+<ul class="text-body-md font-body-md text-on-surface-variant space-y-3">
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline mt-0.5" data-icon="schedule">schedule</span>
+<span>Manual syncs are limited to once per hour to prevent API rate limiting.</span>
+</li>
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline mt-0.5" data-icon="autorenew">autorenew</span>
+<span>Automatic background syncs occur every 24 hours for active users.</span>
+</li>
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline mt-0.5" data-icon="data_usage">data_usage</span>
+<span>Only AC (Accepted) submissions are currently imported to your training timeline.</span>
+</li>
+</ul>
+</div>
+<!-- Recent Activity Skeleton/List -->
+<div class="bg-surface-card rounded-xl ambient-shadow p-[24px] border border-border-subtle">
+<h3 class="text-headline-sm font-headline-sm text-on-surface mb-4 border-b border-border-subtle pb-3">Recent Sync Logs</h3>
+<div class="space-y-4">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-status-active"></div>
+<div class="flex-grow">
+<p class="text-body-md font-body-md text-on-surface">Codeforces Sync Complete</p>
+<p class="text-label-caps font-label-caps text-on-surface-variant">14:32 • +2 Submissions</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-status-pending"></div>
+<div class="flex-grow">
+<p class="text-body-md font-body-md text-on-surface">AtCoder Verification Started</p>
+<p class="text-label-caps font-label-caps text-on-surface-variant">Yesterday, 09:15</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-error"></div>
+<div class="flex-grow">
+<p class="text-body-md font-body-md text-on-surface">Vjudge Sync Failed</p>
+<p class="text-label-caps font-label-caps text-on-surface-variant">Oct 24 • API Error</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container dark:bg-inverse-surface w-full mt-auto border-t border-border-subtle dark:border-outline-variant opacity-100">
+<div class="flex flex-col md:flex-row justify-between items-center px-margin-page py-stack-lg max-w-container-max mx-auto gap-stack-md w-full">
+<span class="text-headline-sm font-headline-sm text-on-surface dark:text-inverse-on-surface">ACMate</span>
+<div class="flex gap-4">
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:underline transition-all text-body-md font-body-md" href="#">About</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:underline transition-all text-body-md font-body-md" href="#">Terms</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:underline transition-all text-body-md font-body-md" href="#">Privacy</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:underline transition-all text-body-md font-body-md" href="#">API</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:underline transition-all text-body-md font-body-md" href="#">GitHub</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:underline transition-all text-body-md font-body-md" href="#">Support</a>
+</div>
+<div class="text-body-md font-body-md text-on-surface-variant">© 2024 ACMate Elite. All rights reserved.</div>
+</div>
+</footer>
+</body></html>

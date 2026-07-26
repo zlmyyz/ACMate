@@ -1,0 +1,359 @@
+<!DOCTYPE html><html class="light" lang="zh-CN"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>讨论区 - ACMate</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;family=Hanken+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "status-ended": "#BCBFC4",
+                        "tertiary-fixed": "#ffdad4",
+                        "on-background": "#161d1b",
+                        "tertiary": "#9e4131",
+                        "background": "#f4fbf6",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-container": "#004537",
+                        "surface-variant": "#dde4e0",
+                        "primary-fixed": "#74f9d6",
+                        "primary-container": "#25bb9b",
+                        "inverse-on-surface": "#ecf2ee",
+                        "on-tertiary-fixed": "#3f0300",
+                        "on-tertiary-fixed-variant": "#7f2a1c",
+                        "surface-card": "#FFFFFF",
+                        "error": "#ba1a1a",
+                        "surface-container-high": "#e3eae5",
+                        "on-secondary-fixed-variant": "#44474c",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-container": "#f88671",
+                        "on-secondary-fixed": "#191c20",
+                        "status-inactive": "#9499A0",
+                        "surface-tint": "#006b57",
+                        "secondary-fixed": "#e1e2e9",
+                        "on-surface-variant": "#3c4a45",
+                        "on-surface": "#161d1b",
+                        "on-primary": "#ffffff",
+                        "surface": "#f4fbf6",
+                        "status-active": "#25BB9B",
+                        "outline-variant": "#bbcac3",
+                        "secondary-container": "#e1e2e9",
+                        "on-error": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "surface-bright": "#f4fbf6",
+                        "error-container": "#ffdad6",
+                        "surface-background": "#F4F5F7",
+                        "primary": "#006b57",
+                        "inverse-surface": "#2b322f",
+                        "surface-container-low": "#eff5f1",
+                        "border-subtle": "#E3E5E7",
+                        "tertiary-fixed-dim": "#ffb4a6",
+                        "on-secondary-container": "#62646a",
+                        "on-primary-fixed": "#002019",
+                        "primary-fixed-dim": "#54dcba",
+                        "surface-container": "#e9efeb",
+                        "status-ongoing": "#3A8BFF",
+                        "status-pending": "#F3A13C",
+                        "on-secondary": "#ffffff",
+                        "secondary": "#5c5e64",
+                        "inverse-primary": "#54dcba",
+                        "secondary-fixed-dim": "#c4c6cd",
+                        "surface-dim": "#d5dcd7",
+                        "on-primary-fixed-variant": "#005141",
+                        "on-tertiary-container": "#701f12",
+                        "surface-container-highest": "#dde4e0",
+                        "outline": "#6c7a75"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "container-max": "1280px",
+                        "stack-md": "16px",
+                        "stack-sm": "8px",
+                        "margin-page": "24px",
+                        "stack-lg": "24px",
+                        "gutter": "20px"
+                    },
+                    "fontFamily": {
+                        "code-sm": ["JetBrains Mono"],
+                        "body-lg": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-md-mobile": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "display-lg": ["Hanken Grotesk"],
+                        "headline-sm": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "code-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "headline-md-mobile": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "display-lg": ["36px", { "lineHeight": "48px", "fontWeight": "700" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .shadow-soft { box-shadow: 0px 2px 8px rgba(0,0,0,0.05); }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .material-symbols-outlined.fill { font-variation-settings: 'FILL' 1; }
+    </style>
+</head>
+<body class="bg-surface-background min-h-screen flex flex-col text-on-background">
+<!-- Top Navigation Bar -->
+<nav class="bg-surface dark:bg-on-background w-full top-0 sticky border-b border-border-subtle dark:border-outline-variant flat no shadows z-50">
+<div class="flex items-center justify-between px-margin-page py-4 max-w-container-max mx-auto">
+<div class="flex items-center gap-8">
+<a class="text-headline-md font-headline-md text-primary dark:text-primary-fixed tracking-tight" href="#">ACMate</a>
+<div class="hidden md:flex gap-6">
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors" href="#">Problems</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors" href="#">Contests</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors" href="#">Training</a>
+<a class="font-body-md text-body-md text-primary dark:text-primary-fixed font-bold border-b-2 border-primary dark:border-primary-fixed pb-2" href="#">Discussion</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors" href="#">Leaderboard</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden md:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+<input class="pl-9 pr-4 py-2 bg-surface-container-low border border-border-subtle rounded focus:border-primary focus:ring-1 focus:ring-primary outline-none text-body-md font-body-md w-64 transition-all" placeholder="Search..." type="text">
+</div>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-all active:opacity-80 flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-all active:opacity-80 flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-grow w-full max-w-container-max mx-auto px-margin-page py-stack-lg">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-stack-lg gap-4">
+<div>
+<h1 class="font-display-lg text-display-lg text-on-surface">讨论区</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">交流解题思路，分享学习心得</p>
+</div>
+<button class="bg-primary-container text-on-tertiary px-6 py-3 rounded-lg font-body-md text-body-md font-medium hover:opacity-90 transition-opacity flex items-center gap-2 shadow-soft">
+<span class="material-symbols-outlined text-[20px]">edit_square</span>
+                发帖
+            </button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Left Column: Categories & Post List (9 cols) -->
+<div class="md:col-span-9 flex flex-col gap-stack-md">
+<!-- Filters / Categories Card -->
+<div class="bg-surface-card rounded-xl p-[24px] shadow-soft flex flex-wrap items-center gap-4 border border-border-subtle">
+<button class="px-4 py-2 rounded bg-primary-container/10 text-primary-container font-body-md text-body-md font-medium transition-colors">全部</button>
+<button class="px-4 py-2 rounded text-on-surface-variant hover:bg-surface-container-low font-body-md text-body-md transition-colors">题解</button>
+<button class="px-4 py-2 rounded text-on-surface-variant hover:bg-surface-container-low font-body-md text-body-md transition-colors">求助</button>
+<button class="px-4 py-2 rounded text-on-surface-variant hover:bg-surface-container-low font-body-md text-body-md transition-colors">总结</button>
+<button class="px-4 py-2 rounded text-on-surface-variant hover:bg-surface-container-low font-body-md text-body-md transition-colors">公告</button>
+<div class="ml-auto flex items-center gap-2">
+<span class="font-body-md text-body-md text-on-surface-variant">排序:</span>
+<select class="bg-transparent border-none text-on-surface font-body-md text-body-md focus:ring-0 cursor-pointer">
+<option>最新发布</option>
+<option>最多回复</option>
+<option>最多点赞</option>
+</select>
+</div>
+</div>
+<!-- Post List -->
+<div class="flex flex-col gap-3">
+<!-- Post Item 1 -->
+<div class="bg-surface-card rounded-xl p-[24px] shadow-soft border border-border-subtle hover:border-primary/30 transition-all cursor-pointer group">
+<div class="flex items-start justify-between gap-4">
+<div class="flex-grow">
+<div class="flex items-center gap-2 mb-2">
+<span class="px-2 py-0.5 rounded-full bg-status-active/10 text-status-active font-label-caps text-label-caps">题解</span>
+<a class="text-on-surface-variant hover:text-primary font-code-sm text-code-sm flex items-center gap-1" href="#">
+<span class="material-symbols-outlined text-[14px]">link</span>
+                                        P1001 A+B Problem
+                                    </a>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface group-hover:text-primary transition-colors mb-2">关于线段树优化建图的一些常数优化技巧探讨</h3>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2 mb-4">在处理大规模网络流问题时，线段树优化建图是一种常见手段。但往往因为常数过大导致TLE。本文总结了几种有效降低常数的方法，包括底层数组连续性优化、预处理策略等...</p>
+<div class="flex items-center gap-6 text-on-surface-variant">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-surface-container-high overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A small avatar of a competitive programmer, clean minimal style, digital art, soft lighting, light green background, professional vibe." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBhMbyHk0SuFjjres-UBfBMMR7UokCnupyXk5LMEoI7rPUmMQ4pb5fbzcCKQ7bseR-7tS6MCu2maiwjx7Ttp0bhP9JnMGg2e1OoPof0HVhjiOJUR-vwQhWLp8HS4gj8mQue8nfk04OaYePiFecg5fNg_E6LrwIcpdyJjzBA-vTvubvV84_En3M4FYofyZIXzZMdoh1ccH_fdFBp0JHAptZmPQPh_Vvihl_bPRVvFDhDwOp9emZsZAvtKcVySVfLMMU41mCrdk16A6w">
+</div>
+<span class="font-body-md text-body-md text-sm">Tourist001</span>
+</div>
+<div class="flex items-center gap-4 font-body-md text-body-md text-sm">
+<span class="flex items-center gap-1 hover:text-primary transition-colors"><span class="material-symbols-outlined text-[16px]">thumb_up</span> 142</span>
+<span class="flex items-center gap-1 hover:text-primary transition-colors"><span class="material-symbols-outlined text-[16px]">chat_bubble_outline</span> 28</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">schedule</span> 2小时前</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Post Item 2 -->
+<div class="bg-surface-card rounded-xl p-[24px] shadow-soft border border-border-subtle hover:border-primary/30 transition-all cursor-pointer group">
+<div class="flex items-start justify-between gap-4">
+<div class="flex-grow">
+<div class="flex items-center gap-2 mb-2">
+<span class="px-2 py-0.5 rounded-full bg-status-pending/10 text-status-pending font-label-caps text-label-caps">求助</span>
+<a class="text-on-surface-variant hover:text-primary font-code-sm text-code-sm flex items-center gap-1" href="#">
+<span class="material-symbols-outlined text-[14px]">link</span>
+                                        CF1920F
+                                    </a>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface group-hover:text-primary transition-colors mb-2">这道题用主席树怎么总是MLE？求大佬看看代码</h3>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2 mb-4">空间限制是256MB，我算了一下我的节点数大概是 $O(N \log N)$，理论上应该够用的，但是一交就MLE在Test 4。代码贴在下面了，有没有可能是垃圾回收的问题？</p>
+<div class="flex items-center gap-6 text-on-surface-variant">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-surface-container-high flex items-center justify-center text-xs font-bold text-on-surface-variant">
+                                            L
+                                        </div>
+<span class="font-body-md text-body-md text-sm">蒟蒻_QAQ</span>
+</div>
+<div class="flex items-center gap-4 font-body-md text-body-md text-sm">
+<span class="flex items-center gap-1 hover:text-primary transition-colors"><span class="material-symbols-outlined text-[16px]">thumb_up</span> 5</span>
+<span class="flex items-center gap-1 hover:text-primary transition-colors"><span class="material-symbols-outlined text-[16px]">chat_bubble_outline</span> 12</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">schedule</span> 5小时前</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Post Item 3 -->
+<div class="bg-surface-card rounded-xl p-[24px] shadow-soft border border-border-subtle hover:border-primary/30 transition-all cursor-pointer group border-l-4 border-l-status-ongoing">
+<div class="flex items-start justify-between gap-4">
+<div class="flex-grow">
+<div class="flex items-center gap-2 mb-2">
+<span class="px-2 py-0.5 rounded-full bg-status-ongoing/10 text-status-ongoing font-label-caps text-label-caps">公告</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface group-hover:text-primary transition-colors mb-2">【重要】关于2024 ACMate春季邀请赛规则更新的通知</h3>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2 mb-4">本次春季邀请赛将引入全新的赛制，针对团队协作部分进行了多项调整。请各参赛队伍务必仔细阅读本公告中的评分细则和环境配置要求，以免影响最终成绩...</p>
+<div class="flex items-center gap-6 text-on-surface-variant">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-[14px]">shield</span>
+</div>
+<span class="font-body-md text-body-md text-sm text-primary font-medium">Admin_Team</span>
+</div>
+<div class="flex items-center gap-4 font-body-md text-body-md text-sm">
+<span class="flex items-center gap-1 hover:text-primary transition-colors"><span class="material-symbols-outlined text-[16px]">thumb_up</span> 892</span>
+<span class="flex items-center gap-1 hover:text-primary transition-colors"><span class="material-symbols-outlined text-[16px]">chat_bubble_outline</span> 156</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">schedule</span> 1天前</span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-status-ongoing fill">push_pin</span>
+</div>
+</div>
+</div>
+<!-- Pagination -->
+<div class="flex justify-center items-center gap-2 mt-4">
+<button class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors disabled:opacity-50"><span class="material-symbols-outlined text-[18px]">chevron_left</span></button>
+<button class="w-8 h-8 rounded bg-primary text-on-primary font-body-md text-sm flex items-center justify-center">1</button>
+<button class="w-8 h-8 rounded hover:bg-surface-container-low text-on-surface font-body-md text-sm flex items-center justify-center transition-colors">2</button>
+<button class="w-8 h-8 rounded hover:bg-surface-container-low text-on-surface font-body-md text-sm flex items-center justify-center transition-colors">3</button>
+<span class="text-on-surface-variant">...</span>
+<button class="w-8 h-8 rounded hover:bg-surface-container-low text-on-surface font-body-md text-sm flex items-center justify-center transition-colors">42</button>
+<button class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors"><span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
+</div>
+</div>
+<!-- Right Column: Sidebar (3 cols) -->
+<div class="md:col-span-3 flex flex-col gap-stack-lg">
+<!-- Hot Topics Widget -->
+<div class="bg-surface-card rounded-xl p-[24px] shadow-soft border border-border-subtle">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-4 flex items-center gap-2 border-b border-border-subtle pb-2">
+<span class="material-symbols-outlined text-tertiary-container fill">local_fire_department</span>
+                        热门话题
+                    </h3>
+<div class="flex flex-col gap-4">
+<a class="group flex items-start gap-3" href="#">
+<span class="text-tertiary-container font-headline-sm text-lg w-4 text-center mt-0.5">1</span>
+<div>
+<h4 class="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors line-clamp-1">动态规划常见优化套路合集</h4>
+<p class="text-xs text-on-surface-variant mt-1">3.2k 阅读 · 128 回复</p>
+</div>
+</a>
+<a class="group flex items-start gap-3" href="#">
+<span class="text-status-pending font-headline-sm text-lg w-4 text-center mt-0.5">2</span>
+<div>
+<h4 class="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors line-clamp-1">2024 ICPC 区域赛赛区预测</h4>
+<p class="text-xs text-on-surface-variant mt-1">2.8k 阅读 · 342 回复</p>
+</div>
+</a>
+<a class="group flex items-start gap-3" href="#">
+<span class="text-status-ongoing font-headline-sm text-lg w-4 text-center mt-0.5">3</span>
+<div>
+<h4 class="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors line-clamp-1">图论入门：从DFS到网络流</h4>
+<p class="text-xs text-on-surface-variant mt-1">1.9k 阅读 · 86 回复</p>
+</div>
+</a>
+<a class="group flex items-start gap-3" href="#">
+<span class="text-on-surface-variant font-headline-sm text-lg w-4 text-center mt-0.5">4</span>
+<div>
+<h4 class="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors line-clamp-1">找队友：春季赛缺一名数据结构手</h4>
+<p class="text-xs text-on-surface-variant mt-1">800 阅读 · 12 回复</p>
+</div>
+</a>
+</div>
+</div>
+<!-- Announcements Widget -->
+<div class="bg-surface-card rounded-xl p-[24px] shadow-soft border border-border-subtle bg-gradient-to-br from-surface-card to-surface-container-low">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-4 flex items-center gap-2 border-b border-border-subtle pb-2">
+<span class="material-symbols-outlined text-status-ongoing">campaign</span>
+                        近期活动
+                    </h3>
+<ul class="space-y-3 font-body-md text-body-md">
+<li>
+<a class="text-on-surface hover:text-primary transition-colors flex items-center gap-2" href="#">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container inline-block"></span>
+                                ACMate 第45场周赛报名中
+                            </a>
+</li>
+<li>
+<a class="text-on-surface hover:text-primary transition-colors flex items-center gap-2" href="#">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container inline-block"></span>
+                                "算法之美"征文比赛结果公示
+                            </a>
+</li>
+<li>
+<a class="text-on-surface hover:text-primary transition-colors flex items-center gap-2" href="#">
+<span class="w-1.5 h-1.5 rounded-full bg-border-subtle inline-block"></span>
+                                系统维护通知 (本周五凌晨)
+                            </a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container dark:bg-inverse-surface w-full mt-auto border-t border-border-subtle dark:border-outline-variant flat no shadows">
+<div class="flex flex-col md:flex-row justify-between items-center px-margin-page py-stack-lg max-w-container-max mx-auto gap-stack-md">
+<div class="text-headline-sm font-headline-sm text-on-surface dark:text-inverse-on-surface">
+                © 2024 ACMate Elite. All rights reserved.
+            </div>
+<div class="flex flex-wrap items-center justify-center gap-6">
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-surface-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:underline transition-all opacity-100" href="#">About</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-surface-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:underline transition-all opacity-100" href="#">Terms</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-surface-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:underline transition-all opacity-100" href="#">Privacy</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-surface-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:underline transition-all opacity-100" href="#">API</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-surface-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:underline transition-all opacity-100" href="#">GitHub</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-surface-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:underline transition-all opacity-100" href="#">Support</a>
+</div>
+</div>
+</footer>
+</body></html>

@@ -1,0 +1,485 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>ACMate - Training Plan Leaderboard</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700&amp;family=Inter:wght@400;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-tertiary-fixed": "#3f0300",
+                      "on-tertiary-fixed-variant": "#7f2a1c",
+                      "status-active": "#25BB9B",
+                      "status-ended": "#BCBFC4",
+                      "error-container": "#ffdad6",
+                      "on-tertiary-container": "#701f12",
+                      "on-primary-fixed-variant": "#005141",
+                      "on-surface-variant": "#3c4a45",
+                      "surface-container": "#e9efeb",
+                      "surface-container-lowest": "#ffffff",
+                      "outline": "#6c7a75",
+                      "on-secondary-fixed-variant": "#44474c",
+                      "inverse-on-surface": "#ecf2ee",
+                      "primary": "#006b57",
+                      "status-ongoing": "#3A8BFF",
+                      "surface-container-high": "#e3eae5",
+                      "secondary-container": "#e1e2e9",
+                      "on-primary": "#ffffff",
+                      "tertiary": "#9e4131",
+                      "secondary-fixed": "#e1e2e9",
+                      "tertiary-fixed-dim": "#ffb4a6",
+                      "error": "#ba1a1a",
+                      "inverse-surface": "#2b322f",
+                      "primary-fixed-dim": "#54dcba",
+                      "on-error": "#ffffff",
+                      "on-surface": "#161d1b",
+                      "surface-variant": "#dde4e0",
+                      "surface-background": "#F4F5F7",
+                      "on-tertiary": "#ffffff",
+                      "outline-variant": "#bbcac3",
+                      "status-inactive": "#9499A0",
+                      "secondary-fixed-dim": "#c4c6cd",
+                      "tertiary-fixed": "#ffdad4",
+                      "surface": "#f4fbf6",
+                      "on-primary-fixed": "#002019",
+                      "on-primary-container": "#004537",
+                      "surface-tint": "#006b57",
+                      "surface-container-highest": "#dde4e0",
+                      "surface-dim": "#d5dcd7",
+                      "on-secondary-container": "#62646a",
+                      "on-secondary-fixed": "#191c20",
+                      "inverse-primary": "#54dcba",
+                      "tertiary-container": "#f88671",
+                      "status-pending": "#F3A13C",
+                      "on-background": "#161d1b",
+                      "surface-container-low": "#eff5f1",
+                      "surface-card": "#FFFFFF",
+                      "secondary": "#5c5e64",
+                      "on-secondary": "#ffffff",
+                      "primary-container": "#25bb9b",
+                      "on-error-container": "#93000a",
+                      "border-subtle": "#E3E5E7",
+                      "surface-bright": "#f4fbf6",
+                      "background": "#f4fbf6",
+                      "primary-fixed": "#74f9d6"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "margin-page": "24px",
+                      "stack-sm": "8px",
+                      "container-max": "1280px",
+                      "stack-lg": "24px",
+                      "gutter": "20px",
+                      "stack-md": "16px"
+              },
+              "fontFamily": {
+                      "label-caps": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Hanken Grotesk"
+                      ],
+                      "code-sm": [
+                              "JetBrains Mono"
+                      ],
+                      "headline-sm": [
+                              "Hanken Grotesk"
+                      ],
+                      "headline-md-mobile": [
+                              "Hanken Grotesk"
+                      ],
+                      "display-lg": [
+                              "Hanken Grotesk"
+                      ]
+              },
+              "fontSize": {
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "22px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "code-sm": [
+                              "13px",
+                              {
+                                      "lineHeight": "18px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-sm": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-md-mobile": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg": [
+                              "36px",
+                              {
+                                      "lineHeight": "48px",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .symbol-filled {
+            font-variation-settings: 'FILL' 1;
+        }
+        
+        /* Custom Table Highlight */
+        .tr-hover:hover {
+            background-color: rgba(37, 187, 155, 0.05); /* very light teal */
+        }
+        
+        /* Progress Grid Cells */
+        .ac-cell { background-color: #25BB9B; }
+        .wa-cell { background-color: #ba1a1a; }
+        .pe-cell { background-color: #F3A13C; }
+        .none-cell { background-color: #f4fbf6; border: 1px solid #E3E5E7; }
+        
+    </style>
+</head>
+<body class="bg-surface-background min-h-screen flex flex-col font-body-md text-body-md text-on-surface">
+<!-- TopNavBar -->
+<nav class="bg-white dark:bg-inverse-surface w-full h-16 border-b border-border-subtle dark:border-outline-variant shadow-sm z-50">
+<div class="flex justify-between items-center px-margin-page max-w-container-max mx-auto h-full">
+<!-- Brand -->
+<div class="flex items-center gap-8">
+<span class="text-headline-md font-headline-md text-primary dark:text-primary-fixed-dim">ACMate</span>
+<!-- Search Bar -->
+<div class="hidden md:flex relative group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="pl-10 pr-4 py-2 bg-surface-background border border-border-subtle rounded-DEFAULT focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors w-64 text-body-md font-body-md" placeholder="Search..." type="text">
+</div>
+</div>
+<!-- Nav Links (Desktop) -->
+<div class="hidden md:flex items-end h-full gap-8">
+<a class="text-on-surface-variant dark:text-surface-variant pb-4 hover:text-primary dark:hover:text-primary-fixed-dim transition-colors cursor-pointer transition-all duration-200" href="#">Problems</a>
+<a class="text-on-surface-variant dark:text-surface-variant pb-4 hover:text-primary dark:hover:text-primary-fixed-dim transition-colors cursor-pointer transition-all duration-200" href="#">Contests</a>
+<a class="text-primary dark:text-primary-fixed-dim font-bold border-b-2 border-primary dark:border-primary-fixed-dim pb-4 cursor-pointer transition-all duration-200" href="#">Training</a>
+<a class="text-on-surface-variant dark:text-surface-variant pb-4 hover:text-primary dark:hover:text-primary-fixed-dim transition-colors cursor-pointer transition-all duration-200" href="#">Leaderboard</a>
+</div>
+<!-- Trailing Actions -->
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-container-highest overflow-hidden border border-border-subtle cursor-pointer">
+<img alt="User profile avatar" class="w-full h-full object-cover" data-alt="A small, professional user avatar portrait of an individual against a neutral, well-lit studio background. The lighting is clean and bright, fitting a modern corporate web interface. The color palette is minimal, focusing on skin tones and a simple grey backdrop." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCH73cMl6bNz0rykefYe_odD3PhQbLcjjcepaGIpe32XhUFj4oakRASAgxmKGSYlkuJyPrRmBfKv_lC7OyTFiu4HXTuIcncYbgKymZ_ejLddNPpQCA2B107Gls7XkPbTWxWYIXjDZ9lJTicAlOkvHUZNcuUFuqwlCg9t8RRny2e_ZTciXiMpdNsgIu0l5k9FJJy3-LMt2VJQp7I50yDbptGiUMIkM1pglwfAOCMKM-95V08HJVtMDQJFqep6C0v0Sn-JLoFeqFtHko">
+</div>
+</div>
+</div>
+</nav>
+<div class="flex flex-1 max-w-container-max mx-auto w-full">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col bg-surface-container dark:bg-surface-dim h-[calc(100vh-64px)] w-64 sticky top-16 border-r border-border-subtle dark:border-outline-variant p-stack-md shrink-0">
+<!-- Header -->
+<div class="mb-8 flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-white border border-border-subtle flex items-center justify-center overflow-hidden">
+<span class="material-symbols-outlined text-primary" data-icon="school">school</span>
+</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface dark:text-inverse-on-surface">Training Center</h2>
+<p class="font-label-caps text-label-caps text-on-surface-variant mt-1">Academic Excellence</p>
+</div>
+</div>
+<!-- CTA -->
+<button class="w-full bg-primary hover:bg-primary-container text-white py-2 px-4 rounded-DEFAULT font-body-md text-body-md transition-colors mb-6 shadow-sm flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]" data-icon="add">add</span>
+                Create New Plan
+            </button>
+<!-- Nav Tabs -->
+<nav class="flex-1 space-y-1 font-label-caps text-label-caps text-primary dark:text-primary-fixed-dim scale-95 active:scale-100 transition-transform">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-inverse-surface hover:bg-surface-container-highest dark:hover:bg-surface-variant transition-all rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+                    Overview
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 bg-primary-container dark:bg-on-primary-container text-on-primary-container dark:text-primary-fixed rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="list_alt">list_alt</span>
+                    Plan List
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-inverse-surface hover:bg-surface-container-highest dark:hover:bg-surface-variant transition-all rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="assignment_ind">assignment_ind</span>
+                    My Plans
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-inverse-surface hover:bg-surface-container-highest dark:hover:bg-surface-variant transition-all rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="leaderboard">leaderboard</span>
+                    Rankings
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-inverse-surface hover:bg-surface-container-highest dark:hover:bg-surface-variant transition-all rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+                    Settings
+                </a>
+</nav>
+<!-- Footer Tabs -->
+<div class="mt-auto space-y-1 pt-4 border-t border-border-subtle">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-inverse-surface hover:bg-surface-container-highest dark:hover:bg-surface-variant transition-all rounded-xl font-label-caps text-label-caps" href="#">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+                    Documentation
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-inverse-surface hover:bg-surface-container-highest dark:hover:bg-surface-variant transition-all rounded-xl font-label-caps text-label-caps" href="#">
+<span class="material-symbols-outlined" data-icon="contact_support">contact_support</span>
+                    Support
+                </a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 p-margin-page overflow-x-hidden min-w-0">
+<!-- Breadcrumb & Header -->
+<div class="mb-stack-lg">
+<div class="flex items-center gap-2 text-sm text-on-surface-variant mb-2">
+<a class="hover:text-primary" href="#">Training</a>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<a class="hover:text-primary" href="#">Plan List</a>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="text-on-surface font-semibold">ICPC Regional Prep 2024</span>
+</div>
+<div class="flex justify-between items-end">
+<div>
+<h1 class="font-headline-md text-headline-md text-on-surface">ICPC Regional Prep 2024</h1>
+<p class="text-on-surface-variant mt-1">Advanced Dynamic Programming &amp; Graph Theory</p>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 border border-border-subtle bg-white text-on-surface hover:border-primary hover:text-primary rounded-DEFAULT flex items-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-[20px]">ios_share</span>
+                            Export
+                        </button>
+</div>
+</div>
+</div>
+<!-- Bento Grid Stats Summary -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-stack-md mb-stack-lg">
+<!-- Total Members -->
+<div class="bg-surface-card p-stack-lg rounded-DEFAULT border border-border-subtle shadow-sm flex flex-col justify-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">group</span> Members</span>
+<div class="font-display-lg text-display-lg text-on-surface mt-2">124</div>
+</div>
+<!-- Problems -->
+<div class="bg-surface-card p-stack-lg rounded-DEFAULT border border-border-subtle shadow-sm flex flex-col justify-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">list</span> Total Problems</span>
+<div class="font-display-lg text-display-lg text-on-surface mt-2">45</div>
+</div>
+<!-- Global Completion Rate -->
+<div class="bg-surface-card p-stack-lg rounded-DEFAULT border border-border-subtle shadow-sm flex flex-col justify-center col-span-1 md:col-span-2 relative overflow-hidden">
+<div class="absolute inset-0 opacity-10 bg-gradient-to-r from-status-active to-transparent pointer-events-none"></div>
+<span class="font-label-caps text-label-caps text-on-surface-variant flex items-center gap-1 relative z-10"><span class="material-symbols-outlined text-[16px]">insights</span> Avg Completion</span>
+<div class="flex items-end gap-4 mt-2 relative z-10">
+<div class="font-display-lg text-display-lg text-on-surface">68%</div>
+<div class="flex-1 pb-2">
+<div class="w-full bg-surface-background h-2 rounded-full overflow-hidden">
+<div class="bg-status-active h-full rounded-full" style="width: 68%;"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Leaderboard Table Container -->
+<div class="bg-surface-card rounded-DEFAULT border border-border-subtle shadow-sm flex flex-col overflow-hidden">
+<!-- Table Toolbar -->
+<div class="p-stack-md border-b border-border-subtle flex flex-col md:flex-row justify-between items-center gap-4 bg-surface-bright">
+<div class="flex items-center gap-4 w-full md:w-auto">
+<div class="relative w-full md:w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="w-full pl-9 pr-4 py-1.5 bg-white border border-border-subtle rounded-DEFAULT focus:border-primary outline-none text-sm" placeholder="Search members..." type="text">
+</div>
+</div>
+<div class="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+<span class="font-label-caps text-label-caps text-on-surface-variant whitespace-nowrap">Legend:</span>
+<div class="flex items-center gap-1.5 text-xs whitespace-nowrap"><span class="w-3 h-3 rounded-sm ac-cell inline-block"></span> Accepted</div>
+<div class="flex items-center gap-1.5 text-xs whitespace-nowrap"><span class="w-3 h-3 rounded-sm wa-cell inline-block"></span> Failed</div>
+<div class="flex items-center gap-1.5 text-xs whitespace-nowrap"><span class="w-3 h-3 rounded-sm pe-cell inline-block"></span> Attempted</div>
+<div class="flex items-center gap-1.5 text-xs whitespace-nowrap"><span class="w-3 h-3 rounded-sm none-cell inline-block"></span> Unattempted</div>
+</div>
+</div>
+<!-- Table Wrapper -->
+<div class="overflow-x-auto w-full">
+<table class="w-full text-left border-collapse min-w-[800px]">
+<thead>
+<tr class="border-b border-border-subtle bg-surface-container-lowest font-label-caps text-label-caps text-on-surface-variant">
+<th class="p-4 w-16 text-center cursor-pointer hover:bg-surface-container-highest transition-colors group">
+                                    Rank <span class="material-symbols-outlined text-[14px] opacity-0 group-hover:opacity-100 align-middle">arrow_downward</span>
+</th>
+<th class="p-4 cursor-pointer hover:bg-surface-container-highest transition-colors group">
+                                    Member <span class="material-symbols-outlined text-[14px] opacity-0 group-hover:opacity-100 align-middle">arrow_downward</span>
+</th>
+<th class="p-4 w-24 text-center cursor-pointer hover:bg-surface-container-highest transition-colors group">
+                                    Score <span class="material-symbols-outlined text-[14px] opacity-0 group-hover:opacity-100 align-middle">arrow_downward</span>
+</th>
+<th class="p-4">
+                                    Progress Matrix (Wk 1 - Wk 4)
+                                </th>
+</tr>
+</thead>
+<tbody class="text-sm font-body-md text-on-surface">
+<!-- Row 1 -->
+<tr class="border-b border-border-subtle tr-hover transition-colors">
+<td class="p-4 text-center font-bold text-status-active">1</td>
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Small avatar of a focused male student looking directly at camera, simple grey background, clear lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAuBhQE65yoZeQFFJA2CwJrApSyIQRekgrJlZWZ68OrnhKfzNnlKyroxD5uAWr6xs5JBsadTIMJ3IvIf06-3lCEQAm3p1xITk9f8_Kbp2BGKHkA8YxCbQQqihSiC_f9OTX6bivDTkAxL0zoLcCMksBgeTHC-2ovfSTCQSFScCAWQNI6PaYN0lyreMEzeh3UAJAFpjZ8lCs65avbp9lfAK5XwId66cmmGZvVm9dmNxetHbccDUmbV4h42pNlGW3ahCuZx_0FV1uLu8A">
+</div>
+<div>
+<div class="font-semibold text-primary">Alex Chen</div>
+<div class="text-xs text-on-surface-variant font-code-sm">@alex_dp_master</div>
+</div>
+</div>
+</td>
+<td class="p-4 text-center font-code-sm font-semibold">42/45</td>
+<td class="p-4">
+<div class="flex flex-wrap gap-1 max-w-lg">
+<!-- Week 1 -->
+<div class="flex gap-0.5 mr-2" title="Week 1: Intro to DP">
+<div class="w-4 h-4 rounded-sm ac-cell cursor-help"></div>
+<div class="w-4 h-4 rounded-sm ac-cell cursor-help"></div>
+<div class="w-4 h-4 rounded-sm ac-cell cursor-help"></div>
+<div class="w-4 h-4 rounded-sm ac-cell cursor-help"></div>
+<div class="w-4 h-4 rounded-sm ac-cell cursor-help"></div>
+</div>
+<!-- Week 2 -->
+<div class="flex gap-0.5 mr-2" title="Week 2: Advanced DP">
+<div class="w-4 h-4 rounded-sm ac-cell cursor-help"></div>
+<div class="w-4 h-4 rounded-sm ac-cell cursor-help"></div>
+<div class="w-4 h-4 rounded-sm wa-cell cursor-help" title="Failed attempt"></div>
+<div class="w-4 h-4 rounded-sm ac-cell cursor-help"></div>
+<div class="w-4 h-4 rounded-sm ac-cell cursor-help"></div>
+</div>
+<!-- Week 3 -->
+<div class="flex gap-0.5 mr-2" title="Week 3: Graph Basics">
+<div class="w-4 h-4 rounded-sm ac-cell cursor-help"></div>
+<div class="w-4 h-4 rounded-sm ac-cell cursor-help"></div>
+<div class="w-4 h-4 rounded-sm pe-cell cursor-help" title="Attempted, not solved"></div>
+<div class="w-4 h-4 rounded-sm none-cell cursor-help"></div>
+<div class="w-4 h-4 rounded-sm none-cell cursor-help"></div>
+</div>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="border-b border-border-subtle tr-hover transition-colors">
+<td class="p-4 text-center font-bold text-on-surface-variant">2</td>
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Small avatar of a confident female programmer with glasses, simple bright background, clear lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC9Q1MYzLdXD6V3HsHQfDDs6zZAlKcSZKA22sk6DcRUf57wwFMW135SzC4KqQXwQheh6XtQDN6_ngM3IRbhAuBYHacDKHvur59K5-_Mwe11_YObsc0sdjgUcvmKAbEtugALXa3-sobYjKK4MLy8Tru3jYs9-55QGNACPDKwIMGiKSwmuNiIIQ4iz9X9HUw4VrCuR0GRg4IMVMoU6o_VFIDIpxeQEDYgvZZMkWS0mYVUGEGDjbLA7gLVfGMKhi2Lp60Y0Aw3F8FtpME">
+</div>
+<div>
+<div class="font-semibold text-primary">Sarah Jenkins</div>
+<div class="text-xs text-on-surface-variant font-code-sm">@s_jenks_code</div>
+</div>
+</div>
+</td>
+<td class="p-4 text-center font-code-sm font-semibold">38/45</td>
+<td class="p-4">
+<div class="flex flex-wrap gap-1 max-w-lg">
+<div class="flex gap-0.5 mr-2">
+<div class="w-4 h-4 rounded-sm ac-cell cursor-help"></div>
+<div class="w-4 h-4 rounded-sm ac-cell cursor-help"></div>
+<div class="w-4 h-4 rounded-sm ac-cell cursor-help"></div>
+<div class="w-4 h-4 rounded-sm ac-cell cursor-help"></div>
+<div class="w-4 h-4 rounded-sm pe-cell cursor-help"></div>
+</div>
+<div class="flex gap-0.5 mr-2">
+<div class="w-4 h-4 rounded-sm ac-cell cursor-help"></div>
+<div class="w-4 h-4 rounded-sm ac-cell cursor-help"></div>
+<div class="w-4 h-4 rounded-sm ac-cell cursor-help"></div>
+<div class="w-4 h-4 rounded-sm wa-cell cursor-help"></div>
+<div class="w-4 h-4 rounded-sm none-cell cursor-help"></div>
+</div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="p-4 border-t border-border-subtle flex justify-between items-center text-sm text-on-surface-variant">
+<div>Showing 1 to 20 of 124 entries</div>
+<div class="flex gap-1">
+<button class="px-3 py-1 border border-border-subtle rounded-sm hover:bg-surface-container disabled:opacity-50" disabled="">Prev</button>
+<button class="px-3 py-1 border border-primary bg-primary text-white rounded-sm">1</button>
+<button class="px-3 py-1 border border-border-subtle hover:bg-surface-container rounded-sm">2</button>
+<button class="px-3 py-1 border border-border-subtle hover:bg-surface-container rounded-sm">3</button>
+<button class="px-3 py-1 border border-border-subtle hover:bg-surface-container rounded-sm">Next</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest dark:bg-inverse-surface w-full py-stack-lg border-t border-border-subtle dark:border-outline-variant flat no shadows mt-auto">
+<div class="flex flex-col md:flex-row justify-between items-center px-margin-page max-w-container-max mx-auto gap-4 md:gap-0">
+<span class="text-on-secondary-container dark:text-secondary-fixed-dim font-body-md text-body-md">
+                © 2024 ACMate Competitive Programming Platform. All rights reserved.
+            </span>
+<div class="flex flex-wrap justify-center gap-6">
+<a class="text-on-secondary-container dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed-dim transition-opacity hover:opacity-80 font-body-md text-body-md" href="#">Terms of Service</a>
+<a class="text-on-secondary-container dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed-dim transition-opacity hover:opacity-80 font-body-md text-body-md" href="#">Privacy Policy</a>
+<a class="text-on-secondary-container dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed-dim transition-opacity hover:opacity-80 font-body-md text-body-md" href="#">API Docs</a>
+<a class="text-on-secondary-container dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed-dim transition-opacity hover:opacity-80 font-body-md text-body-md" href="#">Contact</a>
+</div>
+<span class="font-headline-sm text-headline-sm text-primary dark:text-primary-fixed-dim">ACMate</span>
+</div>
+</footer>
+</body></html>

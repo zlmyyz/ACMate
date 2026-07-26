@@ -897,3 +897,60 @@ Tests run: 214, Failures: 0, Errors: 0, Skipped: 0
 ### 已知限制
 
 - 尚未实现物理删除
+
+## 2026-07-26：Vue 前端初始化与认证
+
+### 本次目标
+
+初始化 Vue 3 前端工程，实现登录、注册、首页、Session 认证、CSRF 处理、403/404 页面和响应式基础。
+
+### 新建文件
+
+- frontend/ — Vue 3 + TypeScript + Vite 工程
+- frontend/src/styles/tokens.css — Design Tokens（CSS Variables）
+- frontend/src/styles/main.css — 全局样式与字体
+- frontend/src/constants/labels.ts — 中文界面文案常量
+- frontend/src/api/client.ts — Axios 实例（withCredentials）
+- frontend/src/api/auth.ts — 认证 API（login/register/me/csrf/logout）
+- frontend/src/stores/auth.ts — Pinia 认证 Store
+- frontend/src/router/index.ts — Vue Router（路由守卫）
+- frontend/src/components/layout/AppHeader.vue — 顶部导航
+- frontend/src/components/layout/PageContainer.vue — 页面容器
+- frontend/src/components/common/LoadingState.vue — 加载状态
+- frontend/src/components/common/EmptyState.vue — 空状态
+- frontend/src/views/LoginView.vue — 登录页
+- frontend/src/views/RegisterView.vue — 注册页
+- frontend/src/views/HomeView.vue — 首页
+- frontend/src/views/ForbiddenView.vue — 403 页
+- frontend/src/views/NotFoundView.vue — 404 页
+- frontend/src/__tests__/auth.test.ts — 11 个认证测试
+- frontend/design/ — Stitch 设计资源（16 页截图 + HTML + theme JSON）
+- frontend/design/README.md — 设计资源说明
+- docs/PRD.md — 产品需求文档 v1.4
+
+### 设计决策
+
+- 样式方案：CSS Variables + scoped CSS + Element Plus，未使用 Tailwind
+- 字体：Google Fonts CDN 引用 Hanken Grotesk + Inter + JetBrains Mono，CSS 回退到系统字体
+- 认证：Session Cookie（withCredentials），不读取/保存 JSESSIONID
+- CSRF：登出前 GET /api/auth/csrf 获取动态 Token
+- 路由守卫：requiresAuth 跳转登录，guestOnly 跳转首页
+- 初始化：init() 完成后挂载 app，避免 flicker
+- 中文化：固定文案使用简体中文，枚举/变量保持英文
+- 未实现模块：首页"即将推出"区域展示，不放导航
+
+### 测试结果
+
+```
+Tests run: 11, Failures: 0, Errors: 0, Skipped: 0
+```
+
+### 构建结果
+
+BUILD SUCCESS（type-check + lint + build + test 全部通过）
+
+### 已知限制
+
+- 尚未实现题库、题目详情、创建/编辑题目、我的题目、管理员页面
+- 尚未实现训练计划、讨论区、排行榜、OJ 账号
+- 尚未进行后端联调
