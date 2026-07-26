@@ -53,15 +53,17 @@ function emptyRouter() {
 describe('Leaderboard API', () => {
   beforeEach(() => { vi.clearAllMocks() })
 
+  const emptyResponse = { entries: [], total: 0, page: 1, size: 20 }
+
   it('should call getLeaderboard with default period', async () => {
-    mockGetLeaderboard.mockResolvedValue([])
+    mockGetLeaderboard.mockResolvedValue(emptyResponse)
     const { getLeaderboard } = await import('@/api/leaderboard')
     await getLeaderboard()
     expect(mockGetLeaderboard).toHaveBeenCalled()
   })
 
   it('should call getLeaderboard with 7d period', async () => {
-    mockGetLeaderboard.mockResolvedValue([])
+    mockGetLeaderboard.mockResolvedValue(emptyResponse)
     const { getLeaderboard } = await import('@/api/leaderboard')
     await getLeaderboard('7d')
     expect(mockGetLeaderboard).toHaveBeenCalledWith('7d')
@@ -75,10 +77,10 @@ describe('LeaderboardView', () => {
   })
 
   it('should render leaderboard entries', async () => {
-    mockGetLeaderboard.mockResolvedValue([
+    mockGetLeaderboard.mockResolvedValue({ entries: [
       { rank: 1, userId: 1, username: 'alice', nickname: 'Alice', avatarUrl: null, solvedCount: 42, isMe: false },
       { rank: 2, userId: 2, username: 'bob', nickname: 'Bob', avatarUrl: null, solvedCount: 30, isMe: true },
-    ])
+    ], total: 2, page: 1, size: 20 })
 
     const router = createRouter({
       history: createWebHistory(),
@@ -103,7 +105,7 @@ describe('LeaderboardView', () => {
   })
 
   it('should show empty state when no entries', async () => {
-    mockGetLeaderboard.mockResolvedValue([])
+    mockGetLeaderboard.mockResolvedValue({ entries: [], total: 0, page: 1, size: 20 })
 
     const { default: LeaderboardView } = await import('@/views/LeaderboardView.vue')
     const wrapper = mount(LeaderboardView, {
@@ -115,7 +117,7 @@ describe('LeaderboardView', () => {
   })
 
   it('should show period selector', async () => {
-    mockGetLeaderboard.mockResolvedValue([])
+    mockGetLeaderboard.mockResolvedValue({ entries: [], total: 0, page: 1, size: 20 })
 
     const { default: LeaderboardView } = await import('@/views/LeaderboardView.vue')
     const wrapper = mount(LeaderboardView, {

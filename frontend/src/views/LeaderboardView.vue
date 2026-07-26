@@ -1,15 +1,23 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { getLeaderboard } from '@/api/leaderboard'
 import type { LeaderboardEntry } from '@/types/leaderboard'
 import PageContainer from '@/components/layout/PageContainer.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
 import ErrorState from '@/components/common/ErrorState.vue'
+import PaginationBar from '@/components/common/PaginationBar.vue'
+
+const route = useRoute()
+const router = useRouter()
 
 const entries = ref<LeaderboardEntry[]>([])
+const total = ref(0)
 const loading = ref(true)
 const error = ref('')
 const period = ref('total')
+const page = ref(1)
+const size = 20
 
 const periods = [
   { value: 'total', label: '总榜' },
@@ -20,15 +28,34 @@ const periods = [
 async function fetchLeaderboard() {
   loading.value = true; error.value = ''
   try {
-    entries.value = await getLeaderboard(period.value)
+    const r = await getLeaderboard(period.value, page.value, size)
+    entries.value = r.entries
+    total.value = r.total
   } catch {
     error.value = '加载排行榜失败'
   } finally { loading.value = false }
 }
 
-function onPeriodChange() { fetchLeaderboard() }
+function onPeriodChange(p: string) {
+  period.value = p
+  page.value = 1
+  fetchLeaderboard()
+}
 
-onMounted(fetchLeaderboard)
+function onPageChange(p: number) {
+  page.value = p
+  router.replace({ query: { period: period.value, page: String(p) } })
+  fetchLeaderboard()
+}
+
+onMounted(() => {
+  const q = route.query
+  if (q.period && ['total', '7d', '30d'].includes(String(q.period))) period.value = String(q.period)
+  if (q.page && Number(q.page) > 0) page.value = Number(q.page)
+  fetchLeaderboard()
+})
+
+watch(period, (v) => router.replace({ query: { period: v, page: String(page.value) } }))
 </script>
 
 <template>
@@ -42,7 +69,7 @@ onMounted(fetchLeaderboard)
         v-for="p in periods" :key="p.value"
         class="period-tab"
         :class="{ active: period === p.value }"
-        @click="period = p.value; onPeriodChange()"
+        @click="onPeriodChange(p.value)"
       >{{ p.label }}</button>
     </div>
 
@@ -50,33 +77,41 @@ onMounted(fetchLeaderboard)
     <ErrorState v-else-if="error" :message="error" @retry="fetchLeaderboard" />
 
     <template v-else>
-      <div v-if="entries.length === 0" class="empty-state"><p>暂无排行数据</p></div>
-
-      <div v-else class="leaderboard-table">
-        <div class="table-header">
-          <span class="col-rank">排名</span>
-          <span class="col-user">用户</span>
-          <span class="col-count">AC 题数</span>
-        </div>
-        <div
-          v-for="entry in entries" :key="entry.userId"
-          class="table-row"
-          :class="{ 'is-me': entry.isMe }"
-        >
-          <span class="col-rank">
-            <span v-if="entry.rank <= 3" class="rank-badge rank-{{ entry.rank }}">
-              {{ entry.rank }}
-            </span>
-            <span v-else class="rank-num">{{ entry.rank }}</span>
-          </span>
-          <span class="col-user">
-            <RouterLink :to="`/users/${entry.userId}`" class="user-link">
-              {{ entry.nickname || entry.username }}
-            </RouterLink>
-          </span>
-          <span class="col-count">{{ entry.solvedCount }}</span>
-        </div>
+      <div v-if="entries.length === 0" class="empty-state">
+        <p>暂无排行数据</p>
       </div>
+
+      <template v-else>
+        <div class="leaderboard-table">
+          <div class="table-header">
+            <span class="col-rank">排名</span>
+            <span class="col-user">用户</span>
+            <span class="col-count">AC 题数</span>
+          </div>
+          <div
+            v-for="entry in entries" :key="entry.userId"
+            class="table-row"
+            :class="{ 'is-me': entry.isMe }"
+          >
+            <span class="col-rank">
+              <span v-if="entry.rank <= 3" class="rank-badge" :class="'rank-' + entry.rank">
+                {{ entry.rank }}
+              </span>
+              <span v-else class="rank-num">{{ entry.rank }}</span>
+            </span>
+            <span class="col-user">
+              <RouterLink :to="`/users/${entry.userId}`" class="user-link">
+                {{ entry.nickname || entry.username }}
+              </RouterLink>
+            </span>
+            <span class="col-count">{{ entry.solvedCount }}</span>
+          </div>
+        </div>
+        <PaginationBar
+          :page="page" :size="size" :total="total"
+          @change="onPageChange"
+        />
+      </template>
     </template>
   </PageContainer>
 </template>

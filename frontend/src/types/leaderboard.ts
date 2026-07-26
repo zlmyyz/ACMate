@@ -7,3 +7,10 @@ export interface LeaderboardEntry {
   solvedCount: number
   isMe: boolean
 }
+
+export interface LeaderboardResponse {
+  entries: LeaderboardEntry[]
+  total: number
+  page: number
+  size: number
+}
