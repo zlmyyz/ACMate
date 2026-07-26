@@ -654,6 +654,27 @@ Tests run: 88, Failures: 0, Errors: 0, Skipped: 0
 - ProblemControllerTest: 17 tests（原有 7 个查询 + 新增 10 个：未认证 POST+csrf→401、未认证 POST 无 csrf→403、普通用户+csrf→403、admin 无 csrf→403、admin+csrf→201、响应无 status、creatorUserId 传入 service=1L、请求体 creatorUserId/status 被忽略→仍传 1L、校验失败→400、GET 仍对普通用户可用）
 - 原有 59 tests 全部通过
 
+### 真实接口验收（2026-07-26）
+
+使用运行中 ACMate + 本地 MySQL，真实 Session + CSRF Token 流程验收。
+
+| # | 场景 | 预期 | 实际 | 结果 |
+|---|------|------|------|------|
+| 1 | Admin + CSRF → POST CUSTOM | 201 | 201 | 通过 |
+| 2 | Normal user + CSRF → POST | 403 | 403 | 通过 |
+| 3 | Admin 无 CSRF → POST | 403 | 403 | 通过 |
+| 4 | CODEFORCES 无 externalProblemKey | 400 | 400 | 通过 |
+| 5 | CUSTOM 无 externalProblemKey | 201 | 201 | 通过 |
+| 6a | CODEFORCES + externalProblemKey | 201 | 201 | 通过 |
+| 6b | 相同 platform+key 再次创建 | 409 | 409 | 通过 |
+| 7 | tags=" array, hash-map, array,  " | 201, 存为 "array,hash-map" | 201, "array,hash-map" | 通过 |
+
+**数据库核对：**
+- 所有创建题目 status = 1，creator_user_id = 1（管理员 id）
+- 创建响应和查询响应均不含 status 字段
+- 普通用户 GET /api/problems 可正常分页查询
+- 验收数据已全部删除，数据库恢复验收前状态
+
 ### 已知限制
 
 - 尚未实现修改、删除题目
