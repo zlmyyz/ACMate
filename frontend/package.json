@@ -16,8 +16,10 @@
     "format": "prettier --write --experimental-cli src/"
   },
   "dependencies": {
+    "@types/markdown-it": "^14.1.2",
     "axios": "^1.18.1",
     "element-plus": "^2.14.3",
+    "markdown-it": "^14.3.0",
     "pinia": "^4.0.2",
     "vue": "^3.5.40",
     "vue-router": "^5.2.0"
@@ -33,12 +35,12 @@
     "@vue/tsconfig": "^0.9.1",
     "eslint": "^10.7.0",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-oxlint": "~1.73.0",
+    "eslint-plugin-oxlint": "~1.75.0",
     "eslint-plugin-vue": "~10.9.2",
     "jiti": "^2.7.0",
     "jsdom": "^29.1.1",
     "npm-run-all2": "^9.0.2",
-    "oxlint": "~1.74.0",
+    "oxlint": "~1.75.0",
     "prettier": "3.9.5",
     "typescript": "~6.0.0",
     "vite": "^8.1.5",

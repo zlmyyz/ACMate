@@ -954,3 +954,69 @@ BUILD SUCCESS（type-check + lint + build + test 全部通过）
 - 尚未实现题库、题目详情、创建/编辑题目、我的题目、管理员页面
 - 尚未实现训练计划、讨论区、排行榜、OJ 账号
 - 尚未进行后端联调
+
+## 2026-07-26：题目浏览与编辑 — Vue 前端
+
+### 本次目标
+
+实现题库、题目详情、创建题目、编辑题目四个主流程页面，完善认证错误处理，统一 CSRF 写请求辅助，添加 Markdown 安全渲染，实现草稿保存与离开确认。
+
+### 新建文件
+
+- src/api/csrf.ts — 统一 CSRF 动态令牌获取与写请求辅助
+- src/api/problems.ts — 题目 API（列表查询、详情、创建、更新）
+- src/types/problem.ts — 前端题目类型定义（与后端 DTO 对应）
+- src/components/common/MarkdownContent.vue — Markdown 安全渲染（HTML 禁用，危险链接过滤）
+- src/components/common/PlatformBadge.vue — 平台标签组件
+- src/components/common/DifficultyBadge.vue — 难度标签组件
+- src/components/common/TagList.vue — 标签列表组件
+- src/components/common/ErrorState.vue — 错误状态（含重试按钮）
+- src/components/common/PaginationBar.vue — 分页控制条
+- src/components/problem/ProblemFilters.vue — 题目筛选栏（关键词、平台、难度）
+- src/components/problem/ProblemTable.vue — 题目表格（复用上述 Badge/List 组件）
+- src/components/problem/ProblemForm.vue — 题目表单（创建/编辑共用，含草稿和离开确认）
+- src/views/ProblemsView.vue — 题库页（筛选 URL 同步、分页、加载/空/错误三态）
+- src/views/ProblemDetailView.vue — 题目详情（权限按钮、停用提示、Markdown 渲染）
+- src/views/CreateProblemView.vue — 创建题目（表单、CSRF 写、409/400/网络错误处理）
+- src/views/EditProblemView.vue — 编辑题目（权限校验、初始数据加载、离开确认）
+- src/__tests__/problems.test.ts — 33 个测试
+
+### 修改文件
+
+- src/stores/auth.ts — 新增 initError 状态，网络异常/500 不静默当未登录
+- src/App.vue — 新增初始化错误展示与重试按钮
+- src/router/index.ts — 新增 4 条路由（题目相关），全部 requiresAuth
+- src/components/layout/AppHeader.vue — 导航增加"题库"链接
+- src/views/HomeView.vue — 首页"题库"和"创建题目"快捷入口激活
+- package.json — eslint-plugin-oxlint ~1.73.0 → ~1.75.0（与 oxlint 版本对齐），新增 markdown-it 依赖
+- frontend/README.md — 更新页面清单和技术栈
+
+### 设计决策
+
+- **筛选 URL 同步**：platform、difficulty、keyword、page 写入 URL query，刷新可恢复
+- **CSRF 统一辅助**：`withCsrf(fn)` 封装获取 Token → 写请求的流程，供所有写操作复用
+- **创建/编辑复用表单**：ProblemForm 通过 initialData prop 区分创建和编辑模式
+- **草稿机制**：localStorage 保存创建和每个题目的编辑草稿（不同 key），提交后清除，键盘输入防抖 800ms
+- **离开确认**：编辑页 beforeunload + onBeforeRouteLeave 双重确认
+- **Markdown 安全**：markdown-it 启用 `html: false` 完全禁止原始 HTML，validateLink 拦截 `javascript:`/`data:`/`vbscript:` 协议
+- **权限按钮**：题目详情页创建者或管理员显示编辑按钮
+- **创建者展示**：公共列表暂时显示"用户 #ID"，待后续用户公开信息接口替换
+- **认证错误区分**：/users/me 返回 401 → 未登录（正常）；网络异常或 500 → 显示"无法连接服务器"并允许重试
+
+### 测试结果
+
+```
+Tests run: 33, Failures: 0, Errors: 0, Skipped: 0
+```
+
+### 构建结果
+
+BUILD SUCCESS（type-check + lint + build + test 全部通过）
+
+### 已知限制
+
+- 尚未实现我的题目、管理员全部题库、用户主页
+- 尚未实现停用和恢复题目前端操作
+- 公共列表创建者显示"用户 #ID"（需用户公开信息接口）
+- 尚未实现训练计划、讨论区、排行榜、OJ 账号
+- 尚未进行后端联调

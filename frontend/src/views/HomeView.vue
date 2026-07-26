@@ -21,11 +21,11 @@ const auth = useAuthStore()
       <section class="home-card">
         <h2 class="card-title">快速入口</h2>
         <div class="quick-links">
-          <RouterLink to="/problems" class="quick-link disabled-link">
+          <RouterLink to="/problems" class="quick-link">
             <span class="link-icon">&#128218;</span>
             <span class="link-label">{{ navLabels.problems }}</span>
           </RouterLink>
-          <RouterLink to="/problems/create" class="quick-link disabled-link">
+          <RouterLink to="/problems/create" class="quick-link">
             <span class="link-icon">&#10133;</span>
             <span class="link-label">创建题目</span>
           </RouterLink>

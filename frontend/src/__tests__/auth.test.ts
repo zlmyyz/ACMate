@@ -2,22 +2,25 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useAuthStore } from '@/stores/auth'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mockGetUser = vi.fn<() => any>()
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mockLogin = vi.fn<(data: { username: string; password: string }) => any>()
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mockRegister = vi.fn<(data: { username: string; password: string; nickname: string; email?: string }) => any>()
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mockCsrf = vi.fn<() => any>()
-const mockLogoutApi = vi.fn<(header: string, token: string) => Promise<void>>()
+const { mockGetUser, mockLogin, mockRegister, mockCsrf, mockLogoutApi } = vi.hoisted(() => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  mockGetUser: vi.fn<() => any>(),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  mockLogin: vi.fn<() => any>(),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  mockRegister: vi.fn<() => any>(),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  mockCsrf: vi.fn<() => any>(),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  mockLogoutApi: vi.fn<() => any>(),
+}))
 
 vi.mock('@/api/auth', () => ({
-  getCurrentUser: (...args: unknown[]) => mockGetUser(...args),
-  login: (...args: unknown[]) => mockLogin(...args),
-  register: (...args: unknown[]) => mockRegister(...args),
-  getCsrfToken: (...args: unknown[]) => mockCsrf(...args),
-  logout: (...args: unknown[]) => mockLogoutApi(...args),
+  getCurrentUser: mockGetUser,
+  login: mockLogin,
+  register: mockRegister,
+  getCsrfToken: mockCsrf,
+  logout: mockLogoutApi,
 }))
 
 describe('Auth Store', () => {

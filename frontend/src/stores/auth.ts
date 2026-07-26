@@ -12,18 +12,30 @@ import {
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<UserInfo | null>(null)
   const initialized = ref(false)
+  const initError = ref<string | null>(null)
 
   const isLoggedIn = computed(() => user.value !== null)
   const isAdmin = computed(() => user.value?.admin ?? false)
 
   async function init(): Promise<void> {
+    initError.value = null
     try {
       user.value = await getCurrentUser()
-    } catch {
-      user.value = null
+    } catch (e: unknown) {
+      const err = e as { response?: { status: number } }
+      if (err.response?.status === 401) {
+        user.value = null
+      } else {
+        initError.value = '暂时无法连接服务器，请检查网络后重试'
+        user.value = null
+      }
     } finally {
       initialized.value = true
     }
+  }
+
+  function clearInitError(): void {
+    initError.value = null
   }
 
   async function login(username: string, password: string): Promise<void> {
@@ -37,7 +49,6 @@ export const useAuthStore = defineStore('auth', () => {
     email?: string,
   ): Promise<void> {
     await apiRegister({ username, password, nickname, email })
-    // Registration does not auto-login
   }
 
   async function logout(): Promise<void> {
@@ -52,5 +63,5 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
   }
 
-  return { user, initialized, isLoggedIn, isAdmin, init, login, register, logout }
+  return { user, initialized, initError, isLoggedIn, isAdmin, init, clearInitError, login, register, logout }
 })

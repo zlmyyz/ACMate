@@ -24,6 +24,30 @@ const router = createRouter({
       meta: { guestOnly: true },
     },
     {
+      path: '/problems',
+      name: 'problems',
+      component: () => import('@/views/ProblemsView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/problems/create',
+      name: 'create-problem',
+      component: () => import('@/views/CreateProblemView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/problems/:id',
+      name: 'problem-detail',
+      component: () => import('@/views/ProblemDetailView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/problems/:id/edit',
+      name: 'edit-problem',
+      component: () => import('@/views/EditProblemView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/403',
       name: 'forbidden',
       component: () => import('@/views/ForbiddenView.vue'),

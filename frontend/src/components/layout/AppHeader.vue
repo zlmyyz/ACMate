@@ -24,6 +24,9 @@ async function handleLogout() {
           <RouterLink to="/" class="nav-link" active-class="nav-link-active">
             {{ navLabels.home }}
           </RouterLink>
+          <RouterLink to="/problems" class="nav-link" active-class="nav-link-active">
+            {{ navLabels.problems }}
+          </RouterLink>
         </nav>
       </div>
       <div class="header-right">
