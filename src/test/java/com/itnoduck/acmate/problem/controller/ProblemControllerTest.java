@@ -28,10 +28,13 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -683,5 +686,170 @@ class ProblemControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"platform\":\"CUSTOM\",\"title\":\"Test\"}"))
                 .andExpect(status().isCreated());
+    }
+
+    // --- POST /api/problems/{id}/deactivate ---
+
+    @Test
+    void deactivateShouldReturn401WhenUnauthenticated() throws Exception {
+        mockMvc.perform(post("/api/problems/1/deactivate")
+                        .with(csrf()))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(401));
+    }
+
+    @Test
+    void deactivateShouldReturn403WhenUnauthenticatedWithoutCsrf() throws Exception {
+        mockMvc.perform(post("/api/problems/1/deactivate"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(403));
+    }
+
+    @Test
+    void deactivateShouldReturn403WhenMissingCsrf() throws Exception {
+        mockMvc.perform(post("/api/problems/1/deactivate")
+                        .with(user(buildNormalUser())))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(403));
+
+        verify(problemCommandService, never()).deactivateProblem(anyLong(), anyLong(), anyBoolean());
+    }
+
+    @Test
+    void shouldAllowOwnerToDeactivate() throws Exception {
+        doNothing().when(problemCommandService).deactivateProblem(eq(1L), eq(2L), eq(false));
+
+        mockMvc.perform(post("/api/problems/1/deactivate")
+                        .with(user(buildNormalUser()))
+                        .with(csrf()))
+                .andExpect(status().isNoContent())
+                .andExpect(jsonPath("$").doesNotExist());
+
+        verify(problemCommandService).deactivateProblem(eq(1L), eq(2L), eq(false));
+    }
+
+    @Test
+    void shouldAllowAdminToDeactivate() throws Exception {
+        doNothing().when(problemCommandService).deactivateProblem(eq(1L), eq(1L), eq(true));
+
+        mockMvc.perform(post("/api/problems/1/deactivate")
+                        .with(user(buildAdminUser()))
+                        .with(csrf()))
+                .andExpect(status().isNoContent());
+
+        verify(problemCommandService).deactivateProblem(eq(1L), eq(1L), eq(true));
+    }
+
+    @Test
+    void deactivateShouldReturn403WhenNonOwner() throws Exception {
+        doThrow(new BusinessException(403, "无权管理该题目"))
+                .when(problemCommandService).deactivateProblem(eq(1L), eq(2L), eq(false));
+
+        mockMvc.perform(post("/api/problems/1/deactivate")
+                        .with(user(buildNormalUser()))
+                        .with(csrf()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(403));
+    }
+
+    @Test
+    void deactivateShouldReturn404WhenProblemNotFound() throws Exception {
+        doThrow(new BusinessException(404, "题目不存在"))
+                .when(problemCommandService).deactivateProblem(eq(1L), eq(2L), eq(false));
+
+        mockMvc.perform(post("/api/problems/1/deactivate")
+                        .with(user(buildNormalUser()))
+                        .with(csrf()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(404));
+    }
+
+    @Test
+    void deactivateShouldReturnEmptyBody() throws Exception {
+        doNothing().when(problemCommandService).deactivateProblem(eq(1L), eq(2L), eq(false));
+
+        String content = mockMvc.perform(post("/api/problems/1/deactivate")
+                        .with(user(buildNormalUser()))
+                        .with(csrf()))
+                .andExpect(status().isNoContent())
+                .andReturn().getResponse().getContentAsString();
+
+        assertTrue(content.isEmpty());
+    }
+
+    // --- POST /api/problems/{id}/restore ---
+
+    @Test
+    void restoreShouldReturn401WhenUnauthenticated() throws Exception {
+        mockMvc.perform(post("/api/problems/1/restore")
+                        .with(csrf()))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(401));
+    }
+
+    @Test
+    void restoreShouldReturn403WhenUnauthenticatedWithoutCsrf() throws Exception {
+        mockMvc.perform(post("/api/problems/1/restore"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(403));
+    }
+
+    @Test
+    void restoreShouldReturn403WhenMissingCsrf() throws Exception {
+        mockMvc.perform(post("/api/problems/1/restore")
+                        .with(user(buildNormalUser())))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(403));
+
+        verify(problemCommandService, never()).restoreProblem(anyLong(), anyLong(), anyBoolean());
+    }
+
+    @Test
+    void shouldAllowOwnerToRestore() throws Exception {
+        doNothing().when(problemCommandService).restoreProblem(eq(1L), eq(2L), eq(false));
+
+        mockMvc.perform(post("/api/problems/1/restore")
+                        .with(user(buildNormalUser()))
+                        .with(csrf()))
+                .andExpect(status().isNoContent());
+
+        verify(problemCommandService).restoreProblem(eq(1L), eq(2L), eq(false));
+    }
+
+    @Test
+    void shouldAllowAdminToRestore() throws Exception {
+        doNothing().when(problemCommandService).restoreProblem(eq(1L), eq(1L), eq(true));
+
+        mockMvc.perform(post("/api/problems/1/restore")
+                        .with(user(buildAdminUser()))
+                        .with(csrf()))
+                .andExpect(status().isNoContent());
+
+        verify(problemCommandService).restoreProblem(eq(1L), eq(1L), eq(true));
+    }
+
+    @Test
+    void restoreShouldReturn403WhenNonOwner() throws Exception {
+        doThrow(new BusinessException(403, "无权管理该题目"))
+                .when(problemCommandService).restoreProblem(eq(1L), eq(2L), eq(false));
+
+        mockMvc.perform(post("/api/problems/1/restore")
+                        .with(user(buildNormalUser()))
+                        .with(csrf()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(403));
+    }
+
+    @Test
+    void restoreShouldReturnEmptyBody() throws Exception {
+        doNothing().when(problemCommandService).restoreProblem(eq(1L), eq(2L), eq(false));
+
+        String content = mockMvc.perform(post("/api/problems/1/restore")
+                        .with(user(buildNormalUser()))
+                        .with(csrf()))
+                .andExpect(status().isNoContent())
+                .andReturn().getResponse().getContentAsString();
+
+        assertTrue(content.isEmpty());
     }
 }

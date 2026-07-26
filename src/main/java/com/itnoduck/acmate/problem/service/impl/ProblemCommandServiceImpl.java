@@ -61,16 +61,13 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
         problem.setDifficulty(request.getDifficulty());
         problem.setTags(request.getTags());
         problem.setContentMd(request.getContentMd());
-        // creatorUserId 由服务端指定，客户端不可控
         problem.setCreatorUserId(creatorUserId);
-        // status 由服务端固定为正常
         problem.setStatus(1);
 
         int rows;
         try {
             rows = problemMapper.insert(problem);
         } catch (DuplicateKeyException e) {
-            // 唯一索引 uk_platform_problem 兜底：并发情况下前置查重可能漏过
             throw new BusinessException(409, "该平台题目标识已存在");
         }
 
@@ -84,10 +81,6 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
         return toDetailResponse(problem);
     }
 
-    /**
-     * 事务用于保证当前命令流程中"查询→校验→更新→回读"的读写边界一致。
-     * 编辑停用题目时不会自动恢复 status，仅修改内容字段。
-     */
     @Override
     @Transactional
     public ProblemDetailResponse updateProblem(long problemId, UpdateProblemRequest request,
@@ -99,7 +92,6 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
             throw new BusinessException(400, "操作者 ID 无效");
         }
 
-        // 查询目标题目：不再限制 status=1，创建者和管理员可以编辑正常或停用题目
         Problem existing = problemMapper.selectOne(
                 new LambdaQueryWrapper<Problem>()
                         .eq(Problem::getId, problemId));
@@ -116,13 +108,10 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
             throw new BusinessException(403, "无权修改该题目");
         }
 
-        // 非 CUSTOM 平台必须提供外部题目标识
         if (!"CUSTOM".equals(request.getPlatform()) && request.getExternalProblemKey() == null) {
             throw new BusinessException(400, "非自定义平台必须提供外部题目标识");
         }
 
-        // 题目标识查重：排除当前 problemId，避免保持原值被自己误判为冲突
-        // 前置查重用于提供明确的 409 错误；数据库唯一索引仍负责并发一致性
         if (request.getExternalProblemKey() != null) {
             long count = problemMapper.selectCount(
                     new LambdaQueryWrapper<Problem>()
@@ -134,9 +123,6 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
             }
         }
 
-        // 使用 LambdaUpdateWrapper 显式设置允许修改的字段
-        // UPDATE WHERE 不再固定 status=1，允许编辑停用题目
-        // 编辑不会自动恢复 status——仅修改内容
         LambdaUpdateWrapper<Problem> updateWrapper = Wrappers.lambdaUpdate(Problem.class)
                 .eq(Problem::getId, problemId)
                 .set(Problem::getPlatform, request.getPlatform())
@@ -161,8 +147,6 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
             throw new RuntimeException("更新题目异常：影响行数超过预期");
         }
 
-        // 更新后重新查询，确保响应为数据库实际持久化结果（含 updateTime）
-        // 不再限制 status，可回读停用题目
         Problem updated = problemMapper.selectOne(
                 new LambdaQueryWrapper<Problem>()
                         .eq(Problem::getId, problemId));
@@ -170,6 +154,122 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
             throw new BusinessException(404, "题目不存在");
         }
         return toDetailResponse(updated);
+    }
+
+    /**
+     * 停用题目（ACTIVE → INACTIVE）。
+     *
+     * <p>必须先查询资源再判断权限——URL 层只能确认调用者已登录，
+     * 无法区分谁是创建者。</p>
+     * <p>停用后题目仍占用 platform+externalProblemKey，
+     * 其他用户不能重新创建相同题目标识。</p>
+     * <p>WHERE 条件包含原 status=1，防止并发重复修改。</p>
+     */
+    @Override
+    @Transactional
+    public void deactivateProblem(long problemId, long operatorUserId, boolean operatorAdmin) {
+        if (problemId <= 0) {
+            throw new BusinessException(400, "题目 ID 无效");
+        }
+        if (operatorUserId <= 0) {
+            throw new BusinessException(400, "操作者 ID 无效");
+        }
+
+        // 先查询资源：不限制 status，因为停用题目也属于创建者的私有管理内容
+        Problem existing = problemMapper.selectOne(
+                new LambdaQueryWrapper<Problem>()
+                        .eq(Problem::getId, problemId));
+        if (existing == null) {
+            throw new BusinessException(404, "题目不存在");
+        }
+
+        // 权限判断：创建者或管理员
+        // 停用题目对其他用户返回 404，不暴露私有停用题目存在性
+        if (!operatorAdmin && !Objects.equals(existing.getCreatorUserId(), operatorUserId)) {
+            if (existing.getStatus() != null && existing.getStatus() == 0) {
+                throw new BusinessException(404, "题目不存在");
+            }
+            throw new BusinessException(403, "无权管理该题目");
+        }
+
+        // 已经停用：幂等返回，不报错
+        if (existing.getStatus() != null && existing.getStatus() == 0) {
+            return;
+        }
+
+        // WHERE 带原状态=1，防止并发重复更新
+        LambdaUpdateWrapper<Problem> updateWrapper = Wrappers.lambdaUpdate(Problem.class)
+                .eq(Problem::getId, problemId)
+                .eq(Problem::getStatus, 1)
+                .set(Problem::getStatus, 0);
+
+        int rows = problemMapper.update(null, updateWrapper);
+        if (rows == 0) {
+            // 并发下可能已被其他请求修改：重新读取检查目标状态
+            Problem recheck = problemMapper.selectOne(
+                    new LambdaQueryWrapper<Problem>().eq(Problem::getId, problemId));
+            if (recheck == null) {
+                throw new BusinessException(404, "题目不存在");
+            }
+            if (recheck.getStatus() != null && recheck.getStatus() == 0) {
+                return; // 已处于目标状态，幂等成功
+            }
+            throw new RuntimeException("停用题目异常：状态不匹配");
+        }
+    }
+
+    /**
+     * 恢复题目（INACTIVE → ACTIVE）。
+     *
+     * <p>WHERE 条件包含原 status=0，防止并发重复修改。</p>
+     */
+    @Override
+    @Transactional
+    public void restoreProblem(long problemId, long operatorUserId, boolean operatorAdmin) {
+        if (problemId <= 0) {
+            throw new BusinessException(400, "题目 ID 无效");
+        }
+        if (operatorUserId <= 0) {
+            throw new BusinessException(400, "操作者 ID 无效");
+        }
+
+        Problem existing = problemMapper.selectOne(
+                new LambdaQueryWrapper<Problem>()
+                        .eq(Problem::getId, problemId));
+        if (existing == null) {
+            throw new BusinessException(404, "题目不存在");
+        }
+
+        if (!operatorAdmin && !Objects.equals(existing.getCreatorUserId(), operatorUserId)) {
+            if (existing.getStatus() != null && existing.getStatus() == 0) {
+                throw new BusinessException(404, "题目不存在");
+            }
+            throw new BusinessException(403, "无权管理该题目");
+        }
+
+        // 已经正常：幂等返回
+        if (existing.getStatus() != null && existing.getStatus() == 1) {
+            return;
+        }
+
+        // WHERE 带原状态=0，防止并发重复更新
+        LambdaUpdateWrapper<Problem> updateWrapper = Wrappers.lambdaUpdate(Problem.class)
+                .eq(Problem::getId, problemId)
+                .eq(Problem::getStatus, 0)
+                .set(Problem::getStatus, 1);
+
+        int rows = problemMapper.update(null, updateWrapper);
+        if (rows == 0) {
+            Problem recheck = problemMapper.selectOne(
+                    new LambdaQueryWrapper<Problem>().eq(Problem::getId, problemId));
+            if (recheck == null) {
+                throw new BusinessException(404, "题目不存在");
+            }
+            if (recheck.getStatus() != null && recheck.getStatus() == 1) {
+                return;
+            }
+            throw new RuntimeException("恢复题目异常：状态不匹配");
+        }
     }
 
     private ProblemDetailResponse toDetailResponse(Problem p) {

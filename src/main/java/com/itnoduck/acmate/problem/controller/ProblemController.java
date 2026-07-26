@@ -168,4 +168,54 @@ public class ProblemController {
                                                 @AuthenticationPrincipal AuthenticatedUser currentUser) {
         return problemCommandService.updateProblem(id, request, currentUser.getId(), currentUser.isAdmin());
     }
+
+    /**
+     * 停用指定题目（ACTIVE → INACTIVE）。
+     *
+     * <p>接口：{@code POST /api/problems/{id}/deactivate}</p>
+     * <p>权限：题目创建者和管理员可以停用；
+     * 其他普通用户对正常题目返回 {@code 403}，对停用题目返回 {@code 404}。</p>
+     * <p>安全：该接口会修改服务器状态，必须携带有效 CSRF Token。</p>
+     * <p>重复停用直接返回 {@code 204}，不视为错误。</p>
+     * <p>停用是逻辑操作，不会物理删除记录；
+     * 停用的题目仍占用 platform+externalProblemKey 唯一性。</p>
+     * <p>成功响应：{@code 204 No Content}。</p>
+     * <p>错误响应：参数非法返回 {@code 400}；未登录返回 {@code 401}；
+     * 无权限或 CSRF 校验失败返回 {@code 403}；
+     * 题目不存在或停用题目无权限返回 {@code 404}。</p>
+     *
+     * @param id          路径参数中的题目 ID
+     * @param currentUser 当前认证用户，用于判断题目所有权和管理员权限
+     * @return 204 No Content
+     */
+    @PostMapping("/{id}/deactivate")
+    public ResponseEntity<Void> deactivateProblem(@PathVariable long id,
+                                                   @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        problemCommandService.deactivateProblem(id, currentUser.getId(), currentUser.isAdmin());
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 恢复指定题目（INACTIVE → ACTIVE）。
+     *
+     * <p>接口：{@code POST /api/problems/{id}/restore}</p>
+     * <p>权限：题目创建者和管理员可以恢复；
+     * 其他普通用户对正常题目返回 {@code 403}，对停用题目返回 {@code 404}。</p>
+     * <p>安全：该接口会修改服务器状态，必须携带有效 CSRF Token。</p>
+     * <p>重复恢复直接返回 {@code 204}，不视为错误。</p>
+     * <p>成功响应：{@code 204 No Content}。</p>
+     * <p>错误响应：参数非法返回 {@code 400}；未登录返回 {@code 401}；
+     * 无权限或 CSRF 校验失败返回 {@code 403}；
+     * 题目不存在返回 {@code 404}。</p>
+     *
+     * @param id          路径参数中的题目 ID
+     * @param currentUser 当前认证用户，用于判断题目所有权和管理员权限
+     * @return 204 No Content
+     */
+    @PostMapping("/{id}/restore")
+    public ResponseEntity<Void> restoreProblem(@PathVariable long id,
+                                                @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        problemCommandService.restoreProblem(id, currentUser.getId(), currentUser.isAdmin());
+        return ResponseEntity.noContent().build();
+    }
 }

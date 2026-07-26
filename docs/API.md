@@ -608,3 +608,90 @@ GET 请求不需要 CSRF Token。
 - 更新后重新查询确保响应反映数据库实际状态（含 ON UPDATE CURRENT_TIMESTAMP）
 - @Transactional 保证查询→校验→更新→回读的读写边界一致
 - 权限判断在 Service 层完成，SecurityFilterChain 仅要求 authenticated()
+
+## POST /api/problems/{id}/deactivate
+
+停用题目（ACTIVE → INACTIVE）。创建者和管理员可以操作。停用是逻辑操作，不会物理删除记录。
+
+### 认证
+
+需要登录后携带 JSESSIONID Cookie。
+
+### CSRF
+
+需要携带有效 CSRF Token。
+
+### 权限
+
+- 题目创建者可以停用自己的题目
+- 管理员可以停用任意题目
+- 其他普通用户对正常题目返回 403，对停用题目返回 404（不暴露存在性）
+
+### 幂等
+
+- ACTIVE → INACTIVE，返回 204
+- INACTIVE → 直接返回 204，不重复更新
+
+### 成功响应
+
+**204 No Content** — 响应体为空。
+
+### 错误响应
+
+**400 Bad Request** — 题目 ID 或操作者 ID 无效
+
+**401 Unauthorized** — 未登录
+
+**403 Forbidden** — 缺少/无效 CSRF Token，或无管理权限（正常题目）
+
+**404 Not Found** — 题目不存在或停用题目无管理权限
+
+### 实现说明
+
+- 先查询资源再判断权限——URL 层无法确定创建者
+- UPDATE WHERE 包含 status=1，防止并发重复停用
+- 停用后题目仍占用 platform+externalProblemKey 唯一性
+- 停用题目不删除，创建者可随时查看、编辑或恢复
+- 停用题目不出现在公共题库中
+
+## POST /api/problems/{id}/restore
+
+恢复题目（INACTIVE → ACTIVE）。创建者和管理员可以操作。
+
+### 认证
+
+需要登录后携带 JSESSIONID Cookie。
+
+### CSRF
+
+需要携带有效 CSRF Token。
+
+### 权限
+
+- 题目创建者可以恢复自己的题目
+- 管理员可以恢复任意题目
+- 其他普通用户对正常题目返回 403，对停用题目返回 404
+
+### 幂等
+
+- INACTIVE → ACTIVE，返回 204
+- ACTIVE → 直接返回 204，不重复更新
+
+### 成功响应
+
+**204 No Content** — 响应体为空。
+
+### 错误响应
+
+**400 Bad Request** — 题目 ID 或操作者 ID 无效
+
+**401 Unauthorized** — 未登录
+
+**403 Forbidden** — 缺少/无效 CSRF Token，或无管理权限（正常题目）
+
+**404 Not Found** — 题目不存在或停用题目无管理权限
+
+### 实现说明
+
+- UPDATE WHERE 包含 status=0，防止并发重复恢复
+- 恢复后的题目重新出现在公共题库中

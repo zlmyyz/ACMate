@@ -41,6 +41,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/problems").authenticated()
                 // URL 层只能确定调用者是否登录；创建者权限需要查询题目后在 Service 判断
                 .requestMatchers(HttpMethod.PUT, "/api/problems/{id}").authenticated()
+                // 停用和恢复：URL 层只检查登录，资源所有权在 Service 判断
+                .requestMatchers(HttpMethod.POST, "/api/problems/{id}/deactivate").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/problems/{id}/restore").authenticated()
                 .anyRequest().authenticated()
             )
             .csrf(csrf -> csrf.ignoringRequestMatchers(

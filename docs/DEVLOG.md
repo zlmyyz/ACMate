@@ -809,4 +809,43 @@ Tests run: 155, Failures: 0, Errors: 0, Skipped: 0
 
 ### 已知限制
 
-- 尚未实现删除、停用题目
+- 尚未实现停用和恢复题目
+
+## 2026-07-26：题目停用与恢复
+
+### 本次目标
+
+新增 POST /api/problems/{id}/deactivate 和 POST /api/problems/{id}/restore，允许创建者和管理员停用和恢复题目。停用是逻辑操作，不物理删除。
+
+### 修改文件
+- src/main/java/com/itnoduck/acmate/problem/service/ProblemCommandService.java — 新增 deactivateProblem、restoreProblem 方法
+- src/main/java/com/itnoduck/acmate/problem/service/impl/ProblemCommandServiceImpl.java — 停用和恢复实现
+- src/main/java/com/itnoduck/acmate/problem/controller/ProblemController.java — 新增两个 POST 端点及 Javadoc
+- src/main/java/com/itnoduck/acmate/config/SecurityConfig.java — 新增两条 authenticated() 规则
+- src/test/java/com/itnoduck/acmate/problem/service/impl/ProblemCommandServiceImplTest.java — 64 tests（+21）
+- src/test/java/com/itnoduck/acmate/problem/controller/ProblemControllerTest.java — 59 tests（+15）
+- docs/API.md / docs/DEVLOG.md — 追加记录
+
+### 设计决策
+
+- **幂等**：重复停用/恢复直接返回 204，不报错
+- **WHERE 带原状态**：`eq(status, 1)` 或 `eq(status, 0)`，防并发
+- **停用后仍占用标识**：platform+externalProblemKey 唯一性不变
+- **停用题目对其他用户返回 404**：私有管理操作，不暴露存在性
+- **先查后判权限**：无法在 URL 层完成
+- **operatorUserId 来自 @AuthenticationPrincipal**：不由请求指定
+
+### 测试结果
+
+```
+Tests run: 191, Failures: 0, Errors: 0, Skipped: 0
+```
+
+- ProblemCommandServiceImplTest: 64 tests
+- ProblemControllerTest: 59 tests
+- ProblemQueryServiceImplTest: 18 tests
+- 原有 50 tests 全部通过
+
+### 已知限制
+
+- 尚未实现物理删除

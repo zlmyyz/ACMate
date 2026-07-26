@@ -679,4 +679,223 @@ class ProblemCommandServiceImplTest {
         String sqlSet = captor.getValue().getSqlSet();
         assertFalse(sqlSet.contains("status"));
     }
+
+    // --- deactivateProblem ---
+
+    @Test
+    void shouldAllowOwnerToDeactivate() {
+        Problem existing = buildExistingProblem(1L, 5L, 1);
+        when(problemMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(existing);
+        when(problemMapper.update(eq(null), any(LambdaUpdateWrapper.class))).thenReturn(1);
+
+        assertDoesNotThrow(() -> service.deactivateProblem(1L, 5L, false));
+    }
+
+    @Test
+    void shouldAllowAdminToDeactivateOtherUserProblem() {
+        Problem existing = buildExistingProblem(1L, 999L, 1);
+        when(problemMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(existing);
+        when(problemMapper.update(eq(null), any(LambdaUpdateWrapper.class))).thenReturn(1);
+
+        assertDoesNotThrow(() -> service.deactivateProblem(1L, 1L, true));
+    }
+
+    @Test
+    void shouldReturn204ForDoubleDeactivate() {
+        Problem existing = buildExistingProblem(1L, 5L, 0);
+        when(problemMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(existing);
+
+        service.deactivateProblem(1L, 5L, false);
+
+        verify(problemMapper, never()).update(any(), any(LambdaUpdateWrapper.class));
+    }
+
+    @Test
+    void shouldReturn403WhenNonOwnerTriesToDeactivateActiveProblem() {
+        Problem existing = buildExistingProblem(1L, 999L, 1);
+        when(problemMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(existing);
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.deactivateProblem(1L, 5L, false));
+        assertEquals(403, ex.getCode());
+        assertEquals("无权管理该题目", ex.getMessage());
+    }
+
+    @Test
+    void shouldReturn404WhenNonOwnerTriesToDeactivateInactiveProblem() {
+        Problem existing = buildExistingProblem(1L, 999L, 0);
+        when(problemMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(existing);
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.deactivateProblem(1L, 5L, false));
+        assertEquals(404, ex.getCode());
+        verify(problemMapper, never()).update(any(), any(LambdaUpdateWrapper.class));
+    }
+
+    @Test
+    void deactivateShouldReturn404WhenProblemNotFound() {
+        when(problemMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.deactivateProblem(1L, 5L, true));
+        assertEquals(404, ex.getCode());
+    }
+
+    @Test
+    void deactivateShouldReturn400WhenProblemIdInvalid() {
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.deactivateProblem(0L, 5L, true));
+        assertEquals(400, ex.getCode());
+    }
+
+    @Test
+    void deactivateShouldReturn400WhenOperatorIdInvalid() {
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.deactivateProblem(1L, 0L, true));
+        assertEquals(400, ex.getCode());
+    }
+
+    @Test
+    void deactivateShouldOnlyChangeStatusToZero() {
+        Problem existing = buildExistingProblem(1L, 5L, 1);
+        when(problemMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(existing);
+        ArgumentCaptor<LambdaUpdateWrapper<Problem>> captor = ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
+        when(problemMapper.update(eq(null), captor.capture())).thenReturn(1);
+
+        service.deactivateProblem(1L, 5L, false);
+
+        String sqlSet = captor.getValue().getSqlSet();
+        assertTrue(sqlSet.contains("status"));
+        // WHERE 应包含 status=1
+        String sqlSegment = captor.getValue().getCustomSqlSegment();
+        assertTrue(sqlSegment.contains("status"));
+    }
+
+    @Test
+    void deactivateShouldPreserveCreatorUserId() {
+        Problem existing = buildExistingProblem(1L, 5L, 1);
+        when(problemMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(existing);
+        ArgumentCaptor<LambdaUpdateWrapper<Problem>> captor = ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
+        when(problemMapper.update(eq(null), captor.capture())).thenReturn(1);
+
+        service.deactivateProblem(1L, 5L, false);
+
+        String sqlSet = captor.getValue().getSqlSet();
+        assertFalse(sqlSet.contains("creator_user_id"));
+    }
+
+    @Test
+    void deactivateShouldHandleConcurrentRaceCondition() {
+        // UPDATE 返回 0（WHERE status=1 不满足），重新读取发现已是 status=0
+        Problem existing = buildExistingProblem(1L, 5L, 1);
+        Problem recheck = buildExistingProblem(1L, 5L, 0);
+        when(problemMapper.selectOne(any(LambdaQueryWrapper.class)))
+                .thenReturn(existing, recheck);
+        when(problemMapper.update(eq(null), any(LambdaUpdateWrapper.class))).thenReturn(0);
+
+        assertDoesNotThrow(() -> service.deactivateProblem(1L, 5L, false));
+    }
+
+    // --- restoreProblem ---
+
+    @Test
+    void shouldAllowOwnerToRestore() {
+        Problem existing = buildExistingProblem(1L, 5L, 0);
+        when(problemMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(existing);
+        when(problemMapper.update(eq(null), any(LambdaUpdateWrapper.class))).thenReturn(1);
+
+        assertDoesNotThrow(() -> service.restoreProblem(1L, 5L, false));
+    }
+
+    @Test
+    void shouldAllowAdminToRestoreOtherUserProblem() {
+        Problem existing = buildExistingProblem(1L, 999L, 0);
+        when(problemMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(existing);
+        when(problemMapper.update(eq(null), any(LambdaUpdateWrapper.class))).thenReturn(1);
+
+        assertDoesNotThrow(() -> service.restoreProblem(1L, 1L, true));
+    }
+
+    @Test
+    void shouldReturn204ForDoubleRestore() {
+        Problem existing = buildExistingProblem(1L, 5L, 1);
+        when(problemMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(existing);
+
+        service.restoreProblem(1L, 5L, false);
+
+        verify(problemMapper, never()).update(any(), any(LambdaUpdateWrapper.class));
+    }
+
+    @Test
+    void shouldReturn403WhenNonOwnerTriesToRestoreActiveProblem() {
+        Problem existing = buildExistingProblem(1L, 999L, 1);
+        when(problemMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(existing);
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.restoreProblem(1L, 5L, false));
+        assertEquals(403, ex.getCode());
+    }
+
+    @Test
+    void shouldReturn404WhenNonOwnerTriesToRestoreInactiveProblem() {
+        Problem existing = buildExistingProblem(1L, 999L, 0);
+        when(problemMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(existing);
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.restoreProblem(1L, 5L, false));
+        assertEquals(404, ex.getCode());
+    }
+
+    @Test
+    void restoreShouldReturn404WhenProblemNotFound() {
+        when(problemMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.restoreProblem(1L, 5L, true));
+        assertEquals(404, ex.getCode());
+    }
+
+    @Test
+    void restoreShouldReturn400WhenProblemIdInvalid() {
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.restoreProblem(0L, 5L, true));
+        assertEquals(400, ex.getCode());
+    }
+
+    @Test
+    void restoreShouldOnlyChangeStatusToOne() {
+        Problem existing = buildExistingProblem(1L, 5L, 0);
+        when(problemMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(existing);
+        ArgumentCaptor<LambdaUpdateWrapper<Problem>> captor = ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
+        when(problemMapper.update(eq(null), captor.capture())).thenReturn(1);
+
+        service.restoreProblem(1L, 5L, false);
+
+        String sqlSet = captor.getValue().getSqlSet();
+        assertTrue(sqlSet.contains("status"));
+    }
+
+    @Test
+    void restoreShouldPreserveCreatorUserId() {
+        Problem existing = buildExistingProblem(1L, 5L, 0);
+        when(problemMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(existing);
+        ArgumentCaptor<LambdaUpdateWrapper<Problem>> captor = ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
+        when(problemMapper.update(eq(null), captor.capture())).thenReturn(1);
+
+        service.restoreProblem(1L, 5L, false);
+
+        String sqlSet = captor.getValue().getSqlSet();
+        assertFalse(sqlSet.contains("creator_user_id"));
+    }
+
+    @Test
+    void restoreShouldHandleConcurrentRaceCondition() {
+        Problem existing = buildExistingProblem(1L, 5L, 0);
+        Problem recheck = buildExistingProblem(1L, 5L, 1);
+        when(problemMapper.selectOne(any(LambdaQueryWrapper.class)))
+                .thenReturn(existing, recheck);
+        when(problemMapper.update(eq(null), any(LambdaUpdateWrapper.class))).thenReturn(0);
+
+        assertDoesNotThrow(() -> service.restoreProblem(1L, 5L, false));
+    }
 }
