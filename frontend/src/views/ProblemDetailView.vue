@@ -108,7 +108,9 @@ onMounted(fetchDetail)
           <div class="meta-item">
             <span class="meta-label">创建者</span>
             <span class="meta-value">
-              用户 #{{ problem.creatorUserId }}
+              <RouterLink :to="`/users/${problem.creatorUserId}`" class="meta-value link">
+                用户 #{{ problem.creatorUserId }}
+              </RouterLink>
             </span>
           </div>
           <div class="meta-item" v-if="problem.sourceUrl">

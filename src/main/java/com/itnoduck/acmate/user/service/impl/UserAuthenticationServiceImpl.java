@@ -53,6 +53,7 @@ public class UserAuthenticationServiceImpl implements UserAuthenticationService 
                 user.getNickname(),
                 user.getEmail(),
                 user.getAvatarUrl(),
+                user.getBio(),
                 user.isAdmin()
         );
     }

@@ -1106,4 +1106,51 @@ BUILD SUCCESS（后端编译通过，前端 type-check + lint + build + test 全
 ### 已知限制
 
 - 后端集成测试需 MySQL（9 ApplicationContext 加载失败，非本次变更引入）
-- 尚未实现用户主页
+
+## 2026-07-26：Phase 2 — 用户主页和个人资料
+
+### 本次目标
+
+实现用户主页 `/users/:id` 和个人资料编辑 `/settings/profile`，包括头像上传。
+
+### 修改文件
+
+**后端新建：**
+- `config/WebMvcConfig.java` — 静态资源映射 `/uploads/**`
+- `user/service/UserProfileService.java` — 用户资料服务接口
+- `user/service/impl/UserProfileServiceImpl.java` — 资料/头像业务逻辑
+- `user/dto/UpdateProfileRequest.java` — 编辑资料请求 DTO
+- `user/dto/UserProfileResponse.java` — 公开资料响应 DTO
+
+**后端修改：**
+- `user/dto/LoginResponse.java` — 增加 `bio` 字段
+- `user/dto/CurrentUserResponse.java` — 增加 `bio` 字段
+- `user/controller/UserController.java` — 新增 `/me/avatar`、`/{id}`、`/me/profile` 端点
+- `user/service/impl/UserAuthenticationServiceImpl.java` — 登录返回 bio
+- `security/AuthenticatedUser.java` — 增加 `bio` 字段
+- `security/DatabaseUserDetailsService.java` — 加载 bio
+
+**数据库迁移：**
+- `db/migration/V6__add_user_bio.sql` — app_user 增加 bio 列
+
+**前端新建：**
+- `types/user.ts` — UserProfile、UpdateProfileRequest 类型
+- `api/users.ts` — getUserProfile、updateProfile、uploadAvatar
+- `views/UserProfileView.vue` — `/users/:id` 公开主页
+- `views/ProfileEditView.vue` — `/settings/profile` 编辑昵称/简介/头像
+- `__tests__/users.test.ts` — 12 测试
+
+**前端修改：**
+- `api/auth.ts` — UserInfo 增加 avatarUrl、bio 字段
+- `router/index.ts` — 新增 `/users/:id`、`/settings/profile` 路由
+- `components/layout/AppHeader.vue` — 用户名称链接到资料编辑
+- `views/ProblemDetailView.vue` — 创建者链接到用户主页
+
+### 构建结果
+
+编译通过，后端编译无错误，前端 type-check + build + test 全部通过（73 测试）。
+
+### 已知限制
+
+- 头像固定尺寸 96×96，未提供缩放/裁剪
+- CF 账号、训练计划、公开题目列表待后续阶段补充

@@ -17,6 +17,8 @@ export interface UserInfo {
   username: string
   nickname: string
   email: string | null
+  avatarUrl: string | null
+  bio: string | null
   admin: boolean
 }
 

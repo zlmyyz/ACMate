@@ -53,6 +53,7 @@ public class DatabaseUserDetailsService implements UserDetailsService {
                 user.getNickname(),
                 user.getEmail(),
                 user.getAvatarUrl(),
+                user.getBio(),
                 user.getIsAdmin() != null && user.getIsAdmin() == 1,
                 enabled,
                 Collections.unmodifiableList(authorities)

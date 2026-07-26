@@ -1,11 +1,14 @@
 package com.itnoduck.acmate.user.dto;
 
-public record LoginResponse(
+import java.time.LocalDateTime;
+
+public record UserProfileResponse(
         Long id,
         String username,
         String nickname,
-        String email,
         String avatarUrl,
         String bio,
-        boolean admin) {
+        boolean admin,
+        long problemCount,
+        LocalDateTime createTime) {
 }

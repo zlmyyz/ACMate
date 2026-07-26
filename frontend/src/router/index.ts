@@ -18,6 +18,18 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
+      path: '/users/:id',
+      name: 'user-profile',
+      component: () => import('@/views/UserProfileView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/settings/profile',
+      name: 'profile-edit',
+      component: () => import('@/views/ProfileEditView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/login',
       name: 'login',
       component: () => import('@/views/LoginView.vue'),

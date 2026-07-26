@@ -6,5 +6,6 @@ public record CurrentUserResponse(
         String nickname,
         String email,
         String avatarUrl,
+        String bio,
         boolean admin) {
 }

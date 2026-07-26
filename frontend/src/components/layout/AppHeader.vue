@@ -36,9 +36,9 @@ async function handleLogout() {
         </nav>
       </div>
       <div class="header-right">
-        <span v-if="auth.user" class="user-greeting">
+        <RouterLink v-if="auth.user" to="/settings/profile" class="user-greeting">
           {{ auth.user.nickname || auth.user.username }}
-        </span>
+        </RouterLink>
         <span v-if="auth.isAdmin" class="admin-badge">管理员</span>
         <button class="logout-btn" @click="handleLogout">
           {{ actionLabels.logout }}
@@ -126,6 +126,11 @@ async function handleLogout() {
 .user-greeting {
   color: var(--color-on-surface);
   font-weight: 500;
+  transition: color 0.2s;
+}
+
+.user-greeting:hover {
+  color: var(--color-primary);
 }
 
 .admin-badge {
