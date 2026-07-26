@@ -78,3 +78,37 @@ export interface MyProblemQueryParams {
   keyword?: string
   status?: MineProblemStatusFilter
 }
+
+export interface AdminProblemSummary {
+  id: number
+  platform: string
+  externalProblemKey: string | null
+  title: string
+  sourceUrl: string | null
+  difficulty: string | null
+  tags: string | null
+  status: ProblemStatusView
+  deactivationSource: string | null
+  deactivationReason: string | null
+  deactivatedBy: number | null
+  deactivationTime: string | null
+  creatorUserId: number
+  creatorUsername: string | null
+  creatorNickname: string | null
+  createTime: string
+  updateTime: string
+}
+
+export interface AdminProblemQueryParams {
+  page?: number
+  size?: number
+  platform?: string
+  difficulty?: string
+  keyword?: string
+  creatorUserId?: number
+  status?: MineProblemStatusFilter
+}
+
+export interface AdminDeactivateRequest {
+  reason: string
+}

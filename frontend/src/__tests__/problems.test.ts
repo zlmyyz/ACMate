@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 
-const { mockGetProblems, mockGetProblemDetail, mockCreateProblem, mockUpdateProblem, mockGetMyProblems, mockDeactivateProblem, mockRestoreProblem } = vi.hoisted(() => ({
+const { mockGetProblems, mockGetProblemDetail, mockCreateProblem, mockUpdateProblem, mockGetMyProblems, mockDeactivateProblem, mockRestoreProblem, mockGetAdminProblems, mockAdminDeactivateProblem, mockAdminRestoreProblem } = vi.hoisted(() => ({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   mockGetProblems: vi.fn<() => any>(),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -17,6 +17,12 @@ const { mockGetProblems, mockGetProblemDetail, mockCreateProblem, mockUpdateProb
   mockDeactivateProblem: vi.fn<() => any>(),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   mockRestoreProblem: vi.fn<() => any>(),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  mockGetAdminProblems: vi.fn<() => any>(),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  mockAdminDeactivateProblem: vi.fn<() => any>(),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  mockAdminRestoreProblem: vi.fn<() => any>(),
 }))
 
 vi.mock('@/api/problems', () => ({
@@ -27,6 +33,9 @@ vi.mock('@/api/problems', () => ({
   getMyProblems: mockGetMyProblems,
   deactivateProblem: mockDeactivateProblem,
   restoreProblem: mockRestoreProblem,
+  getAdminProblems: mockGetAdminProblems,
+  adminDeactivateProblem: mockAdminDeactivateProblem,
+  adminRestoreProblem: mockAdminRestoreProblem,
 }))
 
 const { mockGetCurrentUser, mockLogin, mockRegister, mockCsrf, mockLogoutApi } = vi.hoisted(() => ({
@@ -573,5 +582,74 @@ describe('ProblemTable', () => {
       global: { stubs: { 'router-link': true } },
     })
     expect(wrapper.text()).toContain('用户 #42')
+  })
+})
+
+describe('Admin API', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('should pass status and filters to getAdminProblems', async () => {
+    mockGetAdminProblems.mockResolvedValueOnce({ page: 1, size: 20, total: 0, pages: 0, records: [] })
+
+    const { getAdminProblems } = await import('@/api/problems')
+    await getAdminProblems({ page: 1, status: 'ACTIVE', creatorUserId: 5, keyword: 'dp' })
+
+    expect(mockGetAdminProblems).toHaveBeenCalledWith({
+      page: 1, status: 'ACTIVE', creatorUserId: 5, keyword: 'dp',
+      size: undefined, platform: undefined, difficulty: undefined,
+    })
+  })
+
+  it('should call adminDeactivateProblem with reason', async () => {
+    mockCsrf.mockResolvedValueOnce({ token: 'csrf', headerName: 'X-CSRF-TOKEN', parameterName: '_csrf' })
+    mockAdminDeactivateProblem.mockResolvedValueOnce(undefined)
+
+    const { adminDeactivateProblem } = await import('@/api/problems')
+    await adminDeactivateProblem(42, '违规内容')
+
+    expect(mockAdminDeactivateProblem).toHaveBeenCalledWith(42, '违规内容')
+  })
+
+  it('should call adminRestoreProblem with CSRF', async () => {
+    mockCsrf.mockResolvedValueOnce({ token: 'csrf', headerName: 'X-CSRF-TOKEN', parameterName: '_csrf' })
+    mockAdminRestoreProblem.mockResolvedValueOnce(undefined)
+
+    const { adminRestoreProblem } = await import('@/api/problems')
+    await adminRestoreProblem(42)
+
+    expect(mockAdminRestoreProblem).toHaveBeenCalledWith(42)
+  })
+})
+
+describe('Admin route guard', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('should redirect non-admin to forbidden', async () => {
+    mockGetCurrentUser.mockResolvedValueOnce({ id: 1, username: 'user', nickname: 'User', admin: false })
+
+    const { useAuthStore } = await import('@/stores/auth')
+    const auth = useAuthStore()
+    await auth.init()
+
+    const { default: router } = await import('@/router/index')
+    const result = router.resolve('/admin/problems')
+
+    expect(auth.isAdmin).toBe(false)
+    expect(auth.isLoggedIn).toBe(true)
+  })
+
+  it('should allow admin to access admin routes', async () => {
+    mockGetCurrentUser.mockResolvedValueOnce({ id: 1, username: 'admin', nickname: 'Admin', admin: true })
+
+    const { useAuthStore } = await import('@/stores/auth')
+    const auth = useAuthStore()
+    await auth.init()
+
+    expect(auth.isAdmin).toBe(true)
+    expect(auth.isLoggedIn).toBe(true)
   })
 })

@@ -63,4 +63,10 @@ public interface ProblemCommandService {
      * @param operatorAdmin  当前认证用户是否为管理员
      */
     void restoreProblem(long problemId, long operatorUserId, boolean operatorAdmin);
+
+    /**
+     * 管理员强制停用题目，必须填写停用原因。
+     * 被管理员停用的题目，创建者不能自行恢复。
+     */
+    void adminForceDeactivateProblem(long problemId, String reason, long operatorUserId);
 }

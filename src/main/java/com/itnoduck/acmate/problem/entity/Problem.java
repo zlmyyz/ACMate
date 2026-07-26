@@ -27,6 +27,10 @@ public class Problem {
     private String contentMd;
     private Long creatorUserId;
     private Integer status;
+    private String deactivationSource;
+    private String deactivationReason;
+    private Long deactivatedBy;
+    private LocalDateTime deactivationTime;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 }

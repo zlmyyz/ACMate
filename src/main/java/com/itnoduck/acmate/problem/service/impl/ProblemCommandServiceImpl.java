@@ -14,6 +14,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
@@ -201,7 +202,10 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
         LambdaUpdateWrapper<Problem> updateWrapper = Wrappers.lambdaUpdate(Problem.class)
                 .eq(Problem::getId, problemId)
                 .eq(Problem::getStatus, 1)
-                .set(Problem::getStatus, 0);
+                .set(Problem::getStatus, 0)
+                .set(Problem::getDeactivationSource, "CREATOR")
+                .set(Problem::getDeactivatedBy, operatorUserId)
+                .set(Problem::getDeactivationTime, LocalDateTime.now());
 
         int rows = problemMapper.update(null, updateWrapper);
         if (rows == 0) {
@@ -247,6 +251,11 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
             throw new BusinessException(403, "无权管理该题目");
         }
 
+        // 管理员强制停用的题目，创建者不能自行恢复
+        if (!operatorAdmin && "ADMIN".equals(existing.getDeactivationSource())) {
+            throw new BusinessException(403, "该题目由管理员停用，请联系管理员处理");
+        }
+
         // 已经正常：幂等返回
         if (existing.getStatus() != null && existing.getStatus() == 1) {
             return;
@@ -256,7 +265,11 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
         LambdaUpdateWrapper<Problem> updateWrapper = Wrappers.lambdaUpdate(Problem.class)
                 .eq(Problem::getId, problemId)
                 .eq(Problem::getStatus, 0)
-                .set(Problem::getStatus, 1);
+                .set(Problem::getStatus, 1)
+                .set(Problem::getDeactivationSource, null)
+                .set(Problem::getDeactivationReason, null)
+                .set(Problem::getDeactivatedBy, null)
+                .set(Problem::getDeactivationTime, null);
 
         int rows = problemMapper.update(null, updateWrapper);
         if (rows == 0) {
@@ -269,6 +282,57 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
                 return;
             }
             throw new RuntimeException("恢复题目异常：状态不匹配");
+        }
+    }
+
+    @Override
+    @Transactional
+    public void adminForceDeactivateProblem(long problemId, String reason, long operatorUserId) {
+        if (problemId <= 0) {
+            throw new BusinessException(400, "题目 ID 无效");
+        }
+        if (reason == null || reason.isBlank()) {
+            throw new BusinessException(400, "停用原因不能为空");
+        }
+        if (reason.length() > 500) {
+            throw new BusinessException(400, "停用原因不能超过 500 字");
+        }
+        if (operatorUserId <= 0) {
+            throw new BusinessException(400, "操作者 ID 无效");
+        }
+
+        Problem existing = problemMapper.selectOne(
+                new LambdaQueryWrapper<Problem>()
+                        .eq(Problem::getId, problemId));
+        if (existing == null) {
+            throw new BusinessException(404, "题目不存在");
+        }
+
+        // 已经停用：幂等返回（不覆盖原有停用来源和原因）
+        if (existing.getStatus() != null && existing.getStatus() == 0) {
+            return;
+        }
+
+        LambdaUpdateWrapper<Problem> updateWrapper = Wrappers.lambdaUpdate(Problem.class)
+                .eq(Problem::getId, problemId)
+                .eq(Problem::getStatus, 1)
+                .set(Problem::getStatus, 0)
+                .set(Problem::getDeactivationSource, "ADMIN")
+                .set(Problem::getDeactivationReason, reason)
+                .set(Problem::getDeactivatedBy, operatorUserId)
+                .set(Problem::getDeactivationTime, LocalDateTime.now());
+
+        int rows = problemMapper.update(null, updateWrapper);
+        if (rows == 0) {
+            Problem recheck = problemMapper.selectOne(
+                    new LambdaQueryWrapper<Problem>().eq(Problem::getId, problemId));
+            if (recheck == null) {
+                throw new BusinessException(404, "题目不存在");
+            }
+            if (recheck.getStatus() != null && recheck.getStatus() == 0) {
+                return;
+            }
+            throw new RuntimeException("停用题目异常：状态不匹配");
         }
     }
 

@@ -29,9 +29,13 @@ const auth = useAuthStore()
             <span class="link-icon">&#10133;</span>
             <span class="link-label">创建题目</span>
           </RouterLink>
-          <RouterLink to="/my/problems" class="quick-link disabled-link">
+          <RouterLink to="/my/problems" class="quick-link">
             <span class="link-icon">&#128451;</span>
             <span class="link-label">{{ navLabels.myProblems }}</span>
+          </RouterLink>
+          <RouterLink v-if="auth.isAdmin" to="/admin/problems" class="quick-link">
+            <span class="link-icon">&#128202;</span>
+            <span class="link-label">{{ navLabels.adminProblems }}</span>
           </RouterLink>
         </div>
       </section>
@@ -58,10 +62,6 @@ const auth = useAuthStore()
           <li class="upcoming-item">
             <span class="upcoming-badge">即将推出</span>
             {{ navLabels.leaderboard }}
-          </li>
-          <li v-if="auth.isAdmin" class="upcoming-item">
-            <span class="upcoming-badge">即将推出</span>
-            {{ navLabels.adminProblems }}
           </li>
         </ul>
       </section>

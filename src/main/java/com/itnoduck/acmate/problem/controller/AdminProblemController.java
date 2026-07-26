@@ -1,12 +1,20 @@
 package com.itnoduck.acmate.problem.controller;
 
 import com.itnoduck.acmate.common.dto.PageResponse;
+import com.itnoduck.acmate.problem.dto.AdminDeactivateRequest;
 import com.itnoduck.acmate.problem.dto.AdminProblemSummaryResponse;
 import com.itnoduck.acmate.problem.dto.MineProblemStatusFilter;
 import com.itnoduck.acmate.problem.dto.ProblemQueryRequest;
 import com.itnoduck.acmate.problem.service.AdminProblemQueryService;
+import com.itnoduck.acmate.problem.service.ProblemCommandService;
+import com.itnoduck.acmate.security.AuthenticatedUser;
 import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,9 +30,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminProblemController {
 
     private final AdminProblemQueryService adminProblemQueryService;
+    private final ProblemCommandService problemCommandService;
 
-    public AdminProblemController(AdminProblemQueryService adminProblemQueryService) {
+    public AdminProblemController(AdminProblemQueryService adminProblemQueryService,
+                                  ProblemCommandService problemCommandService) {
         this.adminProblemQueryService = adminProblemQueryService;
+        this.problemCommandService = problemCommandService;
     }
 
     /**
@@ -50,5 +61,32 @@ public class AdminProblemController {
             @Valid ProblemQueryRequest request,
             @RequestParam(defaultValue = "ALL") MineProblemStatusFilter status) {
         return adminProblemQueryService.listProblems(request, status);
+    }
+
+    /**
+     * 管理员强制停用题目。
+     *
+     * <p>接口：{@code POST /api/admin/problems/{id}/deactivate}</p>
+     * <p>权限：仅管理员可访问，CSRF 保护由 Spring Security 全局控制。</p>
+     * <p>必须填写停用原因，被管理员停用的题目创建者不能自行恢复。</p>
+     */
+    @PostMapping("/{id}/deactivate")
+    public ResponseEntity<Void> deactivateProblem(@PathVariable long id,
+                                                   @Valid @RequestBody AdminDeactivateRequest request,
+                                                   @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        problemCommandService.adminForceDeactivateProblem(id, request.getReason(), currentUser.getId());
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 管理员恢复题目（包括管理员强制停用的题目）。
+     *
+     * <p>管理员恢复会清除停用来源、原因等审计字段。</p>
+     */
+    @PostMapping("/{id}/restore")
+    public ResponseEntity<Void> restoreProblem(@PathVariable long id,
+                                                @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        problemCommandService.restoreProblem(id, currentUser.getId(), true);
+        return ResponseEntity.noContent().build();
     }
 }

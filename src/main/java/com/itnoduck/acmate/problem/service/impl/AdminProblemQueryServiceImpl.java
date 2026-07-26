@@ -113,8 +113,11 @@ public class AdminProblemQueryServiceImpl implements AdminProblemQueryService {
                 p.getId(), p.getPlatform(), p.getExternalProblemKey(), p.getTitle(),
                 p.getSourceUrl(), p.getDifficulty(), p.getTags(),
                 ProblemStatusView.fromStatus(p.getStatus()),
+                p.getDeactivationSource(),
+                p.getDeactivationReason(),
+                p.getDeactivatedBy(),
+                p.getDeactivationTime(),
                 p.getCreatorUserId(),
-                // 创建者数据缺失时保留题目记录，username/nickname 返回 null
                 creator != null ? creator.getUsername() : null,
                 creator != null ? creator.getNickname() : null,
                 p.getCreateTime(), p.getUpdateTime());

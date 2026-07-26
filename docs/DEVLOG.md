@@ -1060,4 +1060,50 @@ BUILD SUCCESS（type-check + lint + build + test 全部通过，56 个测试）
 ### 已知限制
 
 - ConfirmDialog 未使用 Teleport（为测试兼容性）
-- 尚未实现管理员全部题库、用户主页
+- 尚未实现用户主页
+
+---
+
+## 2026-07-26：管理员题目管理
+
+### 本次目标
+
+实现管理员全部题库（/admin/problems）、管理员强制停用（含原因）、管理员恢复、停用审计字段。
+
+### 修改/新增文件
+
+**数据库迁移：**
+
+- `src/main/resources/db/migration/V5__add_problem_deactivation_audit.sql` — 新增停用来源、原因、操作人、时间四个审计字段
+
+**后端：**
+
+- `Problem.java` — 新增 deactivationSource/deactivationReason/deactivatedBy/deactivationTime
+- `ProblemCommandService.java` — 新增 adminForceDeactivateProblem 方法
+- `ProblemCommandServiceImpl.java` — deactivateProblem 记录 CREATOR 来源；restoreProblem 拦截管理员停用恢复并清除审计字段；新增 adminForceDeactivateProblem
+- `AdminDeactivateRequest.java` — 新 DTO（reason 必填，最长500）
+- `AdminProblemSummaryResponse.java` — 新增停用审计字段
+- `AdminProblemQueryServiceImpl.java` — 列表响应包含停用审计信息
+- `AdminProblemController.java` — 新增 POST /api/admin/problems/{id}/deactivate 和 restore 端点
+
+**前端：**
+
+- `types/problem.ts` — 新增 AdminProblemSummary、AdminProblemQueryParams、AdminDeactivateRequest
+- `api/problems.ts` — 新增 getAdminProblems、adminDeactivateProblem、adminRestoreProblem
+- `views/AdminProblemsView.vue` — 管理员全部题库页（状态选项卡、多维筛选、创建者名称展示、停用原因、强制停用含原因对话框）
+- `router/index.ts` — 新增 /admin/problems 路由（requiresAdmin 守卫）
+- `AppHeader.vue` — 管理员可见"全部题库"导航链接
+- `HomeView.vue` — 启用"我的题目"入口，新增管理员"全部题库"入口
+
+**测试：** 新增 5 测试（Admin API + 路由守卫），总 61 测试
+
+**文档：** 新建 IMPLEMENTATION_STATUS.md
+
+### 构建结果
+
+BUILD SUCCESS（后端编译通过，前端 type-check + lint + build + test 全部通过，61 测试）
+
+### 已知限制
+
+- 后端集成测试需 MySQL（9 ApplicationContext 加载失败，非本次变更引入）
+- 尚未实现用户主页

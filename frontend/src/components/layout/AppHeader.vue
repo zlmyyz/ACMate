@@ -30,6 +30,9 @@ async function handleLogout() {
           <RouterLink to="/my/problems" class="nav-link" active-class="nav-link-active">
             {{ navLabels.myProblems }}
           </RouterLink>
+          <RouterLink v-if="auth.isAdmin" to="/admin/problems" class="nav-link" active-class="nav-link-active">
+            {{ navLabels.adminProblems }}
+          </RouterLink>
         </nav>
       </div>
       <div class="header-right">
