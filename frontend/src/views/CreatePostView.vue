@@ -34,8 +34,26 @@ async function handleCreate() {
     })
     router.push({ name: 'post-detail', params: { id: r.id } })
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { message?: string } } }
-    error.value = err.response?.data?.message ?? '发布失败'
+    const err = e as { response?: { status?: number; data?: { code?: number; message?: string; fieldErrors?: Array<{ field: string; message: string }> } } }
+    const status = err.response?.status
+    if (status === 400) {
+      const fields = err.response?.data?.fieldErrors
+      if (fields && fields.length > 0) {
+        error.value = fields.map(f => f.message).join('；')
+      } else {
+        error.value = err.response?.data?.message ?? '请检查输入内容'
+      }
+    } else if (status === 401) {
+      error.value = '登录已失效，请重新登录'
+    } else if (status === 403) {
+      error.value = '无权发布'
+    } else if (status === 409) {
+      error.value = err.response?.data?.message ?? '内容冲突，请修改后重试'
+    } else if (status === 500) {
+      error.value = '服务器暂时无法处理请求'
+    } else {
+      error.value = err.response?.data?.message ?? '发布失败'
+    }
   } finally { saving.value = false }
 }
 </script>
