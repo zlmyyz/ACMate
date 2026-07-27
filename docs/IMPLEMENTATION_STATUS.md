@@ -1,6 +1,6 @@
 # IMPLEMENTATION STATUS
 
-> Updated: 2026-07-27 | Authentication fix + Flyway consistency
+> Updated: 2026-07-27 | Test stabilization + auth semantics fix
 
 ## Feature Status
 
@@ -34,10 +34,10 @@
 
 | 层 | 测试数 | 通过 | 失败 |
 |---|---|---|---|
-| 后端 | 239 | 193 | 46（10 Failures + 36 Errors，均为 Problem entity lambda cache 的已知 MyBatis-Plus Mockito 上下文问题） |
+| 后端 | 243 | 243 | 0 |
 | 前端 | 110 | 110 | 0 |
 
-前端测试全部使用 Vitest + vi.mock。后端 @WebMvcTest（SessionLogin 12/12 通过、Profile 5/5 通过、Registration 12/12 通过）无需数据库。Problem*Test 使用 @ExtendWith(MockitoExtension.class) 缺失 MyBatis-Plus entity lambda cache 初始化。
+全部测试无需数据库。Problem*Test lambda cache 通过 MybatisPlusTestHelper 初始化 TableInfo 修复。SessionLogin 新增 4 个认证异常语义测试（DB 异常→500、密码错误→401、用户不存在→401、500 响应不泄露 SQL）。
 
 ## 数据库迁移
 
@@ -55,7 +55,7 @@
 | V10 | audit_log表 | OK |
 | V11 | app_user表增加 uk_app_user_nickname 唯一索引 | OK |
 
-Flyway 在 Spring Boot 4.1.0 中无自动配置，通过手动 `FlywayConfig` 启用。现有数据库 baseline 在 V11，全新数据库 `acmate_fresh` 验证 V1-V11 完整迁移通过，重启幂等。
+Flyway 在 Spring Boot 4.1.0 中无自动配置，通过手动 `FlywayConfig`（`@ConditionalOnProperty("spring.flyway.enabled")`）启用。现有数据库 baseline 在 V11，全新数据库 `acmate_fresh` 验证 V1-V11 完整迁移通过，重启幂等。未来 V12+ 对两种数据库均正常执行。
 
 ---
 
@@ -63,7 +63,7 @@ Flyway 在 Spring Boot 4.1.0 中无自动配置，通过手动 `FlywayConfig` �
 
 ### Git 状态
 
-- 分支：`feat/vue-frontend`，有未提交变更（auth 修复 + Flyway 配置 + 迁移修正）
+- 分支：`feat/vue-frontend`，有未提交变更（测试稳定 + 认证异常语义修复）
 - 无硬编码密钥、密码、Token
 - 无 `.env`、`.pem`、`.key` 文件追踪
 - `.gitignore` 已补充 `uploads/` 和 `logs/`
@@ -85,6 +85,25 @@ Flyway 在 Spring Boot 4.1.0 中无自动配置，通过手动 `FlywayConfig` �
 | **登录 401 根因修复** | **已修复** | 数据库缺失 V6 `bio` 列 → SQL Unknown column → InternalAuthenticationServiceException → 全局异常处理器误吞为 401 |
 | Flyway 一致性修复 | **已修复** | Spring Boot 4.1.0 无自动配置 → 手动 FlywayConfig；V9 ADD COLUMN IF NOT EXISTS 非法语法 → 移除 IF NOT EXISTS |
 | 昵称大小写自更新 | **已修复** | 数据库 ci 排序规则下，大小写变体更新被误判 409 → equalsIgnoreCase |
+| **认证异常语义** | **已修复** | 新增 `@ExceptionHandler(InternalAuthenticationServiceException)` → 500；`RestAuthenticationEntryPoint` 区分 `InternalAuthenticationServiceException`（500）和普通未登录（401） |
+| MyBatis-Plus Lambda Cache | **已修复** | 3 个 Mockito-only 测试类缺失 entity 初始化 → 统一 `MybatisPlusTestHelper.initEntityTables()` |
+
+### 认证错误状态码规则
+
+| 场景 | HTTP | 响应 |
+|---|---|---|
+| 用户不存在 | 401 | `用户名或密码错误` |
+| 密码错误 | 401 | `用户名或密码错误` |
+| 账号已禁用 | 403 | `账号已被禁用` |
+| 未登录访问受保护资源 | 401 | `未登录或登录已失效` |
+| 数据库异常 / SQL 字段缺失 | 500 | `服务器内部错误，请稍后再试` |
+| 认证基础设施异常 | 500 | `服务器内部错误，请稍后再试` |
+
+500 响应不包含 SQL、表名、字段名或堆栈。
+
+### V9 历史修改
+
+V9 首次出现在 `bd56c20`（Phase 8），含非法 `ADD COLUMN IF NOT EXISTS` 语法。该语法从未被 Flyway 执行——`bd56c20` 提交时 Spring Boot 4.1.0 无 Flyway 自动配置，FlywayConfig 在 `0505f11` 才引入，且现有数据库在 V11 基线化。V9 修正是首次启用 Flyway 前对未发布迁移的语法修正，无 checksum 冲突风险。
 
 ### 已知阻塞项
 
@@ -94,7 +113,6 @@ Flyway 在 Spring Boot 4.1.0 中无自动配置，通过手动 `FlywayConfig` �
 | 通知事件触发未实现 | 中 | 通知 CRUD 已就绪，但 7 种场景事件触发代码不存在 |
 | 禁用用户 Session 仍有效 | 中 | AdminUserService.toggleStatus 只改数据库，不失效已登录 Session |
 | 操作日志未写入 | 低 | AuditLogService.log() 方法存在但未被调用 |
-| Problem*Test Lambda Cache | 低 | 46 个 Problem 单测因 Mockito-only 上下文缺少 MyBatis-Plus entity 初始化而失败 |
 
 ### Codeforces 能力审计
 

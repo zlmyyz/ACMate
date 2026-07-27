@@ -1,5 +1,65 @@
 # DEVLOG
 
+## 2026-07-27（二轮）：测试稳定与认证异常语义修复
+
+### 修复：MyBatis-Plus Lambda Cache（46 个测试失败）
+
+**根因**：`ProblemCommandServiceImplTest`、`ProblemQueryServiceImplTest`、`AdminProblemQueryServiceImplTest` 使用 `@ExtendWith(MockitoExtension.class)`（纯 Mockito，无 Spring 上下文）。生产代码创建 `LambdaQueryWrapper<Problem>()` 时需要解析 `Problem::getStatus` → 列名映射，调用 `LambdaUtils.getColumnMap()` → `TableInfoHelper.getTableInfo(Problem.class)` → 返回 null（未初始化）→ "can not find lambda cache" 异常。
+
+Spring 环境下 MyBatis-Plus 自动配置会初始化所有 `@TableName` 实体，但纯 Mockito 测试不会。
+
+**修复**：新建 `MybatisPlusTestHelper` 工具类，使用 `MybatisConfiguration.addMapper()` 触发 `MybatisMapperAnnotationBuilder.parse()` → `TableInfoHelper.initTableInfo()`，初始化 Problem 和 AppUser 实体。3 个测试类添加 `@BeforeAll` 静态初始化器。
+
+### 修复：认证异常语义
+
+**根因**：`GlobalExceptionHandler` 中 `@ExceptionHandler(AuthenticationException.class)` 返回 401。`InternalAuthenticationServiceException extends AuthenticationException`，因此数据库异常（字段缺失、连接失败）也被错误映射为 401 "用户名或密码错误"。
+
+`RestAuthenticationEntryPoint` 同样对所有 `AuthenticationException`（包括 `InternalAuthenticationServiceException`）返回 401。
+
+**修复**：
+- `GlobalExceptionHandler`：新增 `@ExceptionHandler(InternalAuthenticationServiceException.class)` → 500，日志记录原始异常
+- `RestAuthenticationEntryPoint`：区分 `InternalAuthenticationServiceException`（500）和普通未登录（401）
+- `FlywayConfig`：添加 `@ConditionalOnProperty("spring.flyway.enabled")`，支持测试禁用
+- `AcMateApplicationTests`：添加 `@TestPropertySource("spring.flyway.enabled=false")`
+
+**新增测试（4 个）**：
+1. `shouldReturn500OnDatabaseErrorDuringLogin` — DB 异常 → 500
+2. `shouldNotLeakSqlIn500Response` — 500 不含 SQL/表名
+3. `shouldReturn401ForWrongPassword` — 错误密码 → 401
+4. `shouldReturn401ForNonExistentUser` — 用户不存在 → 401
+
+### 修改文件
+
+- `src/test/java/com/itnoduck/acmate/testutil/MybatisPlusTestHelper.java` — 新建，统一 MyBatis-Plus entity 初始化
+- `src/test/java/com/itnoduck/acmate/AcMateApplicationTests.java` — 禁用 Flyway
+- `src/test/java/com/itnoduck/acmate/user/controller/SessionLoginTest.java` — 新增 4 个测试
+- `src/test/java/com/itnoduck/acmate/problem/service/impl/ProblemCommandServiceImplTest.java` — 添加 `@BeforeAll`
+- `src/test/java/com/itnoduck/acmate/problem/service/impl/ProblemQueryServiceImplTest.java` — 添加 `@BeforeAll`
+- `src/test/java/com/itnoduck/acmate/problem/service/impl/AdminProblemQueryServiceImplTest.java` — 添加 `@BeforeAll`
+- `src/main/java/com/itnoduck/acmate/common/exception/GlobalExceptionHandler.java` — `InternalAuthenticationServiceException` → 500
+- `src/main/java/com/itnoduck/acmate/security/RestAuthenticationEntryPoint.java` — 区分基础设施异常
+- `src/main/java/com/itnoduck/acmate/config/FlywayConfig.java` — 添加 `@ConditionalOnProperty`
+- `docs/IMPLEMENTATION_STATUS.md` — 更新测试统计、认证规则、V9 历史等
+- `docs/DEVLOG.md` — 本条目
+
+### 测试结果
+
+```
+后端 Tests run: 243, Failures: 0, Errors: 0, Skipped: 0
+前端 Tests run: 110/110 通过，type-check + lint + build 通过
+```
+
+### V9 历史结论
+
+V9 首次出现在 `bd56c20`（Phase 8，含 `IF NOT EXISTS`）。该语法从未被 Flyway 执行——Spring Boot 4.1.0 无 Flyway 自动配置，首次启用 Flyway 在 `0505f11`，且现有数据库 baseline 在 V11。当前修正是首次启用 Flyway 前对未发布迁移的语法修正，无 checksum 冲突风险。
+
+### Baseline V11 验证
+
+- `flyway_schema_history` 存在 1 条 BASELINE 条目（version=11）
+- `FlywayConfig` 使用 `@ConditionalOnProperty`，不全局启用 `baseline-on-migrate`
+- `acmate_fresh` 验证 V1-V11 完整迁移（非基线），未来 V12+ 正常执行
+- `acmate` 基线化在 V11，未来 V12+ 正常执行
+
 ## 2026-07-27：认证恢复与 Flyway 迁移一致性修复
 
 ### 修复：登录 401

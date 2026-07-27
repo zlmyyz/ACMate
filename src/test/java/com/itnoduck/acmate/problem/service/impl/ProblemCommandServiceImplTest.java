@@ -8,6 +8,8 @@ import com.itnoduck.acmate.problem.dto.ProblemDetailResponse;
 import com.itnoduck.acmate.problem.dto.UpdateProblemRequest;
 import com.itnoduck.acmate.problem.entity.Problem;
 import com.itnoduck.acmate.problem.mapper.ProblemMapper;
+import com.itnoduck.acmate.testutil.MybatisPlusTestHelper;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -25,6 +27,11 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ProblemCommandServiceImplTest {
+
+    @BeforeAll
+    static void initMybatisPlus() {
+        MybatisPlusTestHelper.initEntityTables();
+    }
 
     @Mock
     private ProblemMapper problemMapper;

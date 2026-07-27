@@ -127,6 +127,14 @@ Session 登录。
 
 ### CSRF
 
+**500 Internal Server Error** — 认证基础设施异常
+
+```json
+{"code": 500, "message": "服务器内部错误，请稍后再试", "timestamp": "..."}
+```
+
+### CSRF
+
 登录 POST 不需要 CSRF Token。
 
 ### 认证流程
@@ -137,6 +145,15 @@ Session 登录。
 4. 认证成功后 SecurityContext 写入 HttpSession
 5. ChangeSessionIdAuthenticationStrategy 更换 Session ID（防 Session Fixation）
 6. 返回用户信息
+
+### 认证错误状态码总结
+
+| 场景 | HTTP | 响应 |
+|---|---|---|
+| 用户名或密码错误 | 401 | `用户名或密码错误` |
+| 用户不存在 | 401 | `用户名或密码错误` |
+| 账号已禁用 | 403 | `账号已被禁用` |
+| DB/基础设施异常 | 500 | `服务器内部错误，请稍后再试` |
 
 ## GET /api/users/me
 

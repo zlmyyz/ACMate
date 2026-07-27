@@ -249,4 +249,62 @@ class SessionLoginTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.admin").value(true));
     }
+
+    @Test
+    void shouldReturn500OnDatabaseErrorDuringLogin() throws Exception {
+        when(appUserMapper.selectOne(any(LambdaQueryWrapper.class)))
+                .thenThrow(new RuntimeException("Connection refused"));
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"testuser\",\"password\":\"" + RAW_PASSWORD + "\"}"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.code").value(500))
+                .andExpect(jsonPath("$.message").value("服务器内部错误，请稍后再试"));
+    }
+
+    @Test
+    void shouldNotLeakSqlIn500Response() throws Exception {
+        when(appUserMapper.selectOne(any(LambdaQueryWrapper.class)))
+                .thenThrow(new RuntimeException("Unknown column 'bio' in 'field list'"));
+
+        String responseBody = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"testuser\",\"password\":\"" + RAW_PASSWORD + "\"}"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.code").value(500))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        assert !responseBody.contains("Unknown column");
+        assert !responseBody.contains("bio");
+        assert !responseBody.contains("SQL");
+        assert !responseBody.contains("Connection refused");
+    }
+
+    @Test
+    void shouldReturn401ForWrongPassword() throws Exception {
+        AppUser user = buildAppUser(1L, "testuser", "test@example.com", 0, 1);
+        when(appUserMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(user);
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"testuser\",\"password\":\"wrongpassword\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(401))
+                .andExpect(jsonPath("$.message").value("用户名或密码错误"));
+    }
+
+    @Test
+    void shouldReturn401ForNonExistentUser() throws Exception {
+        when(appUserMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"nonexistent\",\"password\":\"password123\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(401))
+                .andExpect(jsonPath("$.message").value("用户名或密码错误"));
+    }
 }

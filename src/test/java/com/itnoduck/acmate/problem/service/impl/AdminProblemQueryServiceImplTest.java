@@ -9,8 +9,10 @@ import com.itnoduck.acmate.problem.dto.MineProblemStatusFilter;
 import com.itnoduck.acmate.problem.dto.ProblemQueryRequest;
 import com.itnoduck.acmate.problem.entity.Problem;
 import com.itnoduck.acmate.problem.mapper.ProblemMapper;
+import com.itnoduck.acmate.testutil.MybatisPlusTestHelper;
 import com.itnoduck.acmate.user.entity.AppUser;
 import com.itnoduck.acmate.user.mapper.AppUserMapper;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -28,6 +30,11 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AdminProblemQueryServiceImplTest {
+
+    @BeforeAll
+    static void initMybatisPlus() {
+        MybatisPlusTestHelper.initEntityTables();
+    }
 
     @Mock
     private ProblemMapper problemMapper;
