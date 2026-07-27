@@ -1278,6 +1278,46 @@ BUILD SUCCESS（后端编译通过，前端 type-check + lint + build + test 全
 
 后端编译通过（116个源文件），前端 type-check + build + test 全部通过（107测试）
 
+## 2026-07-27：强制用户昵称全局唯一
+
+### 本次目标
+
+为 app_user 表增加昵称唯一约束，后端注册和资料修改增加昵称重复校验，前端注册页增加提示文案。
+
+### 修改文件
+
+**数据库迁移（新建）：**
+- `db/migration/V11__add_nickname_unique.sql` — 增加 uk_app_user_nickname 唯一索引
+
+**后端修改：**
+- `user/dto/UpdateProfileRequest.java` — 补充 @Setter 注解
+- `user/service/impl/UserRegistrationServiceImpl.java` — 注册时增加昵称查重（第 2 步），DuplicateKeyException 区分昵称冲突
+- `user/service/impl/UserProfileServiceImpl.java` — 修改资料时增加昵称查重（trim 后比较），空昵称 400、重复 409
+- `common/exception/GlobalExceptionHandler.java` — DuplicateKeyException 中区分昵称冲突并返回中文消息
+
+**前端修改：**
+- `views/RegisterView.vue` — username 标签旁增加"注册后不可修改"，输入框下增加说明文案，nickname 标签旁增加"昵称全站唯一"
+- `views/ProfileEditView.vue` — 修正昵称 trim 比较逻辑
+
+**测试：**
+- `UserProfileServiceImplTest.java` — 5 个新测试（保留自己的昵称、改为唯一昵称、重复拒绝、trim 后空拒绝、并发 DuplicateKeyException）
+- `UserRegistrationServiceImplTest.java` — 2 个新测试（昵称已存在 409、并发昵称重复 DuplicateKeyException）
+- `auth.test.ts` — 3 个新测试（注册页文案验证）
+
+### 设计决策
+
+- 先查后写（selectCount）作为主校验，数据库 uk_app_user_nickname 唯一索引作为并发兜底
+- utf8mb4_0900_ai_ci 排序规则天然支持大小写不敏感和重音不敏感
+- trim 后空昵称返回 400，本地英文提示
+- 保留自己的昵称不触发查重
+
+### 测试结果
+
+```
+后端 Tests run: 239, Failures: 0
+前端 Tests run: 110, Failures: 0
+```
+
 ## 2026-07-27：发布前审计
 
 ### 审计范围

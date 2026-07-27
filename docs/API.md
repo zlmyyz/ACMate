@@ -48,13 +48,23 @@
 }
 ```
 
-**409 Conflict** — 用户名或邮箱已存在
+**409 Conflict** — 用户名、昵称或邮箱已存在
 
 ```json
 {
   "code": 409,
   "message": "用户名已被使用",
   "timestamp": "2026-07-24T19:28:49.1197739"
+}
+```
+
+昵称冲突：
+
+```json
+{
+  "code": 409,
+  "message": "该昵称已被使用，请更换其他昵称。",
+  "timestamp": "2026-07-27T15:54:15.8456861"
 }
 ```
 
@@ -244,6 +254,54 @@ GET 请求不受 CSRF 保护。不要求携带 CSRF Token。
 - 同时清除 SecurityContext 和 HttpSession
 - 不接受任何请求体或参数
 - 退出后旧 Session 无法访问任何受保护接口
+
+## PUT /api/users/me/profile
+
+修改当前用户的昵称和个人简介。
+
+### 认证
+
+需要登录后携带 JSESSIONID Cookie。
+
+### CSRF
+
+需要携带有效 CSRF Token。
+
+### 请求字段
+
+| 字段 | 类型 | 必填 | 校验规则 |
+|------|------|------|----------|
+| nickname | string | 否 | 2-32 字符，去除首尾空格后不能为空 |
+| bio | string | 否 | 最多 500 字符 |
+
+### 规范化规则
+
+- nickname：去除首尾空格
+- bio：去除首尾空格
+
+### 成功响应
+
+**200 OK** — 响应体为空。
+
+### 错误响应
+
+**400 Bad Request** — 昵称格式无效或去除空格后为空
+
+**401 Unauthorized** — 未登录
+
+**403 Forbidden** — 缺少/无效 CSRF Token
+
+**409 Conflict** — 昵称已被其他用户使用
+
+```json
+{"code": 409, "message": "该昵称已被使用，请更换其他昵称。", "timestamp": "..."}
+```
+
+### 规则
+
+- 昵称与当前昵称相同时不检查唯一性
+- 昵称去除首尾空格后与当前昵称相同时视为未修改
+- 数据库唯一索引 `uk_app_user_nickname` 作为并发安全兜底
 
 ## GET /api/problems/{id}
 
