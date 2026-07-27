@@ -1,5 +1,55 @@
 # DEVLOG
 
+## 2026-07-27：讨论区后端完善
+
+### 本次目标
+
+全面完善讨论区后端：帖子完整生命周期、停用审计追踪、权限模型、评论与回复、点赞原子操作、N+1 查询优化、输入安全、46 个测试。
+
+### 修改文件
+
+**后端修改：**
+- `discussion/service/DiscussionService.java` — 新增 `restorePost` 方法
+- `discussion/service/impl/DiscussionServiceImpl.java` — 全面重写：帖子类型校验（6 种固定类型）、HTML 标签拦截、N+1 批量加载作者和题目、原子计数器（view_count/like_count/comment_count）、停用来源追踪（CREATOR/ADMIN）、恢复端点（作者仅可恢复自己停用的，管理员可恢复任意）、管理员编辑权限、评论停用追踪
+- `discussion/controller/DiscussionController.java` — 新增 `POST /api/posts/{id}/restore` 端点
+- `discussion/dto/PostDetailResponse.java` — 新增 `deactivationSource`、`deactivationReason` 字段
+- `admin/service/impl/AdminContentServiceImpl.java` — 注入 `AuditLogService`，管理员停用/恢复操作写入审计日志
+
+**测试：**
+- `discussion/service/impl/DiscussionServiceImplTest.java` — 从 5 个扩展到 46 个测试，覆盖帖子创建（6 种类型/公告权限/题解关联/HTML 拦截/空标题空内容）、更新时间填充、帖子编辑（作者/管理员/非作者拒绝）、帖子详情（404 区分/停用帖子可见性）、列表查询（N+1 批量加载验证）、停用（CREATOR 来源追踪/幂等）、恢复（作者恢复/管理员恢复/管理员停用无法自行恢复/404/幂等/清除审计字段）、评论（一级/回复/拒绝三级嵌套/拒绝 HTML/拒绝空评论/停用帖子拒绝/作者删除/来源追踪）、点赞（like/unlike）、权限边界
+
+### 核心改进
+
+**N+1 修复：**
+- `listPosts`：`selectBatchIds` 批量加载作者和题目，不再逐条查询
+- `getPostDetail`：`selectBatchIds` 批量加载评论作者和回复目标用户
+
+**原子计数器：**
+- `view_count`：`setSql("view_count = view_count + 1")` WHERE id=?
+- `like_count`：`setSql("like_count = like_count + 1")` / `setSql("like_count = GREATEST(like_count - 1, 0)")`
+- `comment_count`：`setSql("comment_count = comment_count + 1")`
+- 避免读-改-写竞态条件
+
+**停用审计追踪：**
+- 作者自行停用：`deactivation_source = 'CREATOR'`，无需原因
+- 管理员强制停用：`deactivation_source = 'ADMIN'`，必须填写原因
+- 作者只能恢复 `CREATOR` 来源的停用帖子；管理员可恢复任意
+- 恢复后清除所有停用审计字段
+
+**输入安全：**
+- 帖子类型：白名单校验（SOLUTION/QUESTION/CONTEST_SUMMARY/TRAINING_EXPERIENCE/ANNOUNCEMENT/OTHER）
+- HTML 拦截：正则检测 `<script|iframe|object|embed|form|input|...` 等危险标签
+- 标题/内容 trim + 空检查
+
+### 测试结果
+
+```
+后端 Tests run: 289, Failures: 0, Errors: 0, Skipped: 0
+前端 Tests run: 109/110 通过（1 个预存的 RegisterView 超时测试）
+```
+
+---
+
 ## 2026-07-27（二轮）：测试稳定与认证异常语义修复
 
 ### 修复：MyBatis-Plus Lambda Cache（46 个测试失败）

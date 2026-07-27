@@ -3,6 +3,7 @@ package com.itnoduck.acmate.admin.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.itnoduck.acmate.admin.service.AdminContentService;
+import com.itnoduck.acmate.auditlog.service.AuditLogService;
 import com.itnoduck.acmate.common.exception.BusinessException;
 import com.itnoduck.acmate.discussion.entity.Post;
 import com.itnoduck.acmate.discussion.entity.PostComment;
@@ -20,10 +21,13 @@ public class AdminContentServiceImpl implements AdminContentService {
 
     private final PostMapper postMapper;
     private final PostCommentMapper commentMapper;
+    private final AuditLogService auditLogService;
 
-    public AdminContentServiceImpl(PostMapper postMapper, PostCommentMapper commentMapper) {
+    public AdminContentServiceImpl(PostMapper postMapper, PostCommentMapper commentMapper,
+                                    AuditLogService auditLogService) {
         this.postMapper = postMapper;
         this.commentMapper = commentMapper;
+        this.auditLogService = auditLogService;
     }
 
     @Override
@@ -66,6 +70,7 @@ public class AdminContentServiceImpl implements AdminContentService {
         p.setDeactivatedBy(user.getId());
         p.setDeactivationTime(LocalDateTime.now());
         postMapper.updateById(p);
+        auditLogService.log(user.getId(), "ADMIN_DEACTIVATE_POST", "POST", id, reason, "active", "deactivated");
     }
 
     @Override
@@ -80,6 +85,7 @@ public class AdminContentServiceImpl implements AdminContentService {
         p.setDeactivatedBy(null);
         p.setDeactivationTime(null);
         postMapper.updateById(p);
+        auditLogService.log(user.getId(), "ADMIN_RESTORE_POST", "POST", id, null, "deactivated", "active");
     }
 
     @Override
@@ -119,6 +125,7 @@ public class AdminContentServiceImpl implements AdminContentService {
         c.setDeactivatedBy(user.getId());
         c.setDeactivationTime(LocalDateTime.now());
         commentMapper.updateById(c);
+        auditLogService.log(user.getId(), "ADMIN_DEACTIVATE_COMMENT", "COMMENT", id, reason, "active", "deactivated");
     }
 
     @Override
@@ -133,5 +140,6 @@ public class AdminContentServiceImpl implements AdminContentService {
         c.setDeactivatedBy(null);
         c.setDeactivationTime(null);
         commentMapper.updateById(c);
+        auditLogService.log(user.getId(), "ADMIN_RESTORE_COMMENT", "COMMENT", id, null, "deactivated", "active");
     }
 }

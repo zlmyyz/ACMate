@@ -21,6 +21,8 @@ public class PostDetailResponse {
     private int commentCount;
     private int viewCount;
     private boolean likedByMe;
+    private String deactivationSource;
+    private String deactivationReason;
     private List<CommentResponse> comments;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
@@ -59,6 +61,10 @@ public class PostDetailResponse {
     public void setViewCount(int v) { this.viewCount = v; }
     public boolean isLikedByMe() { return likedByMe; }
     public void setLikedByMe(boolean v) { this.likedByMe = v; }
+    public String getDeactivationSource() { return deactivationSource; }
+    public void setDeactivationSource(String v) { this.deactivationSource = v; }
+    public String getDeactivationReason() { return deactivationReason; }
+    public void setDeactivationReason(String v) { this.deactivationReason = v; }
     public List<CommentResponse> getComments() { return comments; }
     public void setComments(List<CommentResponse> v) { this.comments = v; }
     public LocalDateTime getCreateTime() { return createTime; }

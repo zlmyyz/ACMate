@@ -59,6 +59,13 @@ public class DiscussionController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/{id}/restore")
+    public ResponseEntity<Void> restore(@PathVariable Long id,
+                                        @AuthenticationPrincipal AuthenticatedUser user) {
+        discussionService.restorePost(id, user.getId());
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/{id}/comments")
     public CommentResponse addComment(@PathVariable Long id,
                                        @Valid @RequestBody CreateCommentRequest request,
@@ -74,10 +81,17 @@ public class DiscussionController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{id}/like")
-    public ResponseEntity<Void> toggleLike(@PathVariable Long id,
-                                            @AuthenticationPrincipal AuthenticatedUser user) {
-        discussionService.toggleLike(id, user.getId());
+    @PutMapping("/{id}/like")
+    public ResponseEntity<Void> like(@PathVariable Long id,
+                                    @AuthenticationPrincipal AuthenticatedUser user) {
+        discussionService.like(id, user.getId());
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{id}/like")
+    public ResponseEntity<Void> unlike(@PathVariable Long id,
+                                       @AuthenticationPrincipal AuthenticatedUser user) {
+        discussionService.unlike(id, user.getId());
         return ResponseEntity.noContent().build();
     }
 }

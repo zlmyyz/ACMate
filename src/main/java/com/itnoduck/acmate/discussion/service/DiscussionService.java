@@ -10,7 +10,9 @@ public interface DiscussionService {
     List<PostSummaryResponse> listPosts(String postType, Long problemId, String keyword, int page, int size);
     int countPosts(String postType, Long problemId, String keyword);
     void deletePost(Long postId, Long userId);
+    void restorePost(Long postId, Long userId);
     CommentResponse addComment(Long postId, CreateCommentRequest req, Long userId);
     void deleteComment(Long postId, Long commentId, Long userId);
-    void toggleLike(Long postId, Long userId);
+    void like(Long postId, Long userId);
+    void unlike(Long postId, Long userId);
 }
