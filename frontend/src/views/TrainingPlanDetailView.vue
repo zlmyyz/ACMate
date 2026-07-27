@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
 import {
   getPlanDetail,
   joinPlan,
-  togglePlanActive,
-  deletePlan,
+  deactivatePlan,
+  restorePlan,
+  removeMember,
 } from '@/api/training'
 import type { PlanDetail } from '@/types/training'
 import { trainingTypeLabels, trainingTimeStatusLabels, platformLabels } from '@/constants/labels'
@@ -16,7 +16,6 @@ import ErrorState from '@/components/common/ErrorState.vue'
 
 const route = useRoute()
 const router = useRouter()
-const auth = useAuthStore()
 
 const plan = ref<PlanDetail | null>(null)
 const loading = ref(true)
@@ -24,12 +23,13 @@ const error = ref('')
 const notFound = ref(false)
 const joining = ref(false)
 const joinError = ref('')
+const deactivating = ref(false)
+const deactivateReason = ref('')
+const showDeactivateDialog = ref(false)
+const actionError = ref('')
+const removingMemberId = ref<number | null>(null)
 
 const planId = computed(() => Number(route.params.id))
-const canEdit = computed(() => {
-  if (!plan.value) return false
-  return auth.user?.id === plan.value.creatorUserId
-})
 
 async function fetchDetail() {
   loading.value = true
@@ -38,10 +38,13 @@ async function fetchDetail() {
   try {
     plan.value = await getPlanDetail(planId.value)
   } catch (e: unknown) {
-    const err = e as { response?: { status: number } }
+    const err = e as { response?: { status: number; data?: { message?: string } } }
     if (err.response?.status === 404) { notFound.value = true; return }
-    if (err.response?.status === 403) { error.value = '无权查看该计划'; return }
-    error.value = '加载计划详情失败，请稍后重试'
+    if (err.response?.status === 401) {
+      router.push({ name: 'login', query: { redirect: router.currentRoute.value.fullPath } })
+      return
+    }
+    error.value = err.response?.data?.message || '加载计划详情失败，请稍后重试'
   } finally {
     loading.value = false
   }
@@ -61,19 +64,45 @@ async function handleJoin() {
   }
 }
 
-async function handleToggleActive() {
+async function handleDeactivate() {
+  actionError.value = ''
+  deactivating.value = true
   try {
-    await togglePlanActive(planId.value)
+    await deactivatePlan(planId.value, deactivateReason.value || undefined)
+    showDeactivateDialog.value = false
+    deactivateReason.value = ''
     await fetchDetail()
-  } catch { /* ignore */ }
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { message?: string } } }
+    actionError.value = err.response?.data?.message ?? '操作失败'
+  } finally {
+    deactivating.value = false
+  }
 }
 
-async function handleDelete() {
-  if (!confirm('确定要删除该计划吗？此操作不可撤销。')) return
+async function handleRestore() {
+  actionError.value = ''
   try {
-    await deletePlan(planId.value)
-    router.push({ name: 'training-plans' })
-  } catch { /* ignore */ }
+    await restorePlan(planId.value)
+    await fetchDetail()
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { message?: string } } }
+    actionError.value = err.response?.data?.message ?? '操作失败'
+  }
+}
+
+async function handleRemoveMember(userId: number) {
+  if (!confirm('确定要移除该成员吗？')) return
+  removingMemberId.value = userId
+  try {
+    await removeMember(planId.value, userId)
+    await fetchDetail()
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { message?: string } } }
+    alert(err.response?.data?.message ?? '移除失败')
+  } finally {
+    removingMemberId.value = null
+  }
 }
 
 function formatDate(d: string | null): string {
@@ -106,7 +135,8 @@ onMounted(fetchDetail)
 
     <template v-else-if="plan">
       <div v-if="!plan.active" class="inactive-notice">
-        该计划已停用。
+        该计划已停用
+        <span v-if="plan.deactivationReason">：{{ plan.deactivationReason }}</span>
       </div>
 
       <div class="plan-card">
@@ -121,14 +151,38 @@ onMounted(fetchDetail)
             </div>
           </div>
           <div class="plan-actions">
-            <button v-if="plan.planType === 'PUBLIC' && !plan.member && plan.active" class="join-btn" :disabled="joining" @click="handleJoin">
+            <button v-if="plan.canJoin" class="join-btn" :disabled="joining" @click="handleJoin">
               {{ joining ? '加入中...' : '加入计划' }}
             </button>
-            <button v-if="canEdit" class="edit-btn" @click="router.push({ name: 'edit-plan', params: { id: planId } })">编辑</button>
-            <button v-if="canEdit" class="toggle-btn" @click="handleToggleActive">
-              {{ plan.active ? '停用' : '恢复' }}
+            <span v-else-if="plan.joined && !plan.creator" class="joined-label">已加入</span>
+
+            <button v-if="plan.canEdit" class="edit-btn" @click="router.push({ name: 'edit-plan', params: { id: planId } })">编辑</button>
+
+            <template v-if="plan.canDeactivate && plan.creator">
+              <button class="deactivate-btn" @click="showDeactivateDialog = true">停用</button>
+            </template>
+            <template v-if="plan.canDeactivate && !plan.creator">
+              <button class="deactivate-btn" @click="showDeactivateDialog = true">强制停用</button>
+            </template>
+
+            <button v-if="plan.canRestore" class="restore-btn" @click="handleRestore">恢复</button>
+          </div>
+        </div>
+
+        <div v-if="showDeactivateDialog" class="deactivate-dialog">
+          <template v-if="plan.creator">
+            <p>确定要停用该计划吗？停用后其他用户将无法加入。</p>
+          </template>
+          <template v-else>
+            <p>管理员强制停用，请输入原因：</p>
+            <input v-model="deactivateReason" class="deactivate-reason" placeholder="停用原因（必填）" maxlength="500" />
+          </template>
+          <div class="dialog-actions">
+            <p v-if="actionError" class="form-error">{{ actionError }}</p>
+            <button class="cancel-btn" @click="showDeactivateDialog = false; deactivateReason = ''; actionError = ''">取消</button>
+            <button class="confirm-deactivate-btn" :disabled="deactivating || (!plan.creator && !deactivateReason.trim())" @click="handleDeactivate">
+              {{ deactivating ? '处理中...' : '确认停用' }}
             </button>
-            <button v-if="canEdit" class="delete-btn" @click="handleDelete">删除</button>
           </div>
         </div>
 
@@ -166,6 +220,29 @@ onMounted(fetchDetail)
           </div>
         </div>
       </div>
+
+      <div v-if="plan.members && plan.members.length" class="members-card">
+        <div class="members-header">
+          <h2 class="section-title">成员列表（{{ plan.members.length }}）</h2>
+        </div>
+        <div class="member-list">
+          <div v-for="m in plan.members" :key="m.userId" class="member-row">
+            <RouterLink :to="`/users/${m.userId}`" class="member-name">
+              {{ m.nickname || m.username }}
+            </RouterLink>
+            <span v-if="m.creator" class="creator-badge">创建者</span>
+            <span class="member-join-time">{{ formatDate(m.joinTime) }}</span>
+            <button
+              v-if="plan.canRemoveMembers && !m.creator"
+              class="remove-member-btn"
+              :disabled="removingMemberId === m.userId"
+              @click.stop="handleRemoveMember(m.userId)"
+            >
+              {{ removingMemberId === m.userId ? '移除中...' : '移除' }}
+            </button>
+          </div>
+        </div>
+      </div>
     </template>
   </PageContainer>
 </template>
@@ -187,7 +264,7 @@ onMounted(fetchDetail)
   margin-bottom: var(--space-stack-md);
 }
 
-.plan-card, .problems-card {
+.plan-card, .problems-card, .members-card {
   background: var(--color-surface-card);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-lg);
@@ -224,7 +301,7 @@ onMounted(fetchDetail)
 .time-status.not_started { color: var(--color-status-pending); background: rgba(243,161,60,0.12); }
 .time-status.ended { color: var(--color-on-surface-variant); background: var(--color-surface-container); }
 
-.plan-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.plan-actions { display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; align-items: center; }
 
 .join-btn {
   height: 36px; padding: 0 20px; border: none; border-radius: var(--radius-md);
@@ -234,14 +311,45 @@ onMounted(fetchDetail)
 .join-btn:hover:not(:disabled) { opacity: 0.9; }
 .join-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-.edit-btn, .toggle-btn, .delete-btn {
+.joined-label {
+  font-size: var(--text-body-sm); color: var(--color-status-success); font-weight: 600;
+}
+
+.edit-btn, .deactivate-btn, .restore-btn {
   height: 36px; padding: 0 14px; border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md); background: transparent;
   font-size: var(--text-body-sm); font-weight: 500; cursor: pointer;
 }
 .edit-btn:hover { border-color: var(--color-primary-container); color: var(--color-primary-container); }
-.toggle-btn:hover { border-color: var(--color-status-pending); color: var(--color-status-pending); }
-.delete-btn:hover { border-color: var(--color-status-critical); color: var(--color-status-critical); }
+.deactivate-btn:hover { border-color: var(--color-status-pending); color: var(--color-status-pending); }
+.restore-btn:hover { border-color: var(--color-status-success); color: var(--color-status-success); }
+
+.deactivate-dialog {
+  margin-top: -8px; margin-bottom: 16px; padding: 16px;
+  background: var(--color-surface-container-lowest);
+  border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md);
+}
+.deactivate-dialog p { font-size: var(--text-body-md); margin-bottom: 8px; }
+.deactivate-reason {
+  width: 100%; padding: 8px 12px; border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md); font-size: var(--text-body-md);
+  margin-bottom: 8px;
+}
+.deactivate-reason:focus { outline: none; border-color: var(--color-primary-container); }
+.dialog-actions { display: flex; gap: 8px; align-items: center; justify-content: flex-end; }
+.form-error { color: var(--color-status-critical); font-size: var(--text-body-sm); margin-right: auto; }
+.cancel-btn {
+  height: 32px; padding: 0 14px; border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md); background: transparent;
+  font-size: var(--text-body-sm); cursor: pointer;
+}
+.confirm-deactivate-btn {
+  height: 32px; padding: 0 16px; border: none; border-radius: var(--radius-md);
+  background: var(--color-status-critical); color: #fff;
+  font-size: var(--text-body-sm); font-weight: 600; cursor: pointer;
+}
+.confirm-deactivate-btn:hover:not(:disabled) { opacity: 0.9; }
+.confirm-deactivate-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .join-error { color: var(--color-status-critical); font-size: var(--text-body-sm); margin-top: -8px; margin-bottom: 8px; }
 
@@ -260,6 +368,11 @@ onMounted(fetchDetail)
 .section-title {
   font-family: var(--font-headline); font-size: var(--text-headline-sm);
   font-weight: 600; color: var(--color-on-surface);
+  margin-bottom: 0;
+}
+
+.members-header {
+  display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 16px; padding-bottom: 12px;
   border-bottom: 1px solid var(--color-border-subtle);
 }
@@ -302,6 +415,38 @@ onMounted(fetchDetail)
   font-size: var(--text-body-sm); color: var(--color-on-surface-variant);
   font-family: var(--font-mono); white-space: nowrap;
 }
+
+.member-list { display: flex; flex-direction: column; gap: 4px; }
+
+.member-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: var(--radius-sm);
+  transition: background 0.15s;
+}
+.member-row:hover { background: var(--color-surface-container-low); }
+
+.member-name { font-size: var(--text-body-md); color: var(--color-on-surface); font-weight: 500; }
+.member-name:hover { color: var(--color-primary-container); }
+
+.creator-badge {
+  font-size: var(--text-label-sm); font-weight: 600;
+  padding: 1px 8px; border-radius: 999px;
+  color: var(--color-on-primary); background: var(--color-primary-container);
+}
+
+.member-join-time {
+  margin-left: auto;
+  font-size: var(--text-body-sm); color: var(--color-on-surface-variant);
+}
+
+.remove-member-btn {
+  height: 28px; padding: 0 10px; border: 1px solid var(--color-status-critical);
+  border-radius: var(--radius-sm); background: transparent;
+  color: var(--color-status-critical);
+  font-size: var(--text-label-sm); cursor: pointer;
+}
+.remove-member-btn:hover:not(:disabled) { background: rgba(217,45,32,0.08); }
+.remove-member-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .status-page {
   text-align: center; padding: 60px 24px;

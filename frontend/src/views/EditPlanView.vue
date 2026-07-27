@@ -33,14 +33,22 @@ async function fetchPlan() {
   error.value = ''
   try {
     plan.value = await getPlanDetail(planId.value)
+    if (!plan.value.canEdit) {
+      error.value = '无权编辑该计划'
+      return
+    }
     title.value = plan.value.title
     description.value = plan.value.description ?? ''
     startTime.value = toLocal(plan.value.startTime)
     endTime.value = toLocal(plan.value.endTime)
   } catch (e: unknown) {
-    const err = e as { response?: { status: number } }
+    const err = e as { response?: { status: number; data?: { message?: string } } }
     if (err.response?.status === 404) { error.value = '计划不存在'; return }
     if (err.response?.status === 403) { error.value = '无权编辑该计划'; return }
+    if (err.response?.status === 401) {
+      router.push({ name: 'login', query: { redirect: router.currentRoute.value.fullPath } })
+      return
+    }
     error.value = '加载失败，请稍后重试'
   } finally {
     loading.value = false
@@ -74,12 +82,12 @@ onMounted(fetchPlan)
   <PageContainer>
     <template #header>
       <div class="edit-header">
-        <button class="back-link" @click="router.back()">&larr; 返回</button>
+        <button class="back-link" @click="router.push({ name: 'plan-detail', params: { id: planId } })">&larr; 返回</button>
       </div>
     </template>
 
     <LoadingState v-if="loading" />
-    <ErrorState v-else-if="error" :message="error" @retry="fetchPlan" />
+    <ErrorState v-else-if="error" :message="error" />
 
     <div v-else class="form-card">
       <h1 class="form-title">编辑训练计划</h1>
@@ -107,7 +115,7 @@ onMounted(fetchPlan)
 
       <div class="form-actions">
         <p v-if="saveError" class="form-error">{{ saveError }}</p>
-        <button class="cancel-btn" @click="router.back()">取消</button>
+        <button class="cancel-btn" @click="router.push({ name: 'plan-detail', params: { id: planId } })">取消</button>
         <button class="save-btn" :disabled="saving || !title.trim()" @click="handleSave">
           {{ saving ? '保存中...' : '保存' }}
         </button>
@@ -150,9 +158,7 @@ onMounted(fetchPlan)
   color: var(--color-on-surface); background: var(--color-surface-container-lowest);
   font-family: inherit;
 }
-.field-input:focus, .field-textarea:focus {
-  outline: none; border-color: var(--color-primary-container);
-}
+.field-input:focus, .field-textarea:focus { outline: none; border-color: var(--color-primary-container); }
 .field-textarea { resize: vertical; min-height: 80px; }
 
 .field-row { display: flex; gap: 16px; }

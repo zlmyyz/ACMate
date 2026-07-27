@@ -69,6 +69,9 @@ async function handleCreate() {
             <span>{{ auth.isAdmin ? '公开计划' : '公开计划（仅管理员）' }}</span>
           </label>
         </div>
+        <p v-if="planType === 'PERSONAL'" class="type-hint">
+          个人计划仅自己使用，创建后自动成为唯一成员，不会出现在公开列表中。
+        </p>
       </div>
 
       <div class="field">
@@ -142,6 +145,13 @@ async function handleCreate() {
 .type-options { display: flex; gap: 24px; }
 .type-option { display: flex; align-items: center; gap: 6px; font-size: var(--text-body-md); cursor: pointer; }
 .type-option input[type="radio"]:disabled + span { color: var(--color-on-surface-variant); opacity: 0.5; }
+
+.type-hint {
+  font-size: var(--text-body-sm); color: var(--color-on-surface-variant);
+  margin: -10px 0 0 0; padding: 6px 10px;
+  background: var(--color-surface-container-lowest);
+  border-radius: var(--radius-sm);
+}
 
 .field-row { display: flex; gap: 16px; }
 .field-row .field { flex: 1; }

@@ -18,6 +18,14 @@ public class TrainingPlan {
 
     private Integer isActive;
 
+    private String deactivationSource;
+
+    private String deactivationReason;
+
+    private Long deactivatedBy;
+
+    private LocalDateTime deactivationTime;
+
     private LocalDateTime startTime;
 
     private LocalDateTime endTime;
@@ -44,6 +52,18 @@ public class TrainingPlan {
 
     public Integer getIsActive() { return isActive; }
     public void setIsActive(Integer isActive) { this.isActive = isActive; }
+
+    public String getDeactivationSource() { return deactivationSource; }
+    public void setDeactivationSource(String v) { this.deactivationSource = v; }
+
+    public String getDeactivationReason() { return deactivationReason; }
+    public void setDeactivationReason(String v) { this.deactivationReason = v; }
+
+    public Long getDeactivatedBy() { return deactivatedBy; }
+    public void setDeactivatedBy(Long v) { this.deactivatedBy = v; }
+
+    public LocalDateTime getDeactivationTime() { return deactivationTime; }
+    public void setDeactivationTime(LocalDateTime v) { this.deactivationTime = v; }
 
     public LocalDateTime getStartTime() { return startTime; }
     public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }

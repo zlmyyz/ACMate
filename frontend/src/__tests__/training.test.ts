@@ -3,13 +3,13 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
 
-const { mockListPlans, mockGetPlanDetail, mockCreatePlan, mockUpdatePlan, mockDeletePlan, mockTogglePlanActive, mockJoinPlan } = vi.hoisted(() => ({
+const { mockListPlans, mockGetPlanDetail, mockCreatePlan, mockUpdatePlan, mockDeactivatePlan, mockRestorePlan, mockJoinPlan } = vi.hoisted(() => ({
   mockListPlans: vi.fn(),
   mockGetPlanDetail: vi.fn(),
   mockCreatePlan: vi.fn(),
   mockUpdatePlan: vi.fn(),
-  mockDeletePlan: vi.fn(),
-  mockTogglePlanActive: vi.fn(),
+  mockDeactivatePlan: vi.fn(),
+  mockRestorePlan: vi.fn(),
   mockJoinPlan: vi.fn(),
 }))
 
@@ -18,8 +18,8 @@ vi.mock('@/api/training', () => ({
   getPlanDetail: mockGetPlanDetail,
   createPlan: mockCreatePlan,
   updatePlan: mockUpdatePlan,
-  deletePlan: mockDeletePlan,
-  togglePlanActive: mockTogglePlanActive,
+  deactivatePlan: mockDeactivatePlan,
+  restorePlan: mockRestorePlan,
   joinPlan: mockJoinPlan,
   addPlanProblem: vi.fn(),
   removePlanProblem: vi.fn(),
@@ -40,6 +40,38 @@ function emptyRouter() {
   return createRouter({ history: createWebHistory(), routes: [] })
 }
 
+function makePlanDetail(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 1,
+    title: 'Test Plan',
+    description: null,
+    planType: 'PUBLIC',
+    active: true,
+    deactivationSource: null,
+    deactivationReason: null,
+    creatorUserId: 1,
+    creatorUsername: 'admin',
+    creatorNickname: 'Admin',
+    startTime: null,
+    endTime: null,
+    timeStatus: 'ONGOING',
+    problemCount: 0,
+    memberCount: 1,
+    joined: false,
+    creator: false,
+    canEdit: false,
+    canJoin: true,
+    canRemoveMembers: false,
+    canDeactivate: false,
+    canRestore: false,
+    members: [{ userId: 1, username: 'admin', nickname: 'Admin', avatarUrl: null, joinTime: '2024-01-01T00:00:00', creator: true }],
+    problems: [],
+    createTime: '2024-01-01T00:00:00',
+    updateTime: '2024-01-01T00:00:00',
+    ...overrides,
+  }
+}
+
 describe('Training Plan API', () => {
   beforeEach(() => { vi.clearAllMocks() })
 
@@ -52,30 +84,30 @@ describe('Training Plan API', () => {
 
   it('should call getPlanDetail with id', async () => {
     const { getPlanDetail } = await import('@/api/training')
-    mockGetPlanDetail.mockResolvedValueOnce({ id: 1 })
+    mockGetPlanDetail.mockResolvedValueOnce(makePlanDetail())
     await getPlanDetail(1)
     expect(mockGetPlanDetail).toHaveBeenCalledWith(1)
   })
 
   it('should call createPlan with data', async () => {
     const { createPlan } = await import('@/api/training')
-    mockCreatePlan.mockResolvedValueOnce({ id: 1 })
+    mockCreatePlan.mockResolvedValueOnce(makePlanDetail())
     await createPlan({ title: 'Test Plan' })
     expect(mockCreatePlan).toHaveBeenCalledWith({ title: 'Test Plan' })
   })
 
-  it('should call deletePlan with id', async () => {
-    const { deletePlan } = await import('@/api/training')
-    mockDeletePlan.mockResolvedValueOnce(undefined)
-    await deletePlan(1)
-    expect(mockDeletePlan).toHaveBeenCalledWith(1)
+  it('should call deactivatePlan with id and reason', async () => {
+    const { deactivatePlan } = await import('@/api/training')
+    mockDeactivatePlan.mockResolvedValueOnce(undefined)
+    await deactivatePlan(1, 'reason')
+    expect(mockDeactivatePlan).toHaveBeenCalledWith(1, 'reason')
   })
 
-  it('should call togglePlanActive with id', async () => {
-    const { togglePlanActive } = await import('@/api/training')
-    mockTogglePlanActive.mockResolvedValueOnce(undefined)
-    await togglePlanActive(1)
-    expect(mockTogglePlanActive).toHaveBeenCalledWith(1)
+  it('should call restorePlan with id', async () => {
+    const { restorePlan } = await import('@/api/training')
+    mockRestorePlan.mockResolvedValueOnce(undefined)
+    await restorePlan(1)
+    expect(mockRestorePlan).toHaveBeenCalledWith(1)
   })
 
   it('should call joinPlan with id', async () => {
@@ -110,48 +142,37 @@ describe('TrainingPlanDetailView', () => {
   }
 
   it('should render plan detail after load', async () => {
-    mockGetPlanDetail.mockResolvedValueOnce({
-      id: 1,
+    mockGetPlanDetail.mockResolvedValueOnce(makePlanDetail({
       title: 'Test Plan',
       description: 'Plan desc',
-      planType: 'PUBLIC',
-      active: true,
-      creatorUserId: 1,
-      creatorUsername: 'admin',
-      creatorNickname: 'Admin',
-      startTime: null,
-      endTime: null,
-      timeStatus: 'ONGOING',
-      problemCount: 2,
-      memberCount: 3,
-      member: true,
+      creator: true,
+      joined: true,
+      canEdit: true,
+      memberCount: 1,
       problems: [{ id: 1, problemId: 1, problemTitle: 'Problem 1', platform: 'CUSTOM', difficulty: null, problemActive: true, sortOrder: 1, required: true }],
-      createTime: '2024-01-01T00:00:00',
-      updateTime: '2024-01-01T00:00:00',
-    })
+    }))
 
     const wrapper = await mountDetail('/training-plans/1')
     await flushPromises()
 
     expect(wrapper.text()).toContain('Test Plan')
     expect(wrapper.text()).toContain('必做')
-    expect(wrapper.text()).toContain('自定义')
+    expect(wrapper.text()).toContain('编辑')
   })
 
-  it('should show join button when not a member', async () => {
-    mockGetPlanDetail.mockResolvedValueOnce({
-      id: 1, title: 'Plan', description: null, planType: 'PUBLIC', active: true,
+  it('should show join button when canJoin is true', async () => {
+    mockGetPlanDetail.mockResolvedValueOnce(makePlanDetail({
+      id: 1, title: 'Plan', planType: 'PUBLIC',
       creatorUserId: 2, creatorUsername: 'other', creatorNickname: 'Other',
-      startTime: null, endTime: null, timeStatus: 'ONGOING',
-      problemCount: 0, memberCount: 1, member: false, problems: [],
-      createTime: '2024-01-01T00:00:00', updateTime: '2024-01-01T00:00:00',
-    })
+      joined: false, creator: false, canJoin: true, canEdit: false,
+      memberCount: 1,
+    }))
     const wrapper = await mountDetail('/training-plans/1')
     await flushPromises()
     expect(wrapper.text()).toContain('加入计划')
   })
 
-  it('should show edit button for creator', async () => {
+  it('should show edit button when canEdit is true', async () => {
     mockGetUser.mockResolvedValueOnce({
       id: 1, username: 'me', nickname: 'Me',
       email: null, avatarUrl: null, bio: null, admin: false,
@@ -159,16 +180,64 @@ describe('TrainingPlanDetailView', () => {
     const { useAuthStore } = await import('@/stores/auth')
     await useAuthStore().init()
 
-    mockGetPlanDetail.mockResolvedValueOnce({
-      id: 1, title: 'My Plan', description: null, planType: 'PERSONAL', active: true,
+    mockGetPlanDetail.mockResolvedValueOnce(makePlanDetail({
+      id: 1, title: 'My Plan', planType: 'PERSONAL',
       creatorUserId: 1, creatorUsername: 'me', creatorNickname: 'Me',
-      startTime: null, endTime: null, timeStatus: 'ONGOING',
-      problemCount: 0, memberCount: 0, member: true, problems: [],
-      createTime: '2024-01-01T00:00:00', updateTime: '2024-01-01T00:00:00',
-    })
+      joined: true, creator: true, canEdit: true, canJoin: false,
+      memberCount: 1,
+    }))
     const wrapper = await mountDetail('/training-plans/1')
     await flushPromises()
     expect(wrapper.text()).toContain('编辑')
+  })
+
+  it('should not show delete button', async () => {
+    mockGetPlanDetail.mockResolvedValueOnce(makePlanDetail({
+      creator: true, canEdit: true,
+    }))
+    const wrapper = await mountDetail('/training-plans/1')
+    await flushPromises()
+    expect(wrapper.find('.delete-btn').exists()).toBe(false)
+  })
+
+  it('should show deactivate button for creator', async () => {
+    mockGetPlanDetail.mockResolvedValueOnce(makePlanDetail({
+      creator: true, canEdit: true, canDeactivate: true, active: true,
+    }))
+    const wrapper = await mountDetail('/training-plans/1')
+    await flushPromises()
+    expect(wrapper.text()).toContain('停用')
+  })
+
+  it('should show restore button when canRestore is true', async () => {
+    mockGetPlanDetail.mockResolvedValueOnce(makePlanDetail({
+      active: false, creator: true, canEdit: true, canRestore: true, canDeactivate: false,
+    }))
+    const wrapper = await mountDetail('/training-plans/1')
+    await flushPromises()
+    expect(wrapper.text()).toContain('恢复')
+  })
+
+  it('should show member list', async () => {
+    mockGetPlanDetail.mockResolvedValueOnce(makePlanDetail({
+      members: [
+        { userId: 1, username: 'creator', nickname: 'Creator', avatarUrl: null, joinTime: '2024-01-01T00:00:00', creator: true },
+        { userId: 2, username: 'member1', nickname: 'Member1', avatarUrl: null, joinTime: '2024-02-01T00:00:00', creator: false },
+      ],
+      memberCount: 2, joined: true, creator: true, canRemoveMembers: true,
+    }))
+    const wrapper = await mountDetail('/training-plans/1')
+    await flushPromises()
+    expect(wrapper.text()).toContain('成员列表')
+    expect(wrapper.text()).toContain('创建者')
+    expect(wrapper.text()).toContain('移除')
+  })
+
+  it('should show 404 page when plan not found', async () => {
+    mockGetPlanDetail.mockRejectedValueOnce({ response: { status: 404 } })
+    const wrapper = await mountDetail('/training-plans/1')
+    await flushPromises()
+    expect(wrapper.text()).toContain('计划不存在')
   })
 })
 
@@ -178,7 +247,27 @@ describe('CreatePlanView', () => {
     setActivePinia(createPinia())
   })
 
-  it('should show create form', async () => {
+  it('should show create form with PERSONAL hint', async () => {
+    mockGetUser.mockResolvedValueOnce({
+      id: 1, username: 'user', nickname: 'User',
+      email: null, avatarUrl: null, bio: null, admin: false,
+    })
+    const { useAuthStore } = await import('@/stores/auth')
+    await useAuthStore().init()
+
+    const { default: CreatePlanView } = await import('@/views/CreatePlanView.vue')
+    const wrapper = mount(CreatePlanView, {
+      global: { plugins: [emptyRouter()], stubs: { RouterLink: true } },
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('创建训练计划')
+    expect(wrapper.text()).toContain('个人计划')
+    expect(wrapper.text()).toContain('仅管理员')
+    expect(wrapper.text()).toContain('仅自己使用')
+  })
+
+  it('should allow admin to select PUBLIC', async () => {
     mockGetUser.mockResolvedValueOnce({
       id: 1, username: 'admin', nickname: 'Admin',
       email: null, avatarUrl: null, bio: null, admin: true,
@@ -192,8 +281,8 @@ describe('CreatePlanView', () => {
     })
     await flushPromises()
 
-    expect(wrapper.text()).toContain('创建训练计划')
-    expect(wrapper.text()).toContain('个人计划')
     expect(wrapper.text()).toContain('公开计划')
+    const publicRadio = wrapper.find('input[value="PUBLIC"]')
+    expect((publicRadio.element as HTMLInputElement).disabled).toBe(false)
   })
 })

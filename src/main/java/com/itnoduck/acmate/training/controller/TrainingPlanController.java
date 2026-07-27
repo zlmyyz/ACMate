@@ -1,5 +1,6 @@
 package com.itnoduck.acmate.training.controller;
 
+import com.itnoduck.acmate.common.exception.BusinessException;
 import com.itnoduck.acmate.security.AuthenticatedUser;
 import com.itnoduck.acmate.training.dto.*;
 import com.itnoduck.acmate.training.service.TrainingPlanService;
@@ -29,23 +30,19 @@ public class TrainingPlanController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal AuthenticatedUser user) {
-
+        if (page < 1 || size < 1 || size > 100) {
+            throw new BusinessException(400, "分页参数非法");
+        }
         List<PlanSummaryResponse> plans = trainingPlanService.listPlans(type, timeStatus, keyword, page, size, user.getId());
         int total = trainingPlanService.countPlans(type, timeStatus, keyword, user.getId());
-
-        return Map.of(
-                "plans", plans,
-                "total", total,
-                "page", page,
-                "size", size
-        );
+        return Map.of("plans", plans, "total", total, "page", page, "size", size);
     }
 
     @PostMapping
     public PlanDetailResponse create(@Valid @RequestBody CreatePlanRequest request,
                                       @AuthenticationPrincipal AuthenticatedUser user) {
         if ("PUBLIC".equals(request.getPlanType()) && !user.isAdmin()) {
-            throw new com.itnoduck.acmate.common.exception.BusinessException(403, "只有管理员才能创建公开计划");
+            throw new BusinessException(403, "只有管理员才能创建公开计划");
         }
         return trainingPlanService.createPlan(request, user.getId());
     }
@@ -63,17 +60,19 @@ public class TrainingPlanController {
         return trainingPlanService.updatePlan(id, request, user.getId());
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id,
-                                        @AuthenticationPrincipal AuthenticatedUser user) {
-        trainingPlanService.deletePlan(id, user.getId());
+    @PutMapping("/{id}/deactivate")
+    public ResponseEntity<Void> deactivate(@PathVariable Long id,
+                                            @RequestBody(required = false) DeactivateRequest request,
+                                            @AuthenticationPrincipal AuthenticatedUser user) {
+        String reason = request != null ? request.getReason() : null;
+        trainingPlanService.deactivatePlan(id, reason, user.getId());
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{id}/toggle-active")
-    public ResponseEntity<Void> toggleActive(@PathVariable Long id,
-                                              @AuthenticationPrincipal AuthenticatedUser user) {
-        trainingPlanService.toggleActive(id, user.getId());
+    @PutMapping("/{id}/restore")
+    public ResponseEntity<Void> restore(@PathVariable Long id,
+                                         @AuthenticationPrincipal AuthenticatedUser user) {
+        trainingPlanService.restorePlan(id, user.getId());
         return ResponseEntity.noContent().build();
     }
 
@@ -93,7 +92,7 @@ public class TrainingPlanController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{id}/join")
+    @PostMapping("/{id}/members/me")
     public ResponseEntity<Void> join(@PathVariable Long id,
                                       @AuthenticationPrincipal AuthenticatedUser user) {
         trainingPlanService.joinPlan(id, user.getId());

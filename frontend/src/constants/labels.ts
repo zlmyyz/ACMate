@@ -16,10 +16,10 @@ export const problemStatusFilterLabels: Record<string, string> = {
   INACTIVE: '已停用',
 }
 
-export const trainingTypeLabels: Record<string, string> = {
+export const trainingTypeLabels = {
   PERSONAL: '个人计划',
   PUBLIC: '公开计划',
-}
+} as const
 
 export const trainingTimeStatusLabels: Record<string, string> = {
   NOT_STARTED: '未开始',

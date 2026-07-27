@@ -2,7 +2,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { listPlans } from '@/api/training'
-import type { PlanSummary, PlanType } from '@/types/training'
+import type { PlanSummary, ListType } from '@/types/training'
 import { trainingTypeLabels, trainingTimeStatusLabels } from '@/constants/labels'
 import PageContainer from '@/components/layout/PageContainer.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
@@ -18,16 +18,22 @@ const total = ref(0)
 const page = ref(1)
 const size = 20
 
-const activeType = ref<PlanType>('PUBLIC')
+const activeTab = ref<ListType>('PUBLIC')
 const timeStatusFilter = ref('')
 const keyword = ref('')
+
+const tabs: { key: ListType; label: string }[] = [
+  { key: 'PUBLIC', label: trainingTypeLabels.PUBLIC },
+  { key: 'MY_CREATED', label: '我创建的' },
+  { key: 'MY_JOINED', label: '我加入的' },
+]
 
 async function fetchPlans() {
   loading.value = true
   error.value = ''
   try {
     const res = await listPlans({
-      type: activeType.value,
+      type: activeTab.value,
       timeStatus: timeStatusFilter.value,
       keyword: keyword.value,
       page: page.value,
@@ -36,12 +42,12 @@ async function fetchPlans() {
     plans.value = res.plans
     total.value = res.total
   } catch (e: unknown) {
-    const err = e as { response?: { status: number } }
+    const err = e as { response?: { status: number; data?: { message?: string } } }
     if (err.response?.status === 401) {
       router.push({ name: 'login', query: { redirect: router.currentRoute.value.fullPath } })
       return
     }
-    error.value = '加载训练计划失败，请稍后重试'
+    error.value = err.response?.data?.message || '加载训练计划失败，请稍后重试'
   } finally {
     loading.value = false
   }
@@ -57,7 +63,7 @@ function onPageChange(p: number) {
   fetchPlans()
 }
 
-watch(activeType, () => { page.value = 1; fetchPlans() })
+watch(activeTab, () => { page.value = 1; fetchPlans() })
 
 onMounted(fetchPlans)
 </script>
@@ -75,18 +81,12 @@ onMounted(fetchPlans)
 
     <div class="tabs-row">
       <button
+        v-for="t in tabs" :key="t.key"
         class="tab-btn"
-        :class="{ active: activeType === 'PUBLIC' }"
-        @click="activeType = 'PUBLIC'"
+        :class="{ active: activeTab === t.key }"
+        @click="activeTab = t.key"
       >
-        {{ trainingTypeLabels.PUBLIC }}
-      </button>
-      <button
-        class="tab-btn"
-        :class="{ active: activeType === 'PERSONAL' }"
-        @click="activeType = 'PERSONAL'"
-      >
-        {{ trainingTypeLabels.PERSONAL }}
+        {{ t.label }}
       </button>
     </div>
 
@@ -183,10 +183,7 @@ onMounted(fetchPlans)
   cursor: pointer;
   transition: opacity 0.2s;
 }
-
-.create-btn:hover {
-  opacity: 0.9;
-}
+.create-btn:hover { opacity: 0.9; }
 
 .tabs-row {
   display: flex;
@@ -208,11 +205,7 @@ onMounted(fetchPlans)
   margin-bottom: -2px;
   transition: color 0.2s, border-color 0.2s;
 }
-
-.tab-btn:hover {
-  color: var(--color-on-surface);
-}
-
+.tab-btn:hover { color: var(--color-on-surface); }
 .tab-btn.active {
   color: var(--color-primary);
   border-bottom-color: var(--color-primary);
@@ -244,11 +237,7 @@ onMounted(fetchPlans)
   color: var(--color-on-surface);
   background: var(--color-surface-container-lowest);
 }
-
-.search-input:focus {
-  outline: none;
-  border-color: var(--color-primary-container);
-}
+.search-input:focus { outline: none; border-color: var(--color-primary-container); }
 
 .search-btn {
   height: 38px;
@@ -261,10 +250,7 @@ onMounted(fetchPlans)
   cursor: pointer;
   transition: border-color 0.2s;
 }
-
-.search-btn:hover {
-  border-color: var(--color-primary-container);
-}
+.search-btn:hover { border-color: var(--color-primary-container); }
 
 .empty-state {
   text-align: center;
@@ -287,15 +273,8 @@ onMounted(fetchPlans)
   cursor: pointer;
   transition: box-shadow 0.2s, border-color 0.2s;
 }
-
-.plan-card:hover {
-  box-shadow: var(--shadow-sm);
-  border-color: var(--color-primary-container);
-}
-
-.plan-card.inactive {
-  opacity: 0.6;
-}
+.plan-card:hover { box-shadow: var(--shadow-sm); border-color: var(--color-primary-container); }
+.plan-card.inactive { opacity: 0.6; }
 
 .plan-card-header {
   display: flex;
@@ -327,10 +306,7 @@ onMounted(fetchPlans)
   margin-bottom: 8px;
 }
 
-.plan-creator {
-  font-size: var(--text-body-sm);
-  color: var(--color-on-surface-variant);
-}
+.plan-creator { font-size: var(--text-body-sm); color: var(--color-on-surface-variant); }
 
 .plan-time-status {
   font-size: var(--text-label-sm);
@@ -338,21 +314,9 @@ onMounted(fetchPlans)
   padding: 1px 8px;
   border-radius: 999px;
 }
-
-.plan-time-status.ongoing {
-  color: var(--color-status-success);
-  background: rgba(52, 168, 83, 0.12);
-}
-
-.plan-time-status.not_started {
-  color: var(--color-status-pending);
-  background: rgba(243, 161, 60, 0.12);
-}
-
-.plan-time-status.ended {
-  color: var(--color-on-surface-variant);
-  background: var(--color-surface-container);
-}
+.plan-time-status.ongoing { color: var(--color-status-success); background: rgba(52,168,83,0.12); }
+.plan-time-status.not_started { color: var(--color-status-pending); background: rgba(243,161,60,0.12); }
+.plan-time-status.ended { color: var(--color-on-surface-variant); background: var(--color-surface-container); }
 
 .plan-stats {
   display: flex;
@@ -362,8 +326,5 @@ onMounted(fetchPlans)
   margin-bottom: 8px;
 }
 
-.plan-dates {
-  font-size: var(--text-body-sm);
-  color: var(--color-on-surface-variant);
-}
+.plan-dates { font-size: var(--text-body-sm); color: var(--color-on-surface-variant); }
 </style>

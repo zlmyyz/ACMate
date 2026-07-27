@@ -40,17 +40,18 @@ export async function updatePlan(id: number, data: UpdatePlanRequest): Promise<P
   )
 }
 
-export async function deletePlan(id: number): Promise<void> {
+export async function deactivatePlan(id: number, reason?: string): Promise<void> {
   return withCsrf((headerName, token) =>
-    apiClient.delete(`/training-plans/${id}`, {
-      headers: { [headerName]: token },
-    }),
+    apiClient.put(`/training-plans/${id}/deactivate`,
+      reason ? { reason } : {},
+      { headers: { [headerName]: token } },
+    ),
   )
 }
 
-export async function togglePlanActive(id: number): Promise<void> {
+export async function restorePlan(id: number): Promise<void> {
   return withCsrf((headerName, token) =>
-    apiClient.post(`/training-plans/${id}/toggle-active`, null, {
+    apiClient.put(`/training-plans/${id}/restore`, null, {
       headers: { [headerName]: token },
     }),
   )
@@ -74,7 +75,7 @@ export async function removePlanProblem(planId: number, problemId: number): Prom
 
 export async function joinPlan(id: number): Promise<void> {
   return withCsrf((headerName, token) =>
-    apiClient.post(`/training-plans/${id}/join`, null, {
+    apiClient.post(`/training-plans/${id}/members/me`, null, {
       headers: { [headerName]: token },
     }),
   )
