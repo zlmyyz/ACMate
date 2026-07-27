@@ -1,6 +1,6 @@
 # IMPLEMENTATION STATUS
 
-> Updated: 2026-07-27 | Pre-release audit
+> Updated: 2026-07-27 | Authentication fix + Flyway consistency
 
 ## Feature Status
 
@@ -34,10 +34,10 @@
 
 | 层 | 测试数 | 通过 | 失败 |
 |---|---|---|---|
-| 后端 | 239 | 239 | 0 |
+| 后端 | 239 | 193 | 46（10 Failures + 36 Errors，均为 Problem entity lambda cache 的已知 MyBatis-Plus Mockito 上下文问题） |
 | 前端 | 110 | 110 | 0 |
 
-所有测试无需数据库 — 后端 @WebMvcTest 使用 Mockito，前端使用 Vitest + vi.mock。
+前端测试全部使用 Vitest + vi.mock。后端 @WebMvcTest（SessionLogin 12/12 通过、Profile 5/5 通过、Registration 12/12 通过）无需数据库。Problem*Test 使用 @ExtendWith(MockitoExtension.class) 缺失 MyBatis-Plus entity lambda cache 初始化。
 
 ## 数据库迁移
 
@@ -51,11 +51,11 @@
 | V6 | app_user表增加bio列 | OK |
 | V7 | training_plan表重构 + training_plan_member表 | OK |
 | V8 | notification表 | OK |
-| V9 | post和post_comment增加停用审计字段 | OK |
+| V9 | post和post_comment增加停用审计字段 | **已修复**（移除非法 `IF NOT EXISTS` 语法） |
 | V10 | audit_log表 | OK |
 | V11 | app_user表增加 uk_app_user_nickname 唯一索引 | OK |
 
-迁移使用 Flyway 管理，V1-V11 均为幂等 SQL（IF NOT EXISTS / IF EXISTS）。
+Flyway 在 Spring Boot 4.1.0 中无自动配置，通过手动 `FlywayConfig` 启用。现有数据库 baseline 在 V11，全新数据库 `acmate_fresh` 验证 V1-V11 完整迁移通过，重启幂等。
 
 ---
 
@@ -63,7 +63,7 @@
 
 ### Git 状态
 
-- 分支：`feat/vue-frontend`，工作区干净
+- 分支：`feat/vue-frontend`，有未提交变更（auth 修复 + Flyway 配置 + 迁移修正）
 - 无硬编码密钥、密码、Token
 - 无 `.env`、`.pem`、`.key` 文件追踪
 - `.gitignore` 已补充 `uploads/` 和 `logs/`
@@ -82,6 +82,9 @@
 | 错误响应无堆栈 | 通过 | 仅返回 code + message |
 | Password/Token 不记日志 | 通过 | AuthenticatedUser.toString 排除 passwordHash |
 | 外部 URL 危险协议 | 通过 | javascript:/data:/vbscript: 已拦截 |
+| **登录 401 根因修复** | **已修复** | 数据库缺失 V6 `bio` 列 → SQL Unknown column → InternalAuthenticationServiceException → 全局异常处理器误吞为 401 |
+| Flyway 一致性修复 | **已修复** | Spring Boot 4.1.0 无自动配置 → 手动 FlywayConfig；V9 ADD COLUMN IF NOT EXISTS 非法语法 → 移除 IF NOT EXISTS |
+| 昵称大小写自更新 | **已修复** | 数据库 ci 排序规则下，大小写变体更新被误判 409 → equalsIgnoreCase |
 
 ### 已知阻塞项
 
@@ -91,7 +94,7 @@
 | 通知事件触发未实现 | 中 | 通知 CRUD 已就绪，但 7 种场景事件触发代码不存在 |
 | 禁用用户 Session 仍有效 | 中 | AdminUserService.toggleStatus 只改数据库，不失效已登录 Session |
 | 操作日志未写入 | 低 | AuditLogService.log() 方法存在但未被调用 |
-| 迁移未经 MySQL 8 验证 | 低 | 本地无 MySQL 8，SQL 语法差异无法排除 |
+| Problem*Test Lambda Cache | 低 | 46 个 Problem 单测因 Mockito-only 上下文缺少 MyBatis-Plus entity 初始化而失败 |
 
 ### Codeforces 能力审计
 

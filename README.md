@@ -27,37 +27,15 @@
 
 ## 本地启动
 
-### 1. 创建数据库和表
-
-以下命令适用于 CMD（不适用于 PowerShell 的 `<` 重定向）：
+### 1. 创建数据库
 
 ```cmd
 mysql -u root -p < src\main\resources\db\manual\00_create_database.sql
-mysql -u root -p acmate < src\main\resources\db\migration\V1__create_app_user.sql
-mysql -u root -p acmate < src\main\resources\db\migration\V2__create_problem_training_tables.sql
-mysql -u root -p acmate < src\main\resources\db\migration\V3__create_discussion_tables.sql
-mysql -u root -p acmate < src\main\resources\db\migration\V4__create_oj_sync_tables.sql
 ```
 
-PowerShell 替代方式：
+Flyway 在应用启动时自动执行所有迁移（V1-V11），无需手动导入 SQL 文件。
 
-```powershell
-Get-Content src\main\resources\db\manual\00_create_database.sql | mysql -u root -p
-Get-Content src\main\resources\db\migration\V1__create_app_user.sql | mysql -u root -p acmate
-# ... 依次执行其余迁移文件
-```
-
-或使用 MySQL 客户端 source 命令：
-
-```
-mysql -u root -p
-source src/main/resources/db/manual/00_create_database.sql
-use acmate;
-source src/main/resources/db/migration/V1__create_app_user.sql
-source src/main/resources/db/migration/V2__create_problem_training_tables.sql
-source src/main/resources/db/migration/V3__create_discussion_tables.sql
-source src/main/resources/db/migration/V4__create_oj_sync_tables.sql
-```
+> 若数据库已有数据，Flyway 会检测已基线化版本，跳过已执行迁移。详见 `docs/DEVLOG.md`。
 
 ### 2. 配置环境变量
 
@@ -80,10 +58,8 @@ $env:DB_PASSWORD="your_password"
 curl http://localhost:8080/api/health
 ```
 
-响应示例（`userCount` 取决于数据库当前数据，全新数据库为 0）：
+响应示例：
 
 ```json
-{"status":"UP","database":"UP","userCount":0}
+{"status":"UP","database":"UP","userCount":5}
 ```
-
-> 2026-07-25 本地验收实际返回 userCount > 0（含注册用户和验收用户，详见 DEVLOG）。

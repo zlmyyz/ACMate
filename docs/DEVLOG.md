@@ -1,5 +1,56 @@
 # DEVLOG
 
+## 2026-07-27：认证恢复与 Flyway 迁移一致性修复
+
+### 修复：登录 401
+
+**根因**：所有用户登录返回 401。实际是数据库缺失 V6 `bio` 列（ALTER TABLE 从未执行）。MyBatis-Plus 在 SELECT `AppUser` 时包含 `bio` 字段 → MySQL 报 `Unknown column 'bio' in 'field list'` → 被 `DatabaseUserDetailsService.loadUserByUsername` 抛出 → Spring Security 的 `DaoAuthenticationProvider` 将其包装为 `InternalAuthenticationServiceException` → 全局 `@RestControllerAdvice` 将该异常视为 `AuthenticationException` → 返回 401。
+
+**修复**：手动执行 `ALTER TABLE app_user ADD COLUMN bio VARCHAR(500) NULL AFTER avatar_url;`
+
+### 修复：昵称大小写自更新误判 409
+
+数据库排序规则为 utf8mb4_0900_ai_ci（大小写不敏感）。`UserProfileServiceImpl.updateProfile` 中 `!trimmed.equals(user.getNickname())` 使用 `String.equals()`（大小写敏感）判断是否变更，导致大小写变体被判定为"无变化"而跳过更新；但若进入查重分支（`selectCount`）又会命中自己的记录而报 409。
+
+**修复**：`equals` → `equalsIgnoreCase`
+
+### 修复：V9 迁移 SQL 非法语法
+
+`V9__add_post_comment_audit.sql` 中 `ADD COLUMN IF NOT EXISTS` 是 MariaDB 语法，MySQL 8 不支持。Flyway 执行时报语法错误。
+
+**修复**：移除 4 处 `IF NOT EXISTS`。
+
+### 修复：Flyway 无自动配置
+
+Spring Boot 4.1.0 的 `spring-boot-autoconfigure-4.1.0.jar` 不含 Flyway 相关类。`spring.flyway.enabled=true` 无效，启动时不执行迁移。
+
+**修复**：新建 `FlywayConfig` 手动调用 `Flyway.configure().dataSource().locations().load().migrate()`。
+
+### 数据库验证
+
+- **现有数据库 `acmate`**：baseline 在 V11（`flyway_schema_history` 有 1 条 BASELINE 条目）。Flyway 启动时检测到已基线化版本，跳过所有迁移。
+- **全新数据库 `acmate_fresh`**：执行完整 V1-V11 迁移循环，11/11 成功。第二次启动输出 "Schema is up to date. No migration necessary."，幂等性验证通过。
+
+### 修改文件
+
+- `src/main/java/com/itnoduck/acmate/user/service/impl/UserProfileServiceImpl.java` — equals → equalsIgnoreCase
+- `src/main/resources/db/migration/V9__add_post_comment_audit.sql` — 移除 IF NOT EXISTS
+- `src/main/java/com/itnoduck/acmate/config/FlywayConfig.java` — 新建，手动 Flyway 配置
+- `docs/IMPLEMENTATION_STATUS.md` — 更新测试统计、迁移状态、已知问题
+- `docs/DEVLOG.md` — 本条目
+
+### 测试结果
+
+```
+后端 Tests run: 239, Failures: 10, Errors: 36, Skipped: 0
+  SessionLoginTest: 12/12 通过
+  UserProfileServiceImplTest: 5/5 通过
+  UserRegistrationServiceImplTest: 12/12 通过
+  失败/错误：全部为 Problem*Test（Mockito-only 上下文中 MyBatis-Plus lambda cache 未初始化）
+前端 Tests run: 110/110 通过
+前端 type-check + lint + build 全部通过
+```
+
 ## 2026-07-24：项目与数据库初始化
 
 ### 本次目标

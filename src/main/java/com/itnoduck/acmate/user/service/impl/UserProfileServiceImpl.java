@@ -77,7 +77,7 @@ public class UserProfileServiceImpl implements UserProfileService {
             if (trimmed.isEmpty()) {
                 throw new BusinessException(400, "昵称不能为空");
             }
-            if (!trimmed.equals(user.getNickname())) {
+            if (!trimmed.equalsIgnoreCase(user.getNickname())) {
                 if (appUserMapper.selectCount(new LambdaQueryWrapper<AppUser>()
                         .eq(AppUser::getNickname, trimmed)) > 0) {
                     throw new BusinessException(409, "该昵称已被使用，请更换其他昵称。");
