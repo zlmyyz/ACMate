@@ -161,10 +161,10 @@ class TrainingPlanServiceImplTest {
         CreatePlanRequest req = new CreatePlanRequest();
         req.setTitle("Public Plan");
         req.setPlanType("PUBLIC");
+        when(userMapper.selectById(ADMIN_ID)).thenReturn(adminUser());
 
         service.createPlan(req, ADMIN_ID);
 
-        // memberMapper.insert should NOT be called
         verify(memberMapper, never()).insert(any(TrainingPlanMember.class));
     }
 
@@ -221,12 +221,30 @@ class TrainingPlanServiceImplTest {
 
     @Test
     void normalUserCannotCreatePublic() {
-        // This is enforced by controller, but let's test at service level:
-        // The service allows it, controller checks admin — that's correct per spec
         CreatePlanRequest req = new CreatePlanRequest();
         req.setTitle("Public"); req.setPlanType("PUBLIC");
-        // Service doesn't block this; controller does.
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.createPlan(req, OTHER_USER_ID));
+        assertEquals(403, ex.getCode());
+    }
+
+    @Test
+    void adminCanCreatePublic() {
+        CreatePlanRequest req = new CreatePlanRequest();
+        req.setTitle("Public Plan"); req.setPlanType("PUBLIC");
+        when(userMapper.selectById(ADMIN_ID)).thenReturn(adminUser());
+
+        assertDoesNotThrow(() -> service.createPlan(req, ADMIN_ID));
+    }
+
+    @Test
+    void normalUserCanCreatePersonal() {
+        CreatePlanRequest req = new CreatePlanRequest();
+        req.setTitle("My Plan"); req.setPlanType("PERSONAL");
+
         assertDoesNotThrow(() -> service.createPlan(req, OTHER_USER_ID));
+        verify(memberMapper).insert(any(TrainingPlanMember.class));
     }
 
     @Test

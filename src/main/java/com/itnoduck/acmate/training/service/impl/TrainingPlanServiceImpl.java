@@ -63,6 +63,10 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
             planType = "PERSONAL";
         }
 
+        if ("PUBLIC".equals(planType) && !isAdminUser(creatorUserId)) {
+            throw new BusinessException(403, "只有管理员才能创建公开计划");
+        }
+
         if (request.getStartTime() != null && request.getEndTime() != null
                 && !request.getEndTime().isAfter(request.getStartTime())) {
             throw new BusinessException(400, "结束时间必须晚于开始时间");
@@ -260,7 +264,7 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
 
         if (plan.getIsActive() != null && plan.getIsActive() == 1) return;
 
-        if (isCreator && !isAdmin && "ADMIN".equals(plan.getDeactivationSource())) {
+        if (isCreator && "ADMIN".equals(plan.getDeactivationSource())) {
             throw new BusinessException(403, "该计划由管理员停用，无法自行恢复");
         }
 
