@@ -33,6 +33,10 @@ public class UserRegistrationServiceImpl implements UserRegistrationService {
                 .eq(AppUser::getUsername, username)) > 0) {
             throw new BusinessException(409, "用户名已被使用");
         }
+        if (appUserMapper.selectCount(new LambdaQueryWrapper<AppUser>()
+                .eq(AppUser::getNickname, nickname)) > 0) {
+            throw new BusinessException(409, "该昵称已被使用，请更换其他昵称。");
+        }
         if (email != null && appUserMapper.selectCount(new LambdaQueryWrapper<AppUser>()
                 .eq(AppUser::getEmail, email)) > 0) {
             throw new BusinessException(409, "邮箱已被使用");
@@ -52,6 +56,10 @@ public class UserRegistrationServiceImpl implements UserRegistrationService {
                 throw new BusinessException(500, "注册失败");
             }
         } catch (DuplicateKeyException e) {
+            String msg = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
+            if (msg != null && msg.contains("uk_app_user_nickname")) {
+                throw new BusinessException(409, "该昵称已被使用，请更换其他昵称。");
+            }
             throw new BusinessException(409, "用户名或邮箱已被使用");
         }
 

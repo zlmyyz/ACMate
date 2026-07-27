@@ -12,6 +12,7 @@ import com.itnoduck.acmate.user.entity.AppUser;
 import com.itnoduck.acmate.user.mapper.AppUserMapper;
 import com.itnoduck.acmate.user.service.UserProfileService;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -72,13 +73,31 @@ public class UserProfileServiceImpl implements UserProfileService {
                 .eq(AppUser::getId, userId);
 
         if (request.getNickname() != null) {
-            wrapper.set(AppUser::getNickname, request.getNickname().strip());
+            String trimmed = request.getNickname().strip();
+            if (trimmed.isEmpty()) {
+                throw new BusinessException(400, "昵称不能为空");
+            }
+            if (!trimmed.equals(user.getNickname())) {
+                if (appUserMapper.selectCount(new LambdaQueryWrapper<AppUser>()
+                        .eq(AppUser::getNickname, trimmed)) > 0) {
+                    throw new BusinessException(409, "该昵称已被使用，请更换其他昵称。");
+                }
+            }
+            wrapper.set(AppUser::getNickname, trimmed);
         }
         if (request.getBio() != null) {
             wrapper.set(AppUser::getBio, request.getBio().isBlank() ? null : request.getBio().strip());
         }
 
-        appUserMapper.update(null, wrapper);
+        try {
+            appUserMapper.update(null, wrapper);
+        } catch (DuplicateKeyException e) {
+            String msg = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
+            if (msg != null && msg.contains("uk_app_user_nickname")) {
+                throw new BusinessException(409, "该昵称已被使用，请更换其他昵称。");
+            }
+            throw new BusinessException(409, "用户名或邮箱已被使用");
+        }
     }
 
     @Override

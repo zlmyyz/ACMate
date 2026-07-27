@@ -40,7 +40,7 @@ async function handleRegister() {
     const err = e as { response?: { status: number; data?: { message?: string } } }
     const status = err.response?.status
     if (status === 409) {
-      errorMsg.value = err.response?.data?.message || '用户名或邮箱已被使用'
+      errorMsg.value = err.response?.data?.message || '用户名或昵称已被使用'
     } else if (status === 400) {
       errorMsg.value = err.response?.data?.message || '请求参数有误'
     } else {
@@ -64,7 +64,7 @@ async function handleRegister() {
       </div>
       <form class="auth-form" @submit.prevent="handleRegister">
         <div class="form-field">
-          <label for="reg-username">用户名 <span class="required">*</span></label>
+          <label for="reg-username">用户名 <span class="required">*</span> <span class="field-tip">· 注册后不可修改</span></label>
           <input
             id="reg-username"
             v-model="username"
@@ -73,6 +73,7 @@ async function handleRegister() {
             placeholder="请输入用户名"
             :disabled="submitting"
           />
+          <p class="field-hint">用户名用于登录，注册成功后不可修改。</p>
         </div>
         <div class="form-field">
           <label for="reg-nickname">昵称 <span class="required">*</span></label>
@@ -83,6 +84,7 @@ async function handleRegister() {
             placeholder="请输入昵称"
             :disabled="submitting"
           />
+          <p class="field-hint">昵称全站唯一，将显示在题目、帖子和排行榜中。</p>
         </div>
         <div class="form-field">
           <label for="reg-email">邮箱</label>
@@ -216,6 +218,17 @@ async function handleRegister() {
 
 .form-field input:disabled {
   opacity: 0.6;
+}
+
+.field-tip {
+  font-weight: 400;
+  color: var(--color-on-surface-variant);
+}
+
+.field-hint {
+  font-size: var(--text-body-sm);
+  color: var(--color-on-surface-variant);
+  margin-top: 0;
 }
 
 .form-error {

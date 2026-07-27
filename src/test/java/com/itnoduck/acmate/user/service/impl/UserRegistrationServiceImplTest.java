@@ -76,10 +76,23 @@ class UserRegistrationServiceImplTest {
     }
 
     @Test
+    void shouldThrow409WhenNicknameExists() {
+        RegisterRequest req = buildRequest("testuser", "password123", "Taken", "test@example.com");
+        when(appUserMapper.selectCount(ArgumentMatchers.<LambdaQueryWrapper<AppUser>>any()))
+                .thenReturn(0L).thenReturn(1L);
+
+        assertThatThrownBy(() -> service.register(req))
+                .isInstanceOf(BusinessException.class)
+                .matches(e -> ((BusinessException) e).getCode() == 409 && e.getMessage().contains("昵称"));
+
+        verify(appUserMapper, never()).insert(ArgumentMatchers.<AppUser>any());
+    }
+
+    @Test
     void shouldThrow409WhenEmailExists() {
         RegisterRequest req = buildRequest("testuser", "password123", "Test User", "test@example.com");
         when(appUserMapper.selectCount(ArgumentMatchers.<LambdaQueryWrapper<AppUser>>any()))
-                .thenReturn(0L).thenReturn(1L);
+                .thenReturn(0L).thenReturn(0L).thenReturn(1L);
 
         assertThatThrownBy(() -> service.register(req))
                 .isInstanceOf(BusinessException.class)
@@ -156,13 +169,28 @@ class UserRegistrationServiceImplTest {
     @Test
     void shouldThrow409OnDuplicateKey() {
         RegisterRequest req = buildRequest("testuser", "password123", "Test User", "test@example.com");
-        when(appUserMapper.selectCount(ArgumentMatchers.<LambdaQueryWrapper<AppUser>>any())).thenReturn(0L);
+        when(appUserMapper.selectCount(ArgumentMatchers.<LambdaQueryWrapper<AppUser>>any()))
+                .thenReturn(0L).thenReturn(0L).thenReturn(0L);
         when(appUserMapper.insert(ArgumentMatchers.<AppUser>any())).thenThrow(new DuplicateKeyException("dup"));
 
         assertThatThrownBy(() -> service.register(req))
                 .isInstanceOf(BusinessException.class)
                 .matches(e -> ((BusinessException) e).getCode() == 409
                         && e.getMessage().equals("用户名或邮箱已被使用"));
+    }
+
+    @Test
+    void shouldThrow409OnNicknameDuplicateKeyViaConcurrentInsert() {
+        RegisterRequest req = buildRequest("testuser", "password123", "Test User", "test@example.com");
+        when(appUserMapper.selectCount(ArgumentMatchers.<LambdaQueryWrapper<AppUser>>any())).thenReturn(0L);
+        var sqlEx = new java.sql.SQLIntegrityConstraintViolationException("Duplicate entry 'Test User' for key 'app_user.uk_app_user_nickname'");
+        when(appUserMapper.insert(ArgumentMatchers.<AppUser>any()))
+                .thenThrow(new DuplicateKeyException("dup", sqlEx));
+
+        assertThatThrownBy(() -> service.register(req))
+                .isInstanceOf(BusinessException.class)
+                .matches(e -> ((BusinessException) e).getCode() == 409
+                        && e.getMessage().contains("昵称"));
     }
 
     private RegisterRequest buildRequest(String username, String password, String nickname, String email) {

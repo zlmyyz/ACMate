@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { mount, flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
+import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const { mockGetUser, mockLogin, mockRegister, mockCsrf, mockLogoutApi } = vi.hoisted(() => ({
@@ -146,7 +148,38 @@ describe('Auth Store', () => {
     })
   })
 
-  describe('isAdmin', () => {
+  describe('RegisterView', () => {
+  function emptyRouter() {
+    return createRouter({ history: createWebHistory(), routes: [] })
+  }
+
+  async function mountRegister() {
+    const { default: RegisterView } = await import('@/views/RegisterView.vue')
+    return mount(RegisterView, {
+      global: { plugins: [createPinia(), emptyRouter()], stubs: { RouterLink: true } },
+    })
+  }
+
+  it('should show username immutable hint', async () => {
+    const wrapper = await mountRegister()
+    await flushPromises()
+    expect(wrapper.text()).toContain('注册后不可修改')
+  })
+
+  it('should show username login hint', async () => {
+    const wrapper = await mountRegister()
+    await flushPromises()
+    expect(wrapper.text()).toContain('用户名用于登录，注册成功后不可修改。')
+  })
+
+  it('should show nickname uniqueness hint', async () => {
+    const wrapper = await mountRegister()
+    await flushPromises()
+    expect(wrapper.text()).toContain('昵称全站唯一')
+  })
+})
+
+describe('isAdmin', () => {
     it('should be false for normal user', async () => {
       mockGetUser.mockResolvedValueOnce({
         id: 1,

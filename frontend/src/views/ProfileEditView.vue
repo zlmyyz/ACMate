@@ -67,7 +67,7 @@ async function handleSave() {
   saving.value = true
 
   const req: UpdateProfileRequest = {}
-  if (trimmed !== (auth.user?.nickname ?? '')) {
+  if (trimmed !== (auth.user?.nickname ?? '').trim()) {
     req.nickname = trimmed || undefined
   }
   const bioTrimmed = bio.value.trim()

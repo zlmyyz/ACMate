@@ -35,6 +35,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DuplicateKeyException.class)
     public ResponseEntity<ApiError> handleDuplicateKey(DuplicateKeyException e) {
+        String msg = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
+        if (msg != null && msg.contains("uk_app_user_nickname")) {
+            ApiError error = new ApiError(409, "该昵称已被使用，请更换其他昵称。");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+        }
         ApiError error = new ApiError(409, "用户名或邮箱已被使用");
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }

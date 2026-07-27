@@ -1,9 +1,11 @@
 package com.itnoduck.acmate.user.dto;
 
 import jakarta.validation.constraints.Size;
+import lombok.Setter;
 import lombok.Getter;
 
 @Getter
+@Setter
 public class UpdateProfileRequest {
 
     @Size(min = 2, max = 32, message = "昵称长度为 2-32 个字符")
