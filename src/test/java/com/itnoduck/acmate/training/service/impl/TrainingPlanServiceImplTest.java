@@ -42,6 +42,7 @@ class TrainingPlanServiceImplTest {
     @Mock private AppUserMapper userMapper;
     @Mock private ProblemMapper problemMapper;
     @Mock private AuditLogService auditLogService;
+    @Mock private org.springframework.context.ApplicationEventPublisher eventPublisher;
     @InjectMocks private TrainingPlanServiceImpl service;
 
     private static final Long CREATOR_ID = 1L;

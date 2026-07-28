@@ -10,6 +10,8 @@ import com.itnoduck.acmate.training.entity.TrainingPlanProblem;
 import com.itnoduck.acmate.training.mapper.TrainingPlanMapper;
 import com.itnoduck.acmate.training.mapper.TrainingPlanMemberMapper;
 import com.itnoduck.acmate.training.mapper.TrainingPlanProblemMapper;
+import com.itnoduck.acmate.notification.entity.Notification;
+import com.itnoduck.acmate.notification.mapper.NotificationMapper;
 import com.itnoduck.acmate.user.entity.AppUser;
 import com.itnoduck.acmate.user.mapper.AppUserMapper;
 
@@ -33,6 +35,7 @@ public final class MybatisPlusTestHelper {
         config.addMapper(TrainingPlanMapper.class);
         config.addMapper(TrainingPlanProblemMapper.class);
         config.addMapper(TrainingPlanMemberMapper.class);
+        config.addMapper(NotificationMapper.class);
 
         if (TableInfoHelper.getTableInfo(TrainingPlan.class) == null
                 || TableInfoHelper.getTableInfo(TrainingPlanProblem.class) == null

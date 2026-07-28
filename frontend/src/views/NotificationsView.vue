@@ -38,22 +38,49 @@ function onPageChange(p: number) { page.value = p; fetch() }
 function linkFor(n: NotificationItem): string | null {
   if (!n.resourceType || !n.resourceId) return null
   switch (n.resourceType) {
-    case 'post': return `/posts/${n.resourceId}`
-    case 'plan': return `/training-plans/${n.resourceId}`
-    case 'problem': return `/problems/${n.resourceId}`
-    case 'oj_account': return '/settings/oj-account'
+    case 'POST': return `/posts/${n.resourceId}`
+    case 'COMMENT': {
+      const pid = n.payload && n.payload.postId
+      return pid ? `/posts/${pid}` : null
+    }
+    case 'TRAINING_PLAN': return `/training-plans/${n.resourceId}`
     default: return null
   }
 }
 
-const typeLabels: Record<string, string> = {
-  PLAN_UPDATE: '计划更新',
-  PLAN_START: '计划开始',
-  PLAN_REMOVE: '移除成员',
-  POST_REPLY: '帖子回复',
-  CONTENT_DEACTIVATE: '内容停用',
-  OJ_VERIFY: '账号审核',
-  OJ_SYNC_FAIL: '同步失败',
+function notificationText(n: NotificationItem): string {
+  const p = n.payload || {}
+  const actor = p.actorNickname || ''
+  const planTitle = p.planTitle || ''
+  const postTitle = p.postTitle || ''
+  const reason = p.reason || ''
+
+  switch (n.notificationType) {
+    case 'POST_COMMENTED':
+      return `${actor} 评论了你的帖子「${postTitle}」`
+    case 'COMMENT_REPLIED':
+      return `${actor} 回复了你的评论`
+    case 'POST_ADMIN_DEACTIVATED':
+      return `管理员停用了你的帖子「${postTitle}」${reason ? '，原因：' + reason : ''}`
+    case 'COMMENT_ADMIN_DEACTIVATED':
+      return `管理员停用了你的评论${reason ? '，原因：' + reason : ''}`
+    case 'POST_RESTORED':
+      return `管理员恢复了你的帖子「${postTitle}」`
+    case 'COMMENT_RESTORED':
+      return `管理员恢复了你的评论`
+    case 'TRAINING_MEMBER_REMOVED':
+      return `你被移出了计划「${planTitle}」`
+    case 'TRAINING_ADMIN_DEACTIVATED':
+      return `管理员停用了计划「${planTitle}」${reason ? '，原因：' + reason : ''}`
+    case 'TRAINING_RESTORED':
+      return `管理员恢复了计划「${planTitle}」`
+    case 'TRAINING_SCHEDULE_CHANGED':
+      return `计划「${planTitle}」的时间安排已更新`
+    case 'TRAINING_PROBLEMS_CHANGED':
+      return `计划「${planTitle}」的题目列表已更新`
+    default:
+      return n.notificationType || '未知通知'
+  }
 }
 
 onMounted(fetch)
@@ -79,17 +106,24 @@ onMounted(fetch)
           v-for="n in items" :key="n.id"
           class="notification-item"
           :class="{ unread: !n.isRead }"
-          @click="!n.isRead && onMarkRead(n.id)"
         >
           <div class="notif-main">
-            <span class="notif-type">{{ typeLabels[n.type] || n.type }}</span>
-            <span class="notif-title">
-              <RouterLink v-if="linkFor(n)" :to="linkFor(n)!" class="notif-link">{{ n.title }}</RouterLink>
-              <span v-else>{{ n.title }}</span>
-            </span>
-            <span v-if="n.content" class="notif-content">{{ n.content }}</span>
+            <span class="notif-text">{{ notificationText(n) }}</span>
           </div>
-          <span class="notif-time">{{ new Date(n.createTime).toLocaleDateString() }}</span>
+          <div class="notif-right">
+            <RouterLink
+              v-if="linkFor(n)"
+              :to="linkFor(n)!"
+              class="notif-link"
+              @click="!n.isRead && onMarkRead(n.id)"
+            >查看</RouterLink>
+            <button
+              v-if="!n.isRead"
+              class="mark-read-btn"
+              @click="onMarkRead(n.id)"
+            >已读</button>
+          </div>
+          <span class="notif-time">{{ new Date(n.createTime).toLocaleString() }}</span>
         </div>
       </div>
 
@@ -113,18 +147,21 @@ onMounted(fetch)
 .notification-list { display: flex; flex-direction: column; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-lg); overflow: hidden; }
 
 .notification-item {
-  display: flex; justify-content: space-between; padding: 14px 20px;
-  border-bottom: 1px solid var(--color-border-subtle); cursor: default; transition: background 0.15s;
+  display: flex; justify-content: space-between; align-items: center; padding: 14px 20px;
+  border-bottom: 1px solid var(--color-border-subtle); transition: background 0.15s; gap: 12px; flex-wrap: wrap;
 }
 .notification-item:last-child { border-bottom: none; }
 .notification-item:hover { background: var(--color-surface-container-low); }
-.notification-item.unread { background: rgba(0,0,0,0.02); }
+.notification-item.unread { background: rgba(0,0,0,0.02); font-weight: 500; }
 
-.notif-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.notif-type { font-size: var(--text-label-sm); font-weight: 600; color: var(--color-primary-container); }
-.notif-title { font-size: var(--text-body-md); color: var(--color-on-surface); }
-.notif-link { color: var(--color-primary-container); }
+.notif-main { flex: 1; min-width: 0; }
+.notif-text { font-size: var(--text-body-md); color: var(--color-on-surface); }
+
+.notif-right { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+.notif-link { font-size: var(--text-body-sm); color: var(--color-primary); }
 .notif-link:hover { text-decoration: underline; }
-.notif-content { font-size: var(--text-body-sm); color: var(--color-on-surface-variant); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.notif-time { font-size: var(--text-body-sm); color: var(--color-on-surface-variant); white-space: nowrap; margin-left: 16px; flex-shrink: 0; }
+.mark-read-btn { font-size: var(--text-body-sm); color: var(--color-on-surface-variant); cursor: pointer; padding: 2px 8px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm); }
+.mark-read-btn:hover { background: var(--color-surface-container-low); }
+
+.notif-time { font-size: var(--text-body-sm); color: var(--color-on-surface-variant); white-space: nowrap; flex-shrink: 0; width: 100%; text-align: right; margin-top: 4px; }
 </style>

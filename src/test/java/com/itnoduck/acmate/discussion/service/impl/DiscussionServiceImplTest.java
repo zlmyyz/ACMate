@@ -28,6 +28,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.context.ApplicationEventPublisher;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -45,6 +47,7 @@ class DiscussionServiceImplTest {
     @Mock private AppUserMapper userMapper;
     @Mock private ProblemMapper problemMapper;
     @Mock private AuditLogService auditLogService;
+    @Mock private ApplicationEventPublisher eventPublisher;
     @InjectMocks private DiscussionServiceImpl service;
 
     @BeforeAll

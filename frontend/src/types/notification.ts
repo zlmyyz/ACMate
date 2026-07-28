@@ -1,11 +1,12 @@
 export interface NotificationItem {
   id: number
-  type: string
-  title: string
-  content: string | null
+  notificationType: string
+  actorUserId: number | null
   resourceType: string | null
   resourceId: number | null
+  payload: Record<string, unknown> | null
   isRead: boolean
+  readTime: string | null
   createTime: string
 }
 

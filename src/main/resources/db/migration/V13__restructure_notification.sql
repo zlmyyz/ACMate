@@ -1,0 +1,11 @@
+ALTER TABLE notification
+    CHANGE COLUMN user_id recipient_user_id BIGINT UNSIGNED NOT NULL,
+    CHANGE COLUMN type notification_type VARCHAR(64) NOT NULL COMMENT 'POST_COMMENTED,COMMENT_REPLIED,POST_ADMIN_DEACTIVATED,COMMENT_ADMIN_DEACTIVATED,POST_RESTORED,COMMENT_RESTORED,TRAINING_MEMBER_REMOVED,TRAINING_ADMIN_DEACTIVATED,TRAINING_RESTORED,TRAINING_SCHEDULE_CHANGED,TRAINING_PROBLEMS_CHANGED',
+    ADD COLUMN actor_user_id BIGINT UNSIGNED NULL AFTER notification_type,
+    ADD COLUMN payload_json TEXT NULL AFTER resource_id,
+    ADD COLUMN read_time DATETIME NULL AFTER is_read;
+
+ALTER TABLE notification
+    DROP INDEX idx_user_read_time,
+    ADD INDEX idx_recipient_read_time (recipient_user_id, is_read, create_time DESC),
+    ADD INDEX idx_recipient_create (recipient_user_id, create_time DESC);

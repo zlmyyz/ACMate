@@ -14,10 +14,10 @@ export async function getUnreadCount(): Promise<number> {
 
 export async function markRead(id: number): Promise<void> {
   await withCsrf((headerName, token) =>
-    apiClient.post(`/notifications/${id}/read`, null, { headers: { [headerName]: token } }))
+    apiClient.put(`/notifications/${id}/read`, null, { headers: { [headerName]: token } }))
 }
 
 export async function markAllRead(): Promise<void> {
   await withCsrf((headerName, token) =>
-    apiClient.post('/notifications/read-all', null, { headers: { [headerName]: token } }))
+    apiClient.put('/notifications/read-all', null, { headers: { [headerName]: token } }))
 }

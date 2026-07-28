@@ -9,7 +9,9 @@ import com.itnoduck.acmate.discussion.entity.Post;
 import com.itnoduck.acmate.discussion.entity.PostComment;
 import com.itnoduck.acmate.discussion.mapper.PostCommentMapper;
 import com.itnoduck.acmate.discussion.mapper.PostMapper;
+import com.itnoduck.acmate.notification.event.NotificationEvent;
 import com.itnoduck.acmate.security.AuthenticatedUser;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,12 +24,15 @@ public class AdminContentServiceImpl implements AdminContentService {
     private final PostMapper postMapper;
     private final PostCommentMapper commentMapper;
     private final AuditLogService auditLogService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public AdminContentServiceImpl(PostMapper postMapper, PostCommentMapper commentMapper,
-                                    AuditLogService auditLogService) {
+                                    AuditLogService auditLogService,
+                                    ApplicationEventPublisher eventPublisher) {
         this.postMapper = postMapper;
         this.commentMapper = commentMapper;
         this.auditLogService = auditLogService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -71,6 +76,9 @@ public class AdminContentServiceImpl implements AdminContentService {
         p.setDeactivationTime(LocalDateTime.now());
         postMapper.updateById(p);
         auditLogService.log(user.getId(), "ADMIN_DEACTIVATE_POST", "POST", id, reason, "active", "deactivated");
+        eventPublisher.publishEvent(new NotificationEvent(
+                Set.of(p.getAuthorUserId()), user.getId(), "POST_ADMIN_DEACTIVATED",
+                "POST", id, Map.of("postTitle", p.getTitle(), "reason", reason)));
     }
 
     @Override
@@ -86,6 +94,9 @@ public class AdminContentServiceImpl implements AdminContentService {
         p.setDeactivationTime(null);
         postMapper.updateById(p);
         auditLogService.log(user.getId(), "ADMIN_RESTORE_POST", "POST", id, null, "deactivated", "active");
+        eventPublisher.publishEvent(new NotificationEvent(
+                Set.of(p.getAuthorUserId()), user.getId(), "POST_RESTORED",
+                "POST", id, Map.of("postTitle", p.getTitle())));
     }
 
     @Override
@@ -126,6 +137,9 @@ public class AdminContentServiceImpl implements AdminContentService {
         c.setDeactivationTime(LocalDateTime.now());
         commentMapper.updateById(c);
         auditLogService.log(user.getId(), "ADMIN_DEACTIVATE_COMMENT", "COMMENT", id, reason, "active", "deactivated");
+        eventPublisher.publishEvent(new NotificationEvent(
+                Set.of(c.getUserId()), user.getId(), "COMMENT_ADMIN_DEACTIVATED",
+                "COMMENT", id, Map.of("postId", c.getPostId(), "reason", reason)));
     }
 
     @Override
@@ -141,5 +155,8 @@ public class AdminContentServiceImpl implements AdminContentService {
         c.setDeactivationTime(null);
         commentMapper.updateById(c);
         auditLogService.log(user.getId(), "ADMIN_RESTORE_COMMENT", "COMMENT", id, null, "deactivated", "active");
+        eventPublisher.publishEvent(new NotificationEvent(
+                Set.of(c.getUserId()), user.getId(), "COMMENT_RESTORED",
+                "COMMENT", id, Map.of("postId", c.getPostId())));
     }
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
 import { navLabels, actionLabels } from '@/constants/labels'
@@ -9,7 +9,10 @@ const auth = useAuthStore()
 const router = useRouter()
 const unreadCount = ref(0)
 
+let pollTimer: ReturnType<typeof setInterval> | null = null
+
 async function handleLogout() {
+  stopPolling()
   await auth.logout()
   router.push({ name: 'login' })
 }
@@ -18,7 +21,36 @@ async function refreshUnread() {
   try { unreadCount.value = await getUnreadCount() } catch { /* ignore */ }
 }
 
-onMounted(refreshUnread)
+function startPolling() {
+  if (pollTimer !== null) return
+  refreshUnread()
+  pollTimer = setInterval(refreshUnread, 30_000)
+}
+
+function stopPolling() {
+  if (pollTimer !== null) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
+}
+
+function handleVisibilityChange() {
+  if (document.hidden) {
+    stopPolling()
+  } else {
+    startPolling()
+  }
+}
+
+onMounted(() => {
+  startPolling()
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+})
+
+onUnmounted(() => {
+  stopPolling()
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+})
 </script>
 
 <template>

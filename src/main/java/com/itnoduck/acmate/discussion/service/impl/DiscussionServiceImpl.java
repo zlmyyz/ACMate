@@ -13,10 +13,12 @@ import com.itnoduck.acmate.discussion.mapper.PostCommentMapper;
 import com.itnoduck.acmate.discussion.mapper.PostLikeMapper;
 import com.itnoduck.acmate.discussion.mapper.PostMapper;
 import com.itnoduck.acmate.discussion.service.DiscussionService;
+import com.itnoduck.acmate.notification.event.NotificationEvent;
 import com.itnoduck.acmate.problem.entity.Problem;
 import com.itnoduck.acmate.problem.mapper.ProblemMapper;
 import com.itnoduck.acmate.user.entity.AppUser;
 import com.itnoduck.acmate.user.mapper.AppUserMapper;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,16 +39,19 @@ public class DiscussionServiceImpl implements DiscussionService {
     private final AppUserMapper userMapper;
     private final ProblemMapper problemMapper;
     private final AuditLogService auditLogService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public DiscussionServiceImpl(PostMapper postMapper, PostCommentMapper commentMapper,
                                   PostLikeMapper likeMapper, AppUserMapper userMapper,
-                                  ProblemMapper problemMapper, AuditLogService auditLogService) {
+                                  ProblemMapper problemMapper, AuditLogService auditLogService,
+                                  ApplicationEventPublisher eventPublisher) {
         this.postMapper = postMapper;
         this.commentMapper = commentMapper;
         this.likeMapper = likeMapper;
         this.userMapper = userMapper;
         this.problemMapper = problemMapper;
         this.auditLogService = auditLogService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -224,6 +229,30 @@ public class DiscussionServiceImpl implements DiscussionService {
             AppUser replied = userMapper.selectById(c.getReplyToUserId());
             if (replied != null) resp.setReplyToUsername(replied.getUsername());
         }
+
+        // Notifications
+        if (c.getParentId() == null) {
+            var recipients = new HashSet<Long>();
+            recipients.add(post.getAuthorUserId());
+            var payload = new LinkedHashMap<String, Object>();
+            payload.put("postTitle", post.getTitle());
+            payload.put("actorNickname", u != null ? u.getNickname() : null);
+            eventPublisher.publishEvent(new NotificationEvent(
+                    recipients, userId, "POST_COMMENTED", "POST", postId, payload));
+        } else {
+            PostComment parent = commentMapper.selectById(c.getParentId());
+            if (parent != null) {
+                var recipients = new HashSet<Long>();
+                recipients.add(parent.getUserId());
+                var payload = new LinkedHashMap<String, Object>();
+                payload.put("postId", postId);
+                payload.put("postTitle", post.getTitle());
+                payload.put("actorNickname", u != null ? u.getNickname() : null);
+                eventPublisher.publishEvent(new NotificationEvent(
+                        recipients, userId, "COMMENT_REPLIED", "COMMENT", c.getParentId(), payload));
+            }
+        }
+
         return resp;
     }
 

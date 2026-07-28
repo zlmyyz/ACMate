@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.itnoduck.acmate.auditlog.service.AuditLogService;
 import com.itnoduck.acmate.common.exception.BusinessException;
+import com.itnoduck.acmate.notification.event.NotificationEvent;
 import com.itnoduck.acmate.training.dto.*;
 import com.itnoduck.acmate.training.entity.TrainingPlan;
 import com.itnoduck.acmate.training.entity.TrainingPlanMember;
@@ -18,6 +19,7 @@ import com.itnoduck.acmate.user.entity.AppUser;
 import com.itnoduck.acmate.user.mapper.AppUserMapper;
 import com.itnoduck.acmate.problem.entity.Problem;
 import com.itnoduck.acmate.problem.mapper.ProblemMapper;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,19 +39,22 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
     private final AppUserMapper userMapper;
     private final ProblemMapper problemMapper;
     private final AuditLogService auditLogService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public TrainingPlanServiceImpl(TrainingPlanMapper planMapper,
                                     TrainingPlanProblemMapper planProblemMapper,
                                     TrainingPlanMemberMapper memberMapper,
                                     AppUserMapper userMapper,
                                     ProblemMapper problemMapper,
-                                    AuditLogService auditLogService) {
+                                    AuditLogService auditLogService,
+                                    ApplicationEventPublisher eventPublisher) {
         this.planMapper = planMapper;
         this.planProblemMapper = planProblemMapper;
         this.memberMapper = memberMapper;
         this.userMapper = userMapper;
         this.problemMapper = problemMapper;
         this.auditLogService = auditLogService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -98,6 +103,14 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
         TrainingPlan plan = getPlan(planId);
         checkEditPermission(plan, userId);
 
+        boolean scheduleChanged = false;
+        if (request.getStartTime() != null && !request.getStartTime().equals(plan.getStartTime())) {
+            scheduleChanged = true;
+        }
+        if (request.getEndTime() != null && !request.getEndTime().equals(plan.getEndTime())) {
+            scheduleChanged = true;
+        }
+
         LambdaUpdateWrapper<TrainingPlan> wrapper = Wrappers.lambdaUpdate(TrainingPlan.class)
                 .eq(TrainingPlan::getId, planId);
 
@@ -118,6 +131,16 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
         }
 
         planMapper.update(null, wrapper);
+
+        if (scheduleChanged && "PUBLIC".equals(plan.getPlanType())) {
+            Set<Long> memberIds = getCurrentMemberUserIds(planId);
+            var payload = new LinkedHashMap<String, Object>();
+            payload.put("planTitle", plan.getTitle());
+            eventPublisher.publishEvent(new NotificationEvent(
+                    memberIds, userId, "TRAINING_SCHEDULE_CHANGED",
+                    "TRAINING_PLAN", planId, payload));
+        }
+
         return getPlanDetail(planId, userId);
     }
 
@@ -244,6 +267,14 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
             plan.setDeactivationSource("ADMIN");
             plan.setDeactivationReason(reason.strip());
             auditLogService.log(userId, "DEACTIVATE", "TRAINING_PLAN", planId, reason.strip(), "ACTIVE", "DEACTIVATED");
+            Set<Long> memberIds = getCurrentMemberUserIds(planId);
+            memberIds.add(plan.getCreatorUserId());
+            var payload = new LinkedHashMap<String, Object>();
+            payload.put("planTitle", plan.getTitle());
+            payload.put("reason", reason.strip());
+            eventPublisher.publishEvent(new NotificationEvent(
+                    memberIds, userId, "TRAINING_ADMIN_DEACTIVATED",
+                    "TRAINING_PLAN", planId, payload));
         } else {
             plan.setDeactivationSource("CREATOR");
             plan.setDeactivationReason(reason != null && !reason.isBlank() ? reason.strip() : null);
@@ -277,6 +308,13 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
 
         if (isAdmin && !isCreator) {
             auditLogService.log(userId, "RESTORE", "TRAINING_PLAN", planId, null, "DEACTIVATED", "ACTIVE");
+            Set<Long> memberIdsR = getCurrentMemberUserIds(planId);
+            memberIdsR.add(plan.getCreatorUserId());
+            var payload = new LinkedHashMap<String, Object>();
+            payload.put("planTitle", plan.getTitle());
+            eventPublisher.publishEvent(new NotificationEvent(
+                    memberIdsR, userId, "TRAINING_RESTORED",
+                    "TRAINING_PLAN", planId, payload));
         }
     }
 
@@ -304,6 +342,7 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
         tpp.setSortOrder(request.getSortOrder());
         tpp.setRequiredFlag(request.getRequiredFlag() == 0 ? 0 : 1);
         planProblemMapper.insert(tpp);
+        notifyProblemsChanged(plan, userId);
     }
 
     @Override
@@ -314,6 +353,7 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
         planProblemMapper.delete(new LambdaQueryWrapper<TrainingPlanProblem>()
                 .eq(TrainingPlanProblem::getPlanId, planId)
                 .eq(TrainingPlanProblem::getProblemId, problemId));
+        notifyProblemsChanged(plan, userId);
     }
 
     @Override
@@ -365,6 +405,11 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
         if (deleted == 0) {
             throw new BusinessException(404, "该成员不在计划中");
         }
+        var memberPayload = new LinkedHashMap<String, Object>();
+        memberPayload.put("planTitle", plan.getTitle());
+        eventPublisher.publishEvent(new NotificationEvent(
+                Set.of(memberUserId), operatorUserId, "TRAINING_MEMBER_REMOVED",
+                "TRAINING_PLAN", planId, memberPayload));
     }
 
     // ---------- helpers ----------
@@ -395,6 +440,12 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
                 .eq(TrainingPlanMember::getUserId, userId));
         if (membership != null) return;
         throw new BusinessException(404, "训练计划不存在");
+    }
+
+    private Set<Long> getCurrentMemberUserIds(Long planId) {
+        return memberMapper.selectList(new LambdaQueryWrapper<TrainingPlanMember>()
+                .eq(TrainingPlanMember::getPlanId, planId))
+                .stream().map(TrainingPlanMember::getUserId).collect(Collectors.toSet());
     }
 
     private Map<Long, AppUser> batchLoadUsers(Set<Long> ids) {
@@ -537,6 +588,16 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
         r.setProblemCount(problems.size());
 
         return r;
+    }
+
+    private void notifyProblemsChanged(TrainingPlan plan, Long userId) {
+        if (!"PUBLIC".equals(plan.getPlanType())) return;
+        Set<Long> memberIds = getCurrentMemberUserIds(plan.getId());
+        var payload = new LinkedHashMap<String, Object>();
+        payload.put("planTitle", plan.getTitle());
+        eventPublisher.publishEvent(new NotificationEvent(
+                memberIds, userId, "TRAINING_PROBLEMS_CHANGED",
+                "TRAINING_PLAN", plan.getId(), payload));
     }
 
     private String computeTimeStatus(TrainingPlan plan) {
