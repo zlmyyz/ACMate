@@ -1,5 +1,68 @@
 # DEVLOG
 
+## 2026-07-29（七轮）：管理员用户管理
+
+### 本次目标
+
+实现管理员用户管理完整工作流：用户列表（含 status/admin 筛选）、停用/恢复（含原因、Session 失效、审计日志）、管理员授予/撤销（含 Session 失效、最后管理员保护、自操作保护）、前后端联调、49 后端测试 + 8 前端测试。
+
+### 新增文件
+
+**后端：**
+- `admin/dto/DeactivateUserRequest.java` — 停用原因 DTO（@NotBlank + @Size 500, setter 内 strip）
+
+**测试：**
+- `admin/controller/AdminUserControllerTest.java` — 18 个 WebMvcTest（列表/停用/恢复/授权/撤销 + CSRF + 权限 + 参数校验）
+- `admin/service/impl/AdminUserServiceImplTest.java` — 31 个 Mockito 测试（所有业务规则 + 边界 + Session 失效）
+
+### 修改文件
+
+**后端 Service（2 个）：**
+- `admin/service/AdminUserService.java` — listUsers 增加 status/admin 参数；新增 deactivate/reactivate/grantAdmin/revokeAdmin
+
+- `admin/service/impl/AdminUserServiceImpl.java` — 完整重写：
+  - 列表：keyword trim + status/admin SQL 过滤 + create_time DESC, id DESC 稳定排序
+  - 停用：403（自操作）/400（原因空）/404/400（最后管理员）校验，幂等跳过，审计日志，Session 失效
+  - 恢复：404/403 校验，幂等跳过，审计日志
+  - 授权：404/403 校验，幂等跳过，审计日志，Session 失效
+  - 撤销：403（自操作）/400（最后管理员）校验，Session 失效，审计日志
+  - Session 失效：SessionRegistry.getAllPrincipals() → 逐个 expireNow()
+
+**后端 Controller（1 个）：**
+- `admin/controller/AdminUserController.java` — PUT 端点（deactivate/restore/grant-admin/revoke-admin），GET 列表支持 status/admin 参数
+
+**前端文件（3 个）：**
+- `api/admin.ts` — 替换 toggleUserStatus/toggleUserAdmin 为独立函数：deactivateUser(id, reason)、reactivateUser(id)、grantUserAdmin(id)、revokeUserAdmin(id)
+- `types/admin.ts` — 新增 AdminUserFilterParams 接口（page/size/keyword/status/admin）
+- `views/AdminUsersView.vue` — 完整重写：URL 查询参数同步、requestId 防过期响应、状态筛选（ACTIVE/INACTIVE）、角色筛选（ADMIN/USER）、Teleport 弹窗（停用含原因、恢复/授权/撤销含警告）、空状态
+
+**测试（1 个）：**
+- `frontend/src/__tests__/phases567.test.ts` — 新增 8 个 AdminUsersView 测试（渲染/搜索/筛选/弹窗/原因校验/API 调用/错误处理/空状态）
+
+**文档（3 个）：**
+- `docs/API.md` — 管理员用户管理完整 API 文档
+- `docs/ROADMAP.md` — 更新阶段 8 完成状态、测试计数
+- `docs/IMPLEMENTATION_STATUS.md` — 更新管理员用户管理行、测试统计、日期
+
+### 三大约束实现
+
+1. **自操作保护**：`grantAdmin` 对已是管理员返回 403，`deactivateUser` 对操作自己返回 400，`revokeAdmin` 对撤销自己返回 400
+2. **最后管理员保护**：`deactivateUser` 和 `revokeAdmin` 均检查目标是否为最后一名活跃管理员，是则 400
+3. **Session 失效**：`deactivate`、`grantAdmin`、`revokeAdmin` 均调用 `expireUserSessions()` 使目标用户所有 Session 立即失效
+
+### 自动化验证
+
+- 后端：477 tests passed（新增 49 admin 测试 + 428 现有）
+- 前端：181 tests passed（新增 8 个 + 173 现有，两轮运行确认）
+- 前端 lint：pass
+- 前端 build-only：success（type-check 有 2 个 pre-existing oj.ts 错误）
+
+### 提交
+
+`<pending>` feat: complete admin user management workflow
+
+---
+
 ## 2026-07-28（六轮）：可信排行榜数据查询修复
 
 ### 本次目标

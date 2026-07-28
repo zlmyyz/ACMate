@@ -1,7 +1,6 @@
 package com.itnoduck.acmate.admin.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.itnoduck.acmate.admin.service.AdminUserService;
@@ -31,14 +30,29 @@ public class AdminUserServiceImpl implements AdminUserService {
     }
 
     @Override
-    public Map<String, Object> listUsers(int page, int size, String keyword, AuthenticatedUser user) {
+    public Map<String, Object> listUsers(int page, int size, String keyword, String status, String admin, AuthenticatedUser user) {
         if (!user.isAdmin()) throw new BusinessException(403, "无权访问");
 
         var qw = new LambdaQueryWrapper<AppUser>();
         if (keyword != null && !keyword.isBlank()) {
-            qw.and(w -> w.like(AppUser::getUsername, keyword).or().like(AppUser::getNickname, keyword));
+            String kw = keyword.strip();
+            qw.and(w -> w.like(AppUser::getUsername, kw).or().like(AppUser::getNickname, kw));
         }
-        qw.orderByDesc(AppUser::getCreateTime);
+        if (status != null) {
+            if ("ACTIVE".equalsIgnoreCase(status)) {
+                qw.eq(AppUser::getStatus, 1);
+            } else if ("INACTIVE".equalsIgnoreCase(status)) {
+                qw.eq(AppUser::getStatus, 0);
+            }
+        }
+        if (admin != null) {
+            if ("ADMIN".equalsIgnoreCase(admin)) {
+                qw.eq(AppUser::getIsAdmin, 1);
+            } else if ("USER".equalsIgnoreCase(admin)) {
+                qw.eq(AppUser::getIsAdmin, 0);
+            }
+        }
+        qw.orderByDesc(AppUser::getCreateTime).orderByDesc(AppUser::getId);
 
         var result = userMapper.selectPage(new Page<>(page, size), qw);
         List<Map<String, Object>> users = new ArrayList<>();
@@ -61,23 +75,77 @@ public class AdminUserServiceImpl implements AdminUserService {
 
     @Override
     @Transactional
-    public void toggleStatus(Long id, AuthenticatedUser user) {
+    public void deactivate(Long id, String reason, AuthenticatedUser user) {
         if (!user.isAdmin()) throw new BusinessException(403, "无权访问");
-        if (id.equals(user.getId())) throw new BusinessException(400, "不能禁用自己");
+        if (id.equals(user.getId())) throw new BusinessException(400, "不能停用自己");
         var u = userMapper.selectById(id);
         if (u == null) throw new BusinessException(404, "用户不存在");
 
-        String before = u.getStatus() != null && u.getStatus() == 1 ? "enabled" : "disabled";
-        int newStatus = u.getStatus() != null && u.getStatus() == 1 ? 0 : 1;
-        userMapper.update(null, Wrappers.lambdaUpdate(AppUser.class)
-                .eq(AppUser::getId, id).set(AppUser::getStatus, newStatus));
+        if (u.getStatus() != null && u.getStatus() == 0) return;
 
-        String after = newStatus == 1 ? "enabled" : "disabled";
-        auditLogService.log(user.getId(), "TOGGLE_USER_STATUS", "USER", id, null, before, after);
-
-        if (newStatus == 0) {
-            expireUserSessions(id);
+        if (u.getIsAdmin() != null && u.getIsAdmin() == 1) {
+            long activeAdminCount = userMapper.selectCount(new LambdaQueryWrapper<AppUser>()
+                    .eq(AppUser::getIsAdmin, 1).eq(AppUser::getStatus, 1));
+            if (activeAdminCount <= 1) throw new BusinessException(400, "系统必须至少保留一个启用管理员");
         }
+
+        userMapper.update(null, Wrappers.lambdaUpdate(AppUser.class)
+                .eq(AppUser::getId, id).set(AppUser::getStatus, 0));
+
+        auditLogService.log(user.getId(), "USER_DEACTIVATED", "USER", id, reason, "ACTIVE", "DEACTIVATED");
+        expireUserSessions(id);
+    }
+
+    @Override
+    @Transactional
+    public void restore(Long id, AuthenticatedUser user) {
+        if (!user.isAdmin()) throw new BusinessException(403, "无权访问");
+        var u = userMapper.selectById(id);
+        if (u == null) throw new BusinessException(404, "用户不存在");
+
+        if (u.getStatus() != null && u.getStatus() == 1) return;
+
+        userMapper.update(null, Wrappers.lambdaUpdate(AppUser.class)
+                .eq(AppUser::getId, id).set(AppUser::getStatus, 1));
+
+        auditLogService.log(user.getId(), "USER_RESTORED", "USER", id, null, "DEACTIVATED", "ACTIVE");
+    }
+
+    @Override
+    @Transactional
+    public void grantAdmin(Long id, AuthenticatedUser user) {
+        if (!user.isAdmin()) throw new BusinessException(403, "无权访问");
+        var u = userMapper.selectById(id);
+        if (u == null) throw new BusinessException(404, "用户不存在");
+
+        if (u.getIsAdmin() != null && u.getIsAdmin() == 1) return;
+
+        userMapper.update(null, Wrappers.lambdaUpdate(AppUser.class)
+                .eq(AppUser::getId, id).set(AppUser::getIsAdmin, 1));
+
+        auditLogService.log(user.getId(), "ADMIN_GRANTED", "USER", id, null, "USER", "ADMIN");
+        expireUserSessions(id);
+    }
+
+    @Override
+    @Transactional
+    public void revokeAdmin(Long id, AuthenticatedUser user) {
+        if (!user.isAdmin()) throw new BusinessException(403, "无权访问");
+        if (id.equals(user.getId())) throw new BusinessException(400, "不能撤销自己的管理员权限");
+        var u = userMapper.selectById(id);
+        if (u == null) throw new BusinessException(404, "用户不存在");
+
+        if (u.getIsAdmin() == null || u.getIsAdmin() == 0) return;
+
+        long activeAdminCount = userMapper.selectCount(new LambdaQueryWrapper<AppUser>()
+                .eq(AppUser::getIsAdmin, 1).eq(AppUser::getStatus, 1));
+        if (activeAdminCount <= 1) throw new BusinessException(400, "系统必须至少保留一个启用管理员");
+
+        userMapper.update(null, Wrappers.lambdaUpdate(AppUser.class)
+                .eq(AppUser::getId, id).set(AppUser::getIsAdmin, 0));
+
+        auditLogService.log(user.getId(), "ADMIN_REVOKED", "USER", id, null, "ADMIN", "USER");
+        expireUserSessions(id);
     }
 
     private void expireUserSessions(Long userId) {
@@ -88,29 +156,5 @@ public class AdminUserServiceImpl implements AdminUserService {
                 }
             }
         }
-    }
-
-    @Override
-    @Transactional
-    public void toggleAdmin(Long id, AuthenticatedUser user) {
-        if (!user.isAdmin()) throw new BusinessException(403, "无权访问");
-        if (id.equals(user.getId())) throw new BusinessException(400, "不能取消自己的管理员权限");
-        var u = userMapper.selectById(id);
-        if (u == null) throw new BusinessException(404, "用户不存在");
-
-        int newAdmin = u.getIsAdmin() != null && u.getIsAdmin() == 1 ? 0 : 1;
-
-        if (newAdmin == 0) {
-            long adminCount = userMapper.selectCount(new LambdaQueryWrapper<AppUser>()
-                    .eq(AppUser::getIsAdmin, 1).eq(AppUser::getStatus, 1));
-            if (adminCount <= 1) throw new BusinessException(400, "系统必须至少保留一个管理员");
-        }
-
-        userMapper.update(null, Wrappers.lambdaUpdate(AppUser.class)
-                .eq(AppUser::getId, id).set(AppUser::getIsAdmin, newAdmin));
-
-        String before = u.getIsAdmin() != null && u.getIsAdmin() == 1 ? "admin" : "user";
-        String after = newAdmin == 1 ? "admin" : "user";
-        auditLogService.log(user.getId(), "TOGGLE_ADMIN", "USER", id, null, before, after);
     }
 }

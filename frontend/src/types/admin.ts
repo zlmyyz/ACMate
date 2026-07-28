@@ -2,9 +2,9 @@ export interface AdminUser {
   id: number
   username: string
   nickname: string
-  email: string
+  email: string | null
   avatarUrl: string | null
-  bio: string
+  bio: string | null
   admin: boolean
   status: number
   createTime: string | null
@@ -16,4 +16,12 @@ export interface AdminUserListResponse {
   total: number
   page: number
   size: number
+}
+
+export interface AdminUserFilterParams {
+  page?: number
+  size?: number
+  keyword?: string
+  status?: string
+  admin?: string
 }

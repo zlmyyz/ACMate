@@ -21,15 +21,19 @@ vi.mock('@/api/oj', () => ({
   verifyAccount: mockVerifyAccount,
 }))
 
-const { mockListUsers, mockToggleUserStatus, mockToggleUserAdmin } = vi.hoisted(() => ({
+const { mockListUsers, mockDeactivateUser, mockReactivateUser, mockGrantUserAdmin, mockRevokeUserAdmin } = vi.hoisted(() => ({
   mockListUsers: vi.fn(),
-  mockToggleUserStatus: vi.fn(),
-  mockToggleUserAdmin: vi.fn(),
+  mockDeactivateUser: vi.fn(),
+  mockReactivateUser: vi.fn(),
+  mockGrantUserAdmin: vi.fn(),
+  mockRevokeUserAdmin: vi.fn(),
 }))
 vi.mock('@/api/admin', () => ({
   listUsers: mockListUsers,
-  toggleUserStatus: mockToggleUserStatus,
-  toggleUserAdmin: mockToggleUserAdmin,
+  deactivateUser: mockDeactivateUser,
+  reactivateUser: mockReactivateUser,
+  grantUserAdmin: mockGrantUserAdmin,
+  revokeUserAdmin: mockRevokeUserAdmin,
 }))
 
 const { mockGetCurrentUser } = vi.hoisted(() => ({ mockGetCurrentUser: vi.fn() }))
@@ -254,22 +258,36 @@ describe('Admin API', () => {
   it('should call listUsers with params', async () => {
     mockListUsers.mockResolvedValue({ users: [], total: 0, page: 1, size: 20 })
     const { listUsers } = await import('@/api/admin')
-    await listUsers({ page: 1, size: 20, keyword: 'test' })
-    expect(mockListUsers).toHaveBeenCalledWith({ page: 1, size: 20, keyword: 'test' })
+    await listUsers({ page: 1, size: 20, keyword: 'test', status: 'ACTIVE', admin: 'ADMIN' })
+    expect(mockListUsers).toHaveBeenCalledWith({ page: 1, size: 20, keyword: 'test', status: 'ACTIVE', admin: 'ADMIN' })
   })
 
-  it('should call toggleUserStatus with id', async () => {
-    mockToggleUserStatus.mockResolvedValue(undefined)
-    const { toggleUserStatus } = await import('@/api/admin')
-    await toggleUserStatus(42)
-    expect(mockToggleUserStatus).toHaveBeenCalledWith(42)
+  it('should call deactivateUser with id and reason', async () => {
+    mockDeactivateUser.mockResolvedValue(undefined)
+    const { deactivateUser } = await import('@/api/admin')
+    await deactivateUser(42, '违规行为')
+    expect(mockDeactivateUser).toHaveBeenCalledWith(42, '违规行为')
   })
 
-  it('should call toggleUserAdmin with id', async () => {
-    mockToggleUserAdmin.mockResolvedValue(undefined)
-    const { toggleUserAdmin } = await import('@/api/admin')
-    await toggleUserAdmin(42)
-    expect(mockToggleUserAdmin).toHaveBeenCalledWith(42)
+  it('should call reactivateUser with id', async () => {
+    mockReactivateUser.mockResolvedValue(undefined)
+    const { reactivateUser } = await import('@/api/admin')
+    await reactivateUser(42)
+    expect(mockReactivateUser).toHaveBeenCalledWith(42)
+  })
+
+  it('should call grantUserAdmin with id', async () => {
+    mockGrantUserAdmin.mockResolvedValue(undefined)
+    const { grantUserAdmin } = await import('@/api/admin')
+    await grantUserAdmin(42)
+    expect(mockGrantUserAdmin).toHaveBeenCalledWith(42)
+  })
+
+  it('should call revokeUserAdmin with id', async () => {
+    mockRevokeUserAdmin.mockResolvedValue(undefined)
+    const { revokeUserAdmin } = await import('@/api/admin')
+    await revokeUserAdmin(42)
+    expect(mockRevokeUserAdmin).toHaveBeenCalledWith(42)
   })
 })
 
@@ -278,6 +296,19 @@ describe('AdminUsersView', () => {
     vi.clearAllMocks()
     setActivePinia(createPinia())
   })
+
+  function createUsersRouter() {
+    const router = createRouter({
+      history: createWebHistory(),
+      routes: [
+        { path: '/admin/users', name: 'admin-users', component: { template: '<div />' } },
+        { path: '/users/:id', name: 'user-profile', component: { template: '<div />' } },
+        { path: '/403', name: 'forbidden', component: { template: '<div />' } },
+      ],
+    })
+    router.push('/admin/users')
+    return router
+  }
 
   it('should render user list', async () => {
     mockListUsers.mockResolvedValue({
@@ -288,19 +319,12 @@ describe('AdminUsersView', () => {
       total: 2, page: 1, size: 20,
     })
 
-    const router = createRouter({
-      history: createWebHistory(),
-      routes: [
-        { path: '/admin/users', name: 'admin-users', component: { template: '<div />' } },
-        { path: '/users/:id', name: 'user-profile', component: { template: '<div />' } },
-      ],
-    })
-    await router.push('/admin/users')
+    const router = createUsersRouter()
     await router.isReady()
 
     const { default: AdminUsersView } = await import('@/views/AdminUsersView.vue')
     const wrapper = mount(AdminUsersView, {
-      global: { plugins: [router], stubs: { RouterLink: routerLinkStub } },
+      global: { plugins: [router], stubs: { RouterLink: routerLinkStub, Teleport: true } },
     })
     await flushPromises()
 
@@ -312,16 +336,21 @@ describe('AdminUsersView', () => {
     expect(wrapper.text()).toContain('正常')
   })
 
-  it('should show search input', async () => {
+  it('should show search input and filter selects', async () => {
     mockListUsers.mockResolvedValue({ users: [], total: 0, page: 1, size: 20 })
+
+    const router = createRouter({ history: createWebHistory(), routes: [{ path: '/admin/users', name: 'admin-users', component: { template: '<div />' } }] })
+    await router.push('/admin/users')
+    await router.isReady()
 
     const { default: AdminUsersView } = await import('@/views/AdminUsersView.vue')
     const wrapper = mount(AdminUsersView, {
-      global: { plugins: [emptyRouter()], stubs: { RouterLink: routerLinkStub } },
+      global: { plugins: [router], stubs: { RouterLink: routerLinkStub, Teleport: true } },
     })
     await flushPromises()
 
     expect(wrapper.find('.search-input').exists()).toBe(true)
+    expect(wrapper.findAll('.filter-select').length).toBe(2)
   })
 
   it('should show action buttons', async () => {
@@ -333,16 +362,188 @@ describe('AdminUsersView', () => {
       total: 2, page: 1, size: 20,
     })
 
+    const router = createRouter({ history: createWebHistory(), routes: [{ path: '/admin/users', name: 'admin-users', component: { template: '<div />' } }] })
+    await router.push('/admin/users')
+    await router.isReady()
+
     const { default: AdminUsersView } = await import('@/views/AdminUsersView.vue')
     const wrapper = mount(AdminUsersView, {
-      global: { plugins: [emptyRouter()], stubs: { RouterLink: routerLinkStub } },
+      global: { plugins: [router], stubs: { RouterLink: routerLinkStub, Teleport: true } },
     })
     await flushPromises()
 
-    expect(wrapper.text()).toContain('禁用')
+    expect(wrapper.text()).toContain('停用')
     expect(wrapper.text()).toContain('恢复')
     expect(wrapper.text()).toContain('取消管理')
     expect(wrapper.text()).toContain('设为管理')
+  })
+
+  it('should open deactivate dialog with user info', async () => {
+    mockListUsers.mockResolvedValue({
+      users: [{ id: 2, username: 'alice', nickname: 'Alice', email: null, avatarUrl: null, bio: '', admin: false, status: 1, createTime: '2024-02-01T00:00:00', lastLoginTime: null }],
+      total: 1, page: 1, size: 20,
+    })
+
+    const router = createRouter({ history: createWebHistory(), routes: [{ path: '/admin/users', name: 'admin-users', component: { template: '<div />' } }] })
+    await router.push('/admin/users')
+    await router.isReady()
+
+    const { default: AdminUsersView } = await import('@/views/AdminUsersView.vue')
+    const wrapper = mount(AdminUsersView, {
+      global: { plugins: [router], stubs: { RouterLink: routerLinkStub, Teleport: false } },
+      attachTo: document.body,
+    })
+    await flushPromises()
+
+    await wrapper.find('.action-btn').trigger('click')
+    await flushPromises()
+
+    expect(document.body.textContent).toContain('Alice')
+    expect(document.body.textContent).toContain('@alice')
+    expect(document.body.textContent).toContain('确认停用')
+    expect(document.body.textContent).toContain('取消')
+    wrapper.unmount()
+  })
+
+  it('should disable confirm when reason is empty in deactivate dialog', async () => {
+    mockListUsers.mockResolvedValue({
+      users: [{ id: 2, username: 'alice', nickname: 'Alice', email: null, avatarUrl: null, bio: '', admin: false, status: 1, createTime: '2024-02-01T00:00:00', lastLoginTime: null }],
+      total: 1, page: 1, size: 20,
+    })
+
+    const router = createRouter({ history: createWebHistory(), routes: [{ path: '/admin/users', name: 'admin-users', component: { template: '<div />' } }] })
+    await router.push('/admin/users')
+    await router.isReady()
+
+    const { default: AdminUsersView } = await import('@/views/AdminUsersView.vue')
+    const wrapper = mount(AdminUsersView, {
+      global: { plugins: [router], stubs: { RouterLink: routerLinkStub, Teleport: false } },
+      attachTo: document.body,
+    })
+    await flushPromises()
+
+    await wrapper.find('.action-btn').trigger('click')
+    await flushPromises()
+
+    const confirmBtn = document.body.querySelector('.modal-btn.confirm') as HTMLButtonElement
+    expect(confirmBtn.disabled).toBe(true)
+
+    const textarea = document.body.querySelector('.modal-textarea') as HTMLTextAreaElement
+    textarea.value = '违规行为'
+    textarea.dispatchEvent(new Event('input'))
+    await flushPromises()
+    expect(confirmBtn.disabled).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('should call deactivateUser on confirm', async () => {
+    mockDeactivateUser.mockResolvedValue(undefined)
+    mockListUsers.mockResolvedValue({
+      users: [{ id: 2, username: 'alice', nickname: 'Alice', email: null, avatarUrl: null, bio: '', admin: false, status: 1, createTime: '2024-02-01T00:00:00', lastLoginTime: null }],
+      total: 1, page: 1, size: 20,
+    })
+
+    const router = createRouter({ history: createWebHistory(), routes: [{ path: '/admin/users', name: 'admin-users', component: { template: '<div />' } }] })
+    await router.push('/admin/users')
+    await router.isReady()
+
+    const { default: AdminUsersView } = await import('@/views/AdminUsersView.vue')
+    const wrapper = mount(AdminUsersView, {
+      global: { plugins: [router], stubs: { RouterLink: routerLinkStub, Teleport: false } },
+      attachTo: document.body,
+    })
+    await flushPromises()
+
+    await wrapper.find('.action-btn').trigger('click')
+    await flushPromises()
+
+    const textarea = document.body.querySelector('.modal-textarea') as HTMLTextAreaElement
+    textarea.value = '违规行为'
+    textarea.dispatchEvent(new Event('input'))
+    await flushPromises()
+
+    ;(document.body.querySelector('.modal-btn.confirm') as HTMLButtonElement).click()
+    await flushPromises()
+
+    expect(mockDeactivateUser).toHaveBeenCalledWith(2, '违规行为')
+    wrapper.unmount()
+  })
+
+  it('should call reactivateUser on restore confirm', async () => {
+    mockReactivateUser.mockResolvedValue(undefined)
+    mockListUsers.mockResolvedValue({
+      users: [{ id: 2, username: 'alice', nickname: 'Alice', email: null, avatarUrl: null, bio: '', admin: false, status: 0, createTime: '2024-02-01T00:00:00', lastLoginTime: null }],
+      total: 1, page: 1, size: 20,
+    })
+
+    const router = createRouter({ history: createWebHistory(), routes: [{ path: '/admin/users', name: 'admin-users', component: { template: '<div />' } }] })
+    await router.push('/admin/users')
+    await router.isReady()
+
+    const { default: AdminUsersView } = await import('@/views/AdminUsersView.vue')
+    const wrapper = mount(AdminUsersView, {
+      global: { plugins: [router], stubs: { RouterLink: routerLinkStub, Teleport: false } },
+      attachTo: document.body,
+    })
+    await flushPromises()
+
+    await wrapper.find('.action-btn').trigger('click')
+    await flushPromises()
+
+    ;(document.body.querySelector('.modal-btn.confirm') as HTMLButtonElement).click()
+    await flushPromises()
+
+    expect(mockReactivateUser).toHaveBeenCalledWith(2)
+    wrapper.unmount()
+  })
+
+  it('should handle deactivation error', async () => {
+    mockDeactivateUser.mockRejectedValue({ response: { data: { message: '停用失败' } } })
+    mockListUsers.mockResolvedValue({
+      users: [{ id: 2, username: 'alice', nickname: 'Alice', email: null, avatarUrl: null, bio: '', admin: false, status: 1, createTime: '2024-02-01T00:00:00', lastLoginTime: null }],
+      total: 1, page: 1, size: 20,
+    })
+
+    const router = createRouter({ history: createWebHistory(), routes: [{ path: '/admin/users', name: 'admin-users', component: { template: '<div />' } }] })
+    await router.push('/admin/users')
+    await router.isReady()
+
+    const { default: AdminUsersView } = await import('@/views/AdminUsersView.vue')
+    const wrapper = mount(AdminUsersView, {
+      global: { plugins: [router], stubs: { RouterLink: routerLinkStub, Teleport: false } },
+      attachTo: document.body,
+    })
+    await flushPromises()
+
+    await wrapper.find('.action-btn').trigger('click')
+    await flushPromises()
+
+    const textarea = document.body.querySelector('.modal-textarea') as HTMLTextAreaElement
+    textarea.value = '违规'
+    textarea.dispatchEvent(new Event('input'))
+    await flushPromises()
+
+    ;(document.body.querySelector('.modal-btn.confirm') as HTMLButtonElement).click()
+    await flushPromises()
+
+    expect(document.body.textContent).toContain('停用失败')
+    wrapper.unmount()
+  })
+
+  it('should show empty state when no users', async () => {
+    mockListUsers.mockResolvedValue({ users: [], total: 0, page: 1, size: 20 })
+
+    const router = createRouter({ history: createWebHistory(), routes: [{ path: '/admin/users', name: 'admin-users', component: { template: '<div />' } }] })
+    await router.push('/admin/users')
+    await router.isReady()
+
+    const { default: AdminUsersView } = await import('@/views/AdminUsersView.vue')
+    const wrapper = mount(AdminUsersView, {
+      global: { plugins: [router], stubs: { RouterLink: routerLinkStub, Teleport: true } },
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('暂无符合条件的用户')
   })
 })
 

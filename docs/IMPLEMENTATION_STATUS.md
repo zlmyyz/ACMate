@@ -1,6 +1,6 @@
 # IMPLEMENTATION STATUS
 
-> Updated: 2026-07-28 | 可信排行榜代码完成 + 文档同步；真实数据与人工验收待进行
+> Updated: 2026-07-29 | 管理员用户管理完成（deactivate/reactivate/grant-admin/revoke-admin + Session失效 + audit_log + 筛选 + 前端弹窗）
 
 ## Feature Status
 
@@ -24,7 +24,7 @@
 | 排行榜 | 总榜/7天/30天/分页 | **代码完成** | **代码完成** | 5 pass | 待联调 | 真实数据验证+浏览器人工验收待进行 |
 | CF账号 | 绑定/审核/同步/冷却 | **代码完成** | **代码完成** | 34 pass | **浏览器验证通过** | 真实CF API+Chromium最终验收待进行 |
 | 同步任务 | 手动/日志/重试 | 完成 | 完成 | 含 | **浏览器验证通过** | 定时同步/@Scheduled 未启用 |
-| 管理员用户管理 | 列表/禁用/改昵称/提权 | 完成 | 完成 | 8 pass | 待联调 | **禁用用户Session未失效** |
+| 管理员用户管理 | 列表/停用/恢复/提权/管理员授予撤销/Session失效/审计日志 | 完成 | 完成 | 49 admin + 8 frontend | 待联调 | — |
 | 通知 | 11种场景/已读/未读/轮询 | **端到端联调通过** | 完成 | 42 pass | **浏览器验证通过** | — |
 | 管理员内容管理 | 帖子/评论管理 | **已完成** | 完成 | — | 待联调 | 审计日志已集成 |
 | 操作日志 | 管理员审计 | **已完成** | 完成 | — | 待联调 | 高风险操作写入已集成 |
@@ -35,10 +35,10 @@
 
 | 层 | 测试数 | 通过 | 失败 |
 |---|---|---|---|
-| 后端 | 428 | 428 | 0 |
-| 前端 | 173 | 173 | 0 |
+| 后端 | 477 | 477 | 0 |
+| 前端 | 181 | 181 | 0 |
 
-全部后端测试无需数据库，使用 Mockito 和 MybatisPlusTestHelper。通知系统 34 个后端测试，OJ 同步 34 个测试覆盖同步、幂等、first-AC、上游失败场景。前端 173 个测试含通知专项、OJ 同步、训练计划题目选择器。真实 Codeforces API 已用 `tourist` handle 验证。
+全部后端测试无需数据库，使用 Mockito 和 MybatisPlusTestHelper。通知系统 34 个后端测试，OJ 同步 34 个测试覆盖同步、幂等、first-AC、上游失败场景。管理员用户管理新增 49 后端测试 + 8 前端测试。前端 181 个测试含通知专项、OJ 同步、训练计划题目选择器、管理员用户管理。真实 Codeforces API 已用 `tourist` handle 验证。
 
 ## 数据库迁移
 
@@ -158,7 +158,7 @@ V9 首次出现在 `bd56c20`（Phase 8），含非法 `ADD COLUMN IF NOT EXISTS`
 | 排行榜浏览器人工验收 | 中 | 前端代码完成，未用真实数据人工走查 |
 | @Scheduled 定时同步未启用 | 中 | 服务端逻辑就绪，需启用 @EnableScheduling + cron |
 | 同步冷却期未强制 | 低 | 前端冷却提示已就绪，服务端不强制 1 小时冷却 |
-| 禁用用户 Session 仍有效 | 中 | AdminUserService.toggleStatus 只改数据库，不失效已登录 Session |
+| 管理员用户管理 Chromium 验收 | 低 | 后端和前端代码完成，浏览器人工验收待进行 |
 
 ### 最近提交
 
@@ -168,6 +168,7 @@ V9 首次出现在 `bd56c20`（Phase 8），含非法 `ADD COLUMN IF NOT EXISTS`
 | `2adc50d` | fix: finalize Codeforces sync reliability and verification |
 | `be8175d` | feat: implement Codeforces submission sync with idempotent AC tracking |
 | `c6831da` | feat: add problem selection to training plans |
+| `this-commit` | feat: complete admin user management workflow |
 
 ### 排行榜能力审计
 

@@ -854,6 +854,231 @@ GET 请求不需要 CSRF Token。
 
 ---
 
+## 管理员用户管理 API
+
+### GET /api/admin/users
+
+管理员分页查询用户列表，支持搜索和筛选。
+
+#### 认证
+
+需要管理员（ROLE_ADMIN）角色。
+
+#### CSRF
+
+GET 请求不需要 CSRF Token。
+
+#### 查询参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| page | int | 1 | 页码，最小 1 |
+| size | int | 20 | 每页数量，1-100 |
+| keyword | string | — | 关键词，匹配 username 或 nickname（模糊搜索） |
+| status | string | — | 状态筛选：ACTIVE（正常）/ INACTIVE（已禁用） |
+| admin | string | — | 角色筛选：ADMIN（管理员）/ USER（普通用户） |
+
+示例：`?page=1&size=20&keyword=alice&status=ACTIVE&admin=USER`
+
+#### 成功响应
+
+**200 OK**
+
+```json
+{
+  "users": [
+    {
+      "id": 1,
+      "username": "admin",
+      "nickname": "Admin",
+      "email": "admin@acmate.com",
+      "avatarUrl": null,
+      "bio": null,
+      "admin": true,
+      "status": 1,
+      "createTime": "2026-01-01T00:00:00",
+      "lastLoginTime": null
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "size": 20
+}
+```
+
+#### 错误响应
+
+**401 Unauthorized** — 未登录
+
+**403 Forbidden** — 非管理员
+
+#### 字段说明
+
+- `admin`：boolean，表示是否为管理员
+- `status`：1=正常，0=已禁用
+- 不返回 `passwordHash` 字段
+
+#### 排序规则
+
+按 `createTime DESC, id DESC` 排序，确保分页稳定性。
+
+---
+
+### PUT /api/admin/users/{id}/deactivate
+
+管理员停用用户。停用后目标用户全部现有 Session 立即失效，不能继续访问受保护接口。
+
+#### 认证
+
+需要管理员（ROLE_ADMIN）角色。
+
+#### CSRF
+
+需要携带有效 CSRF Token。
+
+#### 请求字段
+
+| 字段 | 类型 | 必填 | 校验规则 |
+|------|------|------|----------|
+| reason | string | 是 | 去除首尾空格后不能为空，最长 500 字符 |
+
+#### 成功响应
+
+**204 No Content**
+
+#### 幂等
+
+- 已停用用户重复停用返回 204，不重复更新，不重复写 audit_log
+
+#### 错误响应
+
+**400 Bad Request** — 原因为空、不能停用自己、或停用后系统无启用管理员
+
+**401 Unauthorized** — 未登录
+
+**403 Forbidden** — 非管理员或 CSRF 校验失败
+
+**404 Not Found** — 用户不存在
+
+#### 业务规则
+
+- 不能停用自己
+- 如果目标是启用管理员，停用后必须至少保留一个启用管理员
+- 实际停用时写 audit_log（actionType: USER_DEACTIVATED）
+- 实际停用后使目标用户所有 Session 失效
+
+---
+
+### PUT /api/admin/users/{id}/restore
+
+管理员恢复已停用用户。恢复后用户必须重新登录，旧 Session 不恢复。
+
+#### 认证
+
+需要管理员（ROLE_ADMIN）角色。
+
+#### CSRF
+
+需要携带有效 CSRF Token。
+
+#### 成功响应
+
+**204 No Content**
+
+#### 幂等
+
+- 已启用用户重复恢复返回 204，不重复更新，不重复写 audit_log
+
+#### 错误响应
+
+**401 Unauthorized** — 未登录
+
+**403 Forbidden** — 非管理员或 CSRF 校验失败
+
+**404 Not Found** — 用户不存在
+
+#### 业务规则
+
+- 恢复后不创建或恢复旧 Session
+- 用户必须重新登录
+- 实际恢复时写 audit_log（actionType: USER_RESTORED）
+
+---
+
+### PUT /api/admin/users/{id}/grant-admin
+
+授予普通用户管理员权限。目标用户需重新登录以获取 ROLE_ADMIN。
+
+#### 认证
+
+需要管理员（ROLE_ADMIN）角色。
+
+#### CSRF
+
+需要携带有效 CSRF Token。
+
+#### 成功响应
+
+**204 No Content**
+
+#### 幂等
+
+- 已是管理员时重复授予返回 204，不重复更新，不重复写 audit_log
+
+#### 错误响应
+
+**401 Unauthorized** — 未登录
+
+**403 Forbidden** — 非管理员或 CSRF 校验失败
+
+**404 Not Found** — 用户不存在
+
+#### 业务规则
+
+- 实际变化时写 audit_log（actionType: ADMIN_GRANTED）
+- 使目标用户全部 Session 失效
+
+---
+
+### PUT /api/admin/users/{id}/revoke-admin
+
+撤销用户的管理员权限。目标用户所有现有 Session 立即失效。
+
+#### 认证
+
+需要管理员（ROLE_ADMIN）角色。
+
+#### CSRF
+
+需要携带有效 CSRF Token。
+
+#### 成功响应
+
+**204 No Content**
+
+#### 幂等
+
+- 已是普通用户时重复撤销返回 204，不重复更新，不重复写 audit_log
+
+#### 错误响应
+
+**400 Bad Request** — 不能撤销自己，或撤销后系统无启用管理员
+
+**401 Unauthorized** — 未登录
+
+**403 Forbidden** — 非管理员或 CSRF 校验失败
+
+**404 Not Found** — 用户不存在
+
+#### 业务规则
+
+- 不能撤销自己的管理员权限
+- 撤销后必须至少保留一个启用管理员
+- 实际变化时写 audit_log（actionType: ADMIN_REVOKED）
+- 使目标用户全部 Session 失效
+
+---
+
 ## 训练计划 API
 
 ### GET /api/training-plans
