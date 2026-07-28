@@ -3,6 +3,7 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import RegisterView from '@/views/RegisterView.vue'
 
 const { mockGetUser, mockLogin, mockRegister, mockCsrf, mockLogoutApi } = vi.hoisted(() => ({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -153,8 +154,7 @@ describe('Auth Store', () => {
     return createRouter({ history: createWebHistory(), routes: [] })
   }
 
-  async function mountRegister() {
-    const { default: RegisterView } = await import('@/views/RegisterView.vue')
+  function mountRegister() {
     return mount(RegisterView, {
       global: { plugins: [createPinia(), emptyRouter()], stubs: { RouterLink: true } },
     })

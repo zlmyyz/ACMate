@@ -243,7 +243,7 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
             }
             plan.setDeactivationSource("ADMIN");
             plan.setDeactivationReason(reason.strip());
-            auditLogService.log(userId, "DEACTIVATE", "TRAINING_PLAN", planId, reason.strip(), null, null);
+            auditLogService.log(userId, "DEACTIVATE", "TRAINING_PLAN", planId, reason.strip(), "ACTIVE", "DEACTIVATED");
         } else {
             plan.setDeactivationSource("CREATOR");
             plan.setDeactivationReason(reason != null && !reason.isBlank() ? reason.strip() : null);
@@ -276,7 +276,7 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
         planMapper.updateById(plan);
 
         if (isAdmin && !isCreator) {
-            auditLogService.log(userId, "RESTORE", "TRAINING_PLAN", planId, null, null, null);
+            auditLogService.log(userId, "RESTORE", "TRAINING_PLAN", planId, null, "DEACTIVATED", "ACTIVE");
         }
     }
 

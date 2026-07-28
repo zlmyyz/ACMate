@@ -341,7 +341,7 @@ class TrainingPlanServiceImplTest {
         assertEquals("ADMIN", plan.getDeactivationSource());
         assertEquals("Violation", plan.getDeactivationReason());
         assertEquals(ADMIN_ID, plan.getDeactivatedBy());
-        verify(auditLogService).log(eq(ADMIN_ID), eq("DEACTIVATE"), eq("TRAINING_PLAN"), eq(PLAN_ID), eq("Violation"), eq(null), eq(null));
+        verify(auditLogService).log(eq(ADMIN_ID), eq("DEACTIVATE"), eq("TRAINING_PLAN"), eq(PLAN_ID), eq("Violation"), eq("ACTIVE"), eq("DEACTIVATED"));
     }
 
     @Test
@@ -383,7 +383,7 @@ class TrainingPlanServiceImplTest {
         assertNull(plan.getDeactivationSource());
         assertNull(plan.getDeactivationReason());
         assertNull(plan.getDeactivatedBy());
-        verify(auditLogService).log(eq(ADMIN_ID), eq("RESTORE"), eq("TRAINING_PLAN"), eq(PLAN_ID), eq(null), eq(null), eq(null));
+        verify(auditLogService).log(eq(ADMIN_ID), eq("RESTORE"), eq("TRAINING_PLAN"), eq(PLAN_ID), eq(null), eq("DEACTIVATED"), eq("ACTIVE"));
     }
 
     @Test
