@@ -12,6 +12,7 @@ public class CreatePostRequest {
     private String postType;
     private Long problemId;
     private Long trainingPlanId;
+    private Boolean broadcast;
 
     public String getTitle() { return title; }
     public void setTitle(String v) { this.title = v; }
@@ -23,4 +24,6 @@ public class CreatePostRequest {
     public void setProblemId(Long v) { this.problemId = v; }
     public Long getTrainingPlanId() { return trainingPlanId; }
     public void setTrainingPlanId(Long v) { this.trainingPlanId = v; }
+    public Boolean getBroadcast() { return broadcast; }
+    public void setBroadcast(Boolean v) { this.broadcast = v; }
 }

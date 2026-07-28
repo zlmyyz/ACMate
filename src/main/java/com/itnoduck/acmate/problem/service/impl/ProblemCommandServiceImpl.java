@@ -11,6 +11,8 @@ import com.itnoduck.acmate.problem.dto.UpdateProblemRequest;
 import com.itnoduck.acmate.problem.entity.Problem;
 import com.itnoduck.acmate.problem.mapper.ProblemMapper;
 import com.itnoduck.acmate.problem.service.ProblemCommandService;
+import com.itnoduck.acmate.user.entity.AppUser;
+import com.itnoduck.acmate.user.mapper.AppUserMapper;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,10 +32,13 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
 
     private final ProblemMapper problemMapper;
     private final AuditLogService auditLogService;
+    private final AppUserMapper appUserMapper;
 
-    public ProblemCommandServiceImpl(ProblemMapper problemMapper, AuditLogService auditLogService) {
+    public ProblemCommandServiceImpl(ProblemMapper problemMapper, AuditLogService auditLogService,
+                                      AppUserMapper appUserMapper) {
         this.problemMapper = problemMapper;
         this.auditLogService = auditLogService;
+        this.appUserMapper = appUserMapper;
     }
 
     @Override
@@ -341,9 +346,19 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
     }
 
     private ProblemDetailResponse toDetailResponse(Problem p) {
+        String creatorUsername = null;
+        String creatorNickname = null;
+        if (p.getCreatorUserId() != null) {
+            AppUser creator = appUserMapper.selectById(p.getCreatorUserId());
+            if (creator != null) {
+                creatorUsername = creator.getUsername();
+                creatorNickname = creator.getNickname();
+            }
+        }
         return new ProblemDetailResponse(
                 p.getId(), p.getPlatform(), p.getExternalProblemKey(), p.getTitle(),
                 p.getSourceUrl(), p.getDifficulty(), p.getTags(), p.getContentMd(),
-                p.getCreatorUserId(), p.getCreateTime(), p.getUpdateTime());
+                p.getCreatorUserId(), creatorUsername, creatorNickname,
+                p.getCreateTime(), p.getUpdateTime());
     }
 }

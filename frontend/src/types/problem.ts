@@ -7,6 +7,8 @@ export interface ProblemSummary {
   difficulty: string | null
   tags: string | null
   creatorUserId: number
+  creatorUsername: string | null
+  creatorNickname: string | null
   createTime: string
 }
 
@@ -20,6 +22,8 @@ export interface ProblemDetail {
   tags: string | null
   contentMd: string | null
   creatorUserId: number
+  creatorUsername: string | null
+  creatorNickname: string | null
   createTime: string
   updateTime: string
 }

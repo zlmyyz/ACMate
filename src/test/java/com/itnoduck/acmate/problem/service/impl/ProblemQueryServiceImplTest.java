@@ -12,7 +12,10 @@ import com.itnoduck.acmate.problem.dto.ProblemSummaryResponse;
 import com.itnoduck.acmate.problem.entity.Problem;
 import com.itnoduck.acmate.problem.mapper.ProblemMapper;
 import com.itnoduck.acmate.testutil.MybatisPlusTestHelper;
+import com.itnoduck.acmate.user.entity.AppUser;
+import com.itnoduck.acmate.user.mapper.AppUserMapper;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -25,8 +28,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ProblemQueryServiceImplTest {
@@ -38,9 +40,20 @@ class ProblemQueryServiceImplTest {
 
     @Mock
     private ProblemMapper problemMapper;
+    @Mock
+    private AppUserMapper appUserMapper;
 
     @InjectMocks
     private ProblemQueryServiceImpl service;
+
+    @BeforeEach
+    void setupCreatorLookup() {
+        AppUser creator = new AppUser();
+        creator.setId(1L);
+        creator.setUsername("testuser");
+        creator.setNickname("TestUser");
+        lenient().when(appUserMapper.selectById(anyLong())).thenReturn(creator);
+    }
 
     private Problem buildProblem(Long id, String title, int status, Long creatorUserId) {
         Problem p = new Problem();

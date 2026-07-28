@@ -85,7 +85,7 @@ function goToDetail(id: number) {
           </td>
           <td v-if="showCreatorCol" class="col-creator">
             <span class="creator-text">
-              用户 #{{ (problem as ProblemSummary).creatorUserId }}
+              {{ ((problem as ProblemSummary).creatorNickname || (problem as ProblemSummary).creatorUsername || `用户 #${(problem as ProblemSummary).creatorUserId}`) }}
             </span>
           </td>
           <td v-if="slots.status" class="col-status" @click.stop>

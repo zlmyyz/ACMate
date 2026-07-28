@@ -12,6 +12,8 @@ public record ProblemDetailResponse(
         String tags,
         String contentMd,
         Long creatorUserId,
+        String creatorUsername,
+        String creatorNickname,
         LocalDateTime createTime,
         LocalDateTime updateTime
 ) {}

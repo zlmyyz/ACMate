@@ -61,9 +61,9 @@ public class DiscussionServiceImpl implements DiscussionService {
         if (type == null || !VALID_POST_TYPES.contains(type)) {
             throw new BusinessException(400, "无效的帖子类型");
         }
+        AppUser currentUser = userMapper.selectById(userId);
         if ("ANNOUNCEMENT".equals(type)) {
-            AppUser u = userMapper.selectById(userId);
-            if (u == null || u.getIsAdmin() == null || u.getIsAdmin() != 1) {
+            if (currentUser == null || currentUser.getIsAdmin() == null || currentUser.getIsAdmin() != 1) {
                 throw new BusinessException(403, "只有管理员才能发布公告");
             }
         }
@@ -89,6 +89,25 @@ public class DiscussionServiceImpl implements DiscussionService {
         post.setLikeCount(0);
         post.setCommentCount(0);
         postMapper.insert(post);
+
+        if ("ANNOUNCEMENT".equals(type) && Boolean.TRUE.equals(req.getBroadcast())) {
+            List<AppUser> allActive = userMapper.selectList(
+                    new LambdaQueryWrapper<AppUser>().eq(AppUser::getStatus, 1));
+            Set<Long> recipientIds = allActive.stream()
+                    .map(AppUser::getId)
+                    .filter(id -> !id.equals(userId))
+                    .collect(Collectors.toSet());
+            if (!recipientIds.isEmpty()) {
+                Map<String, Object> payload = new LinkedHashMap<>();
+                payload.put("postTitle", title);
+                payload.put("postId", post.getId());
+                payload.put("actorNickname", currentUser.getNickname());
+                eventPublisher.publishEvent(new NotificationEvent(
+                        recipientIds, userId, "ANNOUNCEMENT_BROADCAST", "POST",
+                        post.getId(), payload));
+            }
+        }
+
         return toDetailResponse(post, userId);
     }
 

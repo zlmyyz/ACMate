@@ -37,6 +37,10 @@ export async function deleteComment(postId: number, commentId: number): Promise<
   return withCsrf((h, t) => apiClient.delete(`/posts/${postId}/comments/${commentId}`, { headers: { [h]: t } }))
 }
 
-export async function toggleLike(postId: number): Promise<void> {
-  return withCsrf((h, t) => apiClient.post(`/posts/${postId}/like`, null, { headers: { [h]: t } }))
+export async function likePost(postId: number): Promise<void> {
+  return withCsrf((h, t) => apiClient.put(`/posts/${postId}/like`, null, { headers: { [h]: t } }))
+}
+
+export async function unlikePost(postId: number): Promise<void> {
+  return withCsrf((h, t) => apiClient.delete(`/posts/${postId}/like`, { headers: { [h]: t } }))
 }

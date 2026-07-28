@@ -2,7 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { getPostDetail, deletePost, addComment, deleteComment, toggleLike } from '@/api/discussion'
+import { getPostDetail, deletePost, addComment, deleteComment, likePost, unlikePost } from '@/api/discussion'
 import type { PostDetail } from '@/types/discussion'
 import { postTypeLabels } from '@/constants/labels'
 import PageContainer from '@/components/layout/PageContainer.vue'
@@ -35,7 +35,22 @@ async function fetch() {
 }
 
 async function handleDelete() { if (!confirm('确认停用该帖子？')) return; await deletePost(postId.value); router.push({ name: 'posts' }) }
-async function handleLike() { await toggleLike(postId.value); await fetch() }
+async function handleLike() {
+  if (!post.value) return
+  const wasLiked = post.value.likedByMe
+  post.value.likedByMe = !wasLiked
+  post.value.likeCount += wasLiked ? -1 : 1
+  try {
+    if (wasLiked) {
+      await unlikePost(postId.value)
+    } else {
+      await likePost(postId.value)
+    }
+  } catch {
+    post.value.likedByMe = wasLiked
+    post.value.likeCount += wasLiked ? 1 : -1
+  }
+}
 
 async function submitComment() {
   if (!commentText.value.trim()) return

@@ -91,6 +91,8 @@ function notificationText(n: NotificationItem): string {
       return `计划「${planTitle}」的时间安排已更新`
     case 'TRAINING_PROBLEMS_CHANGED':
       return `计划「${planTitle}」的题目列表已更新`
+    case 'ANNOUNCEMENT_BROADCAST':
+      return `${actor} 发布了全站公告「${postTitle}」`
     default:
       return n.notificationType || '未知通知'
   }

@@ -109,7 +109,7 @@ onMounted(fetchDetail)
             <span class="meta-label">创建者</span>
             <span class="meta-value">
               <RouterLink :to="`/users/${problem.creatorUserId}`" class="meta-value link">
-                用户 #{{ problem.creatorUserId }}
+                {{ problem.creatorNickname || problem.creatorUsername || `用户 #${problem.creatorUserId}` }}
               </RouterLink>
             </span>
           </div>

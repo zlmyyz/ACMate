@@ -23,6 +23,7 @@ watch(
       }
     }
   },
+  { immediate: true },
 )
 
 function retryInit() {

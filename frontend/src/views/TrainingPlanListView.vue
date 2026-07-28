@@ -28,7 +28,10 @@ const tabs: { key: ListType; label: string }[] = [
   { key: 'MY_JOINED', label: '我加入的' },
 ]
 
+let fetchSeq = 0
+
 async function fetchPlans() {
+  const seq = ++fetchSeq
   loading.value = true
   error.value = ''
   try {
@@ -39,9 +42,11 @@ async function fetchPlans() {
       page: page.value,
       size,
     })
+    if (seq !== fetchSeq) return
     plans.value = res.plans
     total.value = res.total
   } catch (e: unknown) {
+    if (seq !== fetchSeq) return
     const err = e as { response?: { status: number; data?: { message?: string } } }
     if (err.response?.status === 401) {
       router.push({ name: 'login', query: { redirect: router.currentRoute.value.fullPath } })
@@ -49,7 +54,7 @@ async function fetchPlans() {
     }
     error.value = err.response?.data?.message || '加载训练计划失败，请稍后重试'
   } finally {
-    loading.value = false
+    if (seq === fetchSeq) loading.value = false
   }
 }
 

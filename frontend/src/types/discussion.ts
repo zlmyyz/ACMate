@@ -61,6 +61,7 @@ export interface CreatePostRequest {
   postType: PostType
   problemId?: number
   trainingPlanId?: number
+  broadcast?: boolean
 }
 
 export interface UpdatePostRequest {

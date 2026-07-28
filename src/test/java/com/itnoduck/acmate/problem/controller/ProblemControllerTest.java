@@ -97,7 +97,7 @@ class ProblemControllerTest {
     void shouldReturnListForAuthenticatedUser() throws Exception {
         PageResponse<ProblemSummaryResponse> page = new PageResponse<>(1, 20, 1, 1,
                 List.of(new ProblemSummaryResponse(1L, "CUSTOM", "EXT-1", "Two Sum",
-                        "https://example.com", "800", "dp,greedy", 1L,
+                        "https://example.com", "800", "dp,greedy", 1L, null, null,
                         LocalDateTime.of(2026, 7, 20, 12, 0))));
         when(problemQueryService.listProblems(any())).thenReturn(page);
 
@@ -117,7 +117,7 @@ class ProblemControllerTest {
     void shouldReturnDetailForAuthenticatedUser() throws Exception {
         ProblemDetailResponse detail = new ProblemDetailResponse(1L, "CUSTOM", "EXT-1",
                 "Two Sum", "https://example.com", "800", "dp,greedy",
-                "## Content", 1L,
+                "## Content", 1L, null, null,
                 LocalDateTime.of(2026, 7, 20, 12, 0),
                 LocalDateTime.of(2026, 7, 21, 12, 0));
         when(problemQueryService.getProblem(eq(1L), anyLong(), anyBoolean())).thenReturn(detail);
@@ -147,7 +147,7 @@ class ProblemControllerTest {
     void shouldPassViewerIdentityToGetProblemService() throws Exception {
         ProblemDetailResponse detail = new ProblemDetailResponse(1L, "CUSTOM", "EXT-1",
                 "Two Sum", "https://example.com", "800", "dp,greedy",
-                "## Content", 1L,
+                "## Content", 1L, null, null,
                 LocalDateTime.of(2026, 7, 20, 12, 0),
                 LocalDateTime.of(2026, 7, 21, 12, 0));
         when(problemQueryService.getProblem(eq(1L), eq(2L), eq(false))).thenReturn(detail);
@@ -314,7 +314,7 @@ class ProblemControllerTest {
     @Test
     void shouldReturn201WhenNormalUserPostsWithCsrf() throws Exception {
         ProblemDetailResponse detail = new ProblemDetailResponse(1L, "CUSTOM", null,
-                "Test", null, "800", "dp", "## Content", 2L,
+                "Test", null, "800", "dp", "## Content", 2L, null, null,
                 LocalDateTime.of(2026, 7, 25, 12, 0),
                 LocalDateTime.of(2026, 7, 25, 12, 0));
         when(problemCommandService.createProblem(any(), eq(2L))).thenReturn(detail);
@@ -358,7 +358,7 @@ class ProblemControllerTest {
     @Test
     void shouldReturn201WhenAdminPostsWithCsrf() throws Exception {
         ProblemDetailResponse detail = new ProblemDetailResponse(1L, "CUSTOM", null,
-                "Test", null, "800", "dp", "## Content", 1L,
+                "Test", null, "800", "dp", "## Content", 1L, null, null,
                 LocalDateTime.of(2026, 7, 25, 12, 0),
                 LocalDateTime.of(2026, 7, 25, 12, 0));
         when(problemCommandService.createProblem(any(), eq(1L))).thenReturn(detail);
@@ -378,7 +378,7 @@ class ProblemControllerTest {
     @Test
     void shouldNotReturnStatusInCreateResponse() throws Exception {
         ProblemDetailResponse detail = new ProblemDetailResponse(1L, "CUSTOM", null,
-                "Test", null, null, null, "## Content", 1L,
+                "Test", null, null, null, "## Content", 1L, null, null,
                 LocalDateTime.of(2026, 7, 25, 12, 0),
                 LocalDateTime.of(2026, 7, 25, 12, 0));
         when(problemCommandService.createProblem(any(), eq(1L))).thenReturn(detail);
@@ -395,7 +395,7 @@ class ProblemControllerTest {
     @Test
     void shouldPassAuthenticatedUserIdToService() throws Exception {
         ProblemDetailResponse detail = new ProblemDetailResponse(1L, "CUSTOM", null,
-                "Test", null, null, null, null, 1L,
+                "Test", null, null, null, null, 1L, null, null,
                 LocalDateTime.of(2026, 7, 25, 12, 0),
                 LocalDateTime.of(2026, 7, 25, 12, 0));
         when(problemCommandService.createProblem(any(), eq(1L))).thenReturn(detail);
@@ -413,7 +413,7 @@ class ProblemControllerTest {
     @Test
     void shouldIgnoreCreatorUserIdAndStatusInRequestBody() throws Exception {
         ProblemDetailResponse detail = new ProblemDetailResponse(1L, "CUSTOM", null,
-                "Test", null, null, null, null, 1L,
+                "Test", null, null, null, null, 1L, null, null,
                 LocalDateTime.of(2026, 7, 25, 12, 0),
                 LocalDateTime.of(2026, 7, 25, 12, 0));
         when(problemCommandService.createProblem(any(), eq(1L))).thenReturn(detail);
@@ -455,7 +455,7 @@ class ProblemControllerTest {
     private ProblemDetailResponse buildUpdateResponse() {
         return new ProblemDetailResponse(1L, "CUSTOM", "EXT-1",
                 "Updated", "https://example.com", "900", "dp",
-                "## Content", 2L,
+                "## Content", 2L, null, null,
                 LocalDateTime.of(2026, 7, 25, 12, 0),
                 LocalDateTime.of(2026, 7, 26, 12, 0));
     }
@@ -675,7 +675,7 @@ class ProblemControllerTest {
     @Test
     void shouldStillAllowPostForNormalUserAfterPutEndpoint() throws Exception {
         ProblemDetailResponse detail = new ProblemDetailResponse(1L, "CUSTOM", null,
-                "Test", null, "800", "dp", "## Content", 2L,
+                "Test", null, "800", "dp", "## Content", 2L, null, null,
                 LocalDateTime.of(2026, 7, 25, 12, 0),
                 LocalDateTime.of(2026, 7, 25, 12, 0));
         when(problemCommandService.createProblem(any(), eq(2L))).thenReturn(detail);

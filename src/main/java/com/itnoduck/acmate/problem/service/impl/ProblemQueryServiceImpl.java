@@ -13,6 +13,8 @@ import com.itnoduck.acmate.problem.dto.ProblemSummaryResponse;
 import com.itnoduck.acmate.problem.entity.Problem;
 import com.itnoduck.acmate.problem.mapper.ProblemMapper;
 import com.itnoduck.acmate.problem.service.ProblemQueryService;
+import com.itnoduck.acmate.user.entity.AppUser;
+import com.itnoduck.acmate.user.mapper.AppUserMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -28,9 +30,11 @@ import java.util.Objects;
 public class ProblemQueryServiceImpl implements ProblemQueryService {
 
     private final ProblemMapper problemMapper;
+    private final AppUserMapper appUserMapper;
 
-    public ProblemQueryServiceImpl(ProblemMapper problemMapper) {
+    public ProblemQueryServiceImpl(ProblemMapper problemMapper, AppUserMapper appUserMapper) {
         this.problemMapper = problemMapper;
+        this.appUserMapper = appUserMapper;
     }
 
     @Override
@@ -88,8 +92,9 @@ public class ProblemQueryServiceImpl implements ProblemQueryService {
         Page<Problem> mpPage = new Page<>(page, size);
         Page<Problem> result = problemMapper.selectPage(mpPage, wrapper);
 
+        java.util.Map<Long, AppUser> creatorMap = batchLoadCreators(result.getRecords());
         List<ProblemSummaryResponse> records = result.getRecords().stream()
-                .map(this::toSummaryResponse)
+                .map(p -> toSummaryResponse(p, creatorMap.get(p.getCreatorUserId())))
                 .toList();
 
         return new PageResponse<>(
@@ -153,17 +158,41 @@ public class ProblemQueryServiceImpl implements ProblemQueryService {
     }
 
     ProblemDetailResponse toDetailResponse(Problem p) {
+        String creatorUsername = null;
+        String creatorNickname = null;
+        if (p.getCreatorUserId() != null) {
+            AppUser creator = appUserMapper.selectById(p.getCreatorUserId());
+            if (creator != null) {
+                creatorUsername = creator.getUsername();
+                creatorNickname = creator.getNickname();
+            }
+        }
         return new ProblemDetailResponse(
                 p.getId(), p.getPlatform(), p.getExternalProblemKey(), p.getTitle(),
                 p.getSourceUrl(), p.getDifficulty(), p.getTags(), p.getContentMd(),
-                p.getCreatorUserId(), p.getCreateTime(), p.getUpdateTime());
+                p.getCreatorUserId(), creatorUsername, creatorNickname,
+                p.getCreateTime(), p.getUpdateTime());
     }
 
-    private ProblemSummaryResponse toSummaryResponse(Problem p) {
+    private ProblemSummaryResponse toSummaryResponse(Problem p, AppUser creator) {
         return new ProblemSummaryResponse(
                 p.getId(), p.getPlatform(), p.getExternalProblemKey(), p.getTitle(),
                 p.getSourceUrl(), p.getDifficulty(), p.getTags(),
-                p.getCreatorUserId(), p.getCreateTime());
+                p.getCreatorUserId(),
+                creator != null ? creator.getUsername() : null,
+                creator != null ? creator.getNickname() : null,
+                p.getCreateTime());
+    }
+
+    private java.util.Map<Long, AppUser> batchLoadCreators(List<Problem> problems) {
+        java.util.Set<Long> ids = problems.stream()
+                .map(Problem::getCreatorUserId)
+                .filter(Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
+        if (ids.isEmpty()) return java.util.Map.of();
+        return appUserMapper.selectBatchIds(ids).stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        com.itnoduck.acmate.user.entity.AppUser::getId, u -> u));
     }
 
     private MyProblemSummaryResponse toMySummaryResponse(Problem p) {

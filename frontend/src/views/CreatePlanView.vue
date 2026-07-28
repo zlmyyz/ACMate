@@ -12,8 +12,23 @@ const auth = useAuthStore()
 const title = ref('')
 const description = ref('')
 const planType = ref<PlanType>('PERSONAL')
-const startTime = ref('')
-const endTime = ref('')
+const startDate = ref('')
+const startTimeInput = ref('')
+const endDate = ref('')
+const endTimeInput = ref('')
+
+function buildDateTime(dateVal: string, timeVal: string): string | undefined {
+  if (!dateVal) return undefined
+  const t = timeVal || '00:00'
+  return `${dateVal}T${t}:00`
+}
+
+function splitDateTime(iso: string | null): { date: string; time: string } {
+  if (!iso) return { date: '', time: '' }
+  const d = iso.substring(0, 10)
+  const t = iso.substring(11, 16)
+  return { date: d, time: t }
+}
 const saving = ref(false)
 const error = ref('')
 
@@ -28,8 +43,8 @@ async function handleCreate() {
       title: title.value.trim(),
       description: description.value.trim() || undefined,
       planType: planType.value,
-      startTime: startTime.value || undefined,
-      endTime: endTime.value || undefined,
+      startTime: buildDateTime(startDate.value, startTimeInput.value),
+      endTime: buildDateTime(endDate.value, endTimeInput.value),
     })
     router.push({ name: 'plan-detail', params: { id: result.id } })
   } catch (e: unknown) {
@@ -81,12 +96,22 @@ async function handleCreate() {
 
       <div class="field-row">
         <div class="field">
+          <label class="field-label">开始日期（可选）</label>
+          <input v-model="startDate" type="date" class="field-input" />
+        </div>
+        <div class="field">
           <label class="field-label">开始时间（可选）</label>
-          <input v-model="startTime" type="datetime-local" class="field-input" />
+          <input v-model="startTimeInput" type="time" class="field-input" />
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">结束日期（可选）</label>
+          <input v-model="endDate" type="date" class="field-input" />
         </div>
         <div class="field">
           <label class="field-label">结束时间（可选）</label>
-          <input v-model="endTime" type="datetime-local" class="field-input" />
+          <input v-model="endTimeInput" type="time" class="field-input" />
         </div>
       </div>
 

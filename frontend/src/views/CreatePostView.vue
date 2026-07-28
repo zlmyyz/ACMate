@@ -13,6 +13,7 @@ const title = ref('')
 const contentMd = ref('')
 const postType = ref<PostType>('OTHER')
 const problemId = ref('')
+const broadcast = ref(false)
 const saving = ref(false)
 const error = ref('')
 
@@ -31,6 +32,7 @@ async function handleCreate() {
       contentMd: contentMd.value,
       postType: postType.value,
       problemId: problemId.value ? Number(problemId.value) : undefined,
+      broadcast: broadcast.value || undefined,
     })
     router.push({ name: 'post-detail', params: { id: r.id } })
   } catch (e: unknown) {
@@ -76,6 +78,13 @@ async function handleCreate() {
         </select>
       </div>
 
+      <div class="field" v-if="postType === 'ANNOUNCEMENT' && auth.isAdmin">
+        <label class="field-checkbox">
+          <input type="checkbox" v-model="broadcast" />
+          <span>向全站用户发送广播通知</span>
+        </label>
+      </div>
+
       <div class="field" v-if="isSolution()">
         <label class="field-label">关联题目 ID</label>
         <input v-model="problemId" type="number" class="field-input" placeholder="输入题目ID" />
@@ -111,6 +120,8 @@ async function handleCreate() {
 
 .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
 .field-label { font-size: var(--text-label-sm); font-weight: 600; color: var(--color-on-surface); letter-spacing: 0.05em; }
+.field-checkbox { display: flex; align-items: center; gap: 8px; font-size: var(--text-body-md); color: var(--color-on-surface); cursor: pointer; }
+.field-checkbox input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: var(--color-primary-container); }
 .field-input, .field-textarea { padding: 10px 14px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md); font-size: var(--text-body-md); color: var(--color-on-surface); background: var(--color-surface-container-lowest); font-family: inherit; }
 .field-input:focus, .field-textarea:focus { outline: none; border-color: var(--color-primary-container); }
 .field-textarea { resize: vertical; min-height: 200px; font-family: var(--font-mono); font-size: var(--text-code-sm); line-height: 1.6; }

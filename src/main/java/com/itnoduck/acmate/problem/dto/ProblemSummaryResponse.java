@@ -11,5 +11,7 @@ public record ProblemSummaryResponse(
         String difficulty,
         String tags,
         Long creatorUserId,
+        String creatorUsername,
+        String creatorNickname,
         LocalDateTime createTime
 ) {}

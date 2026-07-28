@@ -6,10 +6,14 @@ import com.itnoduck.acmate.common.exception.BusinessException;
 import com.itnoduck.acmate.problem.dto.CreateProblemRequest;
 import com.itnoduck.acmate.problem.dto.ProblemDetailResponse;
 import com.itnoduck.acmate.problem.dto.UpdateProblemRequest;
+import com.itnoduck.acmate.auditlog.service.AuditLogService;
 import com.itnoduck.acmate.problem.entity.Problem;
 import com.itnoduck.acmate.problem.mapper.ProblemMapper;
 import com.itnoduck.acmate.testutil.MybatisPlusTestHelper;
+import com.itnoduck.acmate.user.entity.AppUser;
+import com.itnoduck.acmate.user.mapper.AppUserMapper;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -35,9 +39,22 @@ class ProblemCommandServiceImplTest {
 
     @Mock
     private ProblemMapper problemMapper;
+    @Mock
+    private AuditLogService auditLogService;
+    @Mock
+    private AppUserMapper appUserMapper;
 
     @InjectMocks
     private ProblemCommandServiceImpl service;
+
+    @BeforeEach
+    void setupCreatorLookup() {
+        AppUser creator = new AppUser();
+        creator.setId(1L);
+        creator.setUsername("testuser");
+        creator.setNickname("TestUser");
+        lenient().when(appUserMapper.selectById(anyLong())).thenReturn(creator);
+    }
 
     private CreateProblemRequest buildRequest(String platform, String externalKey) {
         CreateProblemRequest req = new CreateProblemRequest();
