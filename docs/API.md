@@ -1620,3 +1620,101 @@ GET 请求不需要 CSRF Token。
 - 重复同步 `insertedCount=0`
 - 游标仅在实际同步成功后推进
 - 同步失败时旧提交和 AC 数据完整保留
+
+---
+
+## 排行榜 API
+
+### GET /api/leaderboard
+
+分页查询可信排行榜。
+
+#### 认证
+
+需要登录后携带 JSESSIONID Cookie。
+
+#### 查询参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| period | string | total | 时间范围：`total`（总榜）、`7d`（近7天）、`30d`（近30天） |
+| page | int | 1 | 页码，最小 1 |
+| size | int | 20 | 每页数量，1-100（超出范围重置为 20） |
+
+#### 数据口径
+
+- 统计来源：`oj_first_ac` 表（每行 = 一个唯一 AC）
+- 通过 `submission_id` 关联 `oj_submission` 获取 `submitted_time` 用于 7d/30d 过滤
+- 仅统计 VERIFIED 账号（`oj_account.verify_status = 1`）
+- 禁用用户（`app_user.status = 0`）不在结果中
+- 不要求 `problem_id` 非空；未映射到本地题库的 AC 仍可计入
+- 一名用户同一平台同一题只计一次（`oj_first_ac.uk_user_platform_problem` 唯一约束）
+- 7d/30d 基于 `oj_submission.submitted_time` 过滤，ALL 不限制时间
+
+#### 排序规则
+
+- 主排序：`solved_count DESC`（唯一通过题数降序）
+- 次排序：`user_id ASC`（稳定兜底）
+- 排名字段 `rank` 从 `(page - 1) * size + 1` 开始递增，SQL 已排除的禁用用户不会产生排名空缺
+
+#### 成功响应
+
+**200 OK**
+
+```json
+{
+  "entries": [
+    {
+      "rank": 1,
+      "userId": 5,
+      "username": "alice",
+      "nickname": "Alice",
+      "avatarUrl": null,
+      "solvedCount": 42,
+      "isMe": false
+    },
+    {
+      "rank": 2,
+      "userId": 3,
+      "username": "bob",
+      "nickname": "Bob",
+      "avatarUrl": "https://example.com/avatar.png",
+      "solvedCount": 30,
+      "isMe": true
+    }
+  ],
+  "total": 15,
+  "page": 1,
+  "size": 20
+}
+```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| entries | array | 排行榜条目列表 |
+| entries[].rank | int | 排名 |
+| entries[].userId | long | 用户 ID |
+| entries[].username | string | 用户名 |
+| entries[].nickname | string | 用户昵称 |
+| entries[].avatarUrl | string\|null | 头像 URL |
+| entries[].solvedCount | int | 唯一通过题数 |
+| entries[].isMe | boolean | 是否为当前登录用户 |
+| total | long | 参与排行榜的用户总数（仅 VERIFIED 账号+非禁用用户） |
+| page | int | 当前页码 |
+| size | int | 每页数量 |
+
+#### 错误响应
+
+**400 Bad Request** — page < 1（服务端自动修正为 1，不返回 400）
+
+**401 Unauthorized** — 未登录
+
+**500 Internal Server Error** — 数据库或服务异常
+
+#### 空数据
+
+排行榜无数据时（无 VERIFIED 账号或无人有 AC 记录）返回空数组：
+
+```json
+{"entries": [], "total": 0, "page": 1, "size": 20}
+```

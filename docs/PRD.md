@@ -1032,6 +1032,33 @@ ACMate 用于把社团内部的题目、训练、讨论和统计集中到一个�
 
 不同平台相同题目按平台和外部题号分别计算，第一版不做跨平台合并。
 
+### 6.15.1 当前实现状态（2026-07-28 更新）
+
+代码完成，真实数据与浏览器验收待进行。
+
+**已实现规则：**
+- 统计来源：`oj_first_ac` 表，每行 = 一个唯一 AC（`uk_user_platform_problem` 约束保证）
+- 只统计 VERIFIED OJ 账号（`oj_account.verify_status = 1`）
+- 一名用户同一平台同一题只计一次
+- 未映射到本地 `problem` 表的 Codeforces AC 仍可计入（不要求 `problem_id IS NOT NULL`）
+- 禁用用户（`app_user.status != 1`）在 SQL 层排除，不参与排行榜
+- 时间窗口：
+  - `total`（ALL）：直接聚合 `oj_first_ac`，不限制时间
+  - `7d`：通过 `submission_id` 关联 `oj_submission.submitted_time` 过滤最近 7 天
+  - `30d`：同上，过滤最近 30 天
+- 展示字段：排名、userId、username、nickname、avatarUrl、solvedCount、isMe
+- 分页：page、size，total 与参与用户数一致
+
+**并列排序规则（当前实现）：**
+- 主排序：`solved_count DESC`
+- 次排序：`user_id ASC`
+- PRD 要求的“最后通过时间”次级排序尚未实现，当前以 user_id 作为唯一稳定兜底
+
+**待人工验收：**
+- 并列排名行为稳定性
+- 时间窗口边界准确性
+- 真实数据下分页 total 一致性
+
 ---
 
 # 6.16 管理功能

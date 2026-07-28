@@ -1,5 +1,48 @@
 # DEVLOG
 
+## 2026-07-28（六轮）：可信排行榜数据查询修复
+
+### 本次目标
+
+修复排行榜 SQL 查询的数据口径问题：改用 `oj_first_ac` 作为唯一 AC 统计源，排除禁用用户，修正分页 total。
+
+### 代码修复
+
+**提交：** `730622f` — fix: switch leaderboard queries to oj_first_ac with disabled-user filter
+
+**修改文件（3 个，39+ / 36-）：**
+
+- `oj/mapper/OjSubmissionMapper.java` — 重写 6 个 SQL 查询
+- `leaderboard/service/impl/LeaderboardServiceImpl.java` — 移除冗余 status 过滤
+- `docs/IMPLEMENTATION_STATUS.md` — 更新排行榜状态
+
+**核心变更：**
+
+1. **数据源切换**：从 `oj_submission.is_first_ac` + `problem_id` 改为 `oj_first_ac` 表（DB 级 UNIQUE 约束保证去重）
+2. **移除 `problem_id IS NOT NULL` 限制**：未映射到本地题库的 Codeforces AC 现在可计入排行榜
+3. **SQL 层过滤禁用用户**：`INNER JOIN app_user u ON u.status = 1`
+4. **修正分页 total**：count 查询同样加入 `app_user` join，total 与实际条目数一致
+5. **7d/30d 时间过滤**：通过 `submission_id` 关联 `oj_submission.submitted_time`，ALL 不关联 submission 表
+6. **移除 Service 层冗余过滤**：`enrichRows` 中的 `status == 1` 判断已由 SQL 保证
+
+### 自动化验证
+
+- 后端：428 tests passed（全部 Mockito，无 DB 依赖）
+- 前端：173 tests passed
+- 前端 type-check：2 pre-existing errors（`oj.ts`/`oj.test.ts`，非本次引入）
+- 前端 lint：pass
+- 前端 build：output produced（type-check 失败阻断整体 build 退出码，但非排行榜问题）
+- 编译：pass
+
+### 待办
+
+- [ ] Codeforces 真实同步验收
+- [ ] 使用真实 AC 数据验证排行榜
+- [ ] Chromium 人工验收
+- [ ] 分页/并列排名/时间窗口的真实数据核对
+
+---
+
 ## 2026-07-28（五轮）：Codeforces 提交同步最终验收
 
 ### 本次目标

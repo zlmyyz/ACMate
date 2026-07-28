@@ -37,14 +37,14 @@
 ## 阶段 5：用户题目完成状态和排行榜
 
 - [x] 用户题目状态记录
-- [x] 基于首次通过题目数的排行榜
+- [~] 可信排行榜代码完成，真实 Codeforces 数据与浏览器人工验收待完成
 
 ## 阶段 6：Codeforces 账号绑定与增量同步
 
 - [x] Codeforces 账号绑定
 - [x] 牛客账号绑定（仅记录）
-- [x] Codeforces 提交增量同步（cursor 分页 + first-AC 原子约束 + 幂等）
-- [x] 同步任务日志
+- [~] Codeforces 提交增量同步（cursor 分页 + first-AC 原子约束 + 幂等）— 代码完成，真实 API 和 Chromium 验收待完成
+- [~] 同步任务日志
 
 ## 阶段 7：Redis 排行榜优化
 
