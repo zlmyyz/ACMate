@@ -1,5 +1,63 @@
 # DEVLOG
 
+## 2026-07-28（三轮）：浏览器端全面验收与 Session 持久化修复
+
+### 本次目标
+
+对上一轮 977eb9a 提交的 11 项核心功能进行真实 Chromium 浏览器端验收，修复 Session 持久化和停用/恢复按钮可见性问题。
+
+### 浏览器验收通过项（11/11）
+
+| # | 功能 | 验收方式 | 结果 |
+|---|------|----------|------|
+| 1 | Session 持久化（刷新后恢复） | 全页刷新 /problems → 保持登录 | 通过（修复后） |
+| 2 | 通知角标（真实数据） | 浏览器查看未读计数 | 通过 |
+| 3 | 通知中心（全部功能） | unreadOnly/标记已读/全部已读/点击跳转 | 通过 |
+| 4 | 帖子点赞/取消点赞 | 浏览器端 toggle 验证 | 通过 |
+| 5 | 帖子评论通知投递 | Bob 评论 Alice 帖子 → Alice 收到通知 | 通过 |
+| 6 | 训练计划日期/时间 | 创建和编辑计划的时间控件 | 通过 |
+| 7 | 公告广播端到端 | Admin 发公告 → 其他用户可见 | 通过 |
+| 8 | 所有视图创建者信息 | 题目详情/帖子/计划详情中显示创建者 | 通过 |
+| 9 | 停用/恢复完整流程 | 创建者停用→恢复、管理员强制停用→恢复、普通用户拒绝 | 通过 |
+| 10 | 管理员强制停用原因校验 | 空原因时确认按钮 disabled | 通过 |
+| 11 | 管理员+创建者双重身份按钮 | 同一用户同时为 admin 和 creator 时按钮可见 | 通过（修复后） |
+
+### 修复的文件
+
+**Session 持久化修复（2 个文件）：**
+
+- `frontend/src/router/index.ts` — `beforeEach` 增加 `if (!auth.initialized) return true`，防止 auth.init() 完成前误跳转
+- `frontend/src/App.vue` — `watch(auth.isLoggedIn)` 增加 `auth.initialized` 条件，防止初始化期间误触发 redirect
+
+**停用/恢复按钮可见性修复（1个文件）：**
+
+- `frontend/src/views/ProblemDetailView.vue` — 修复互斥条件 `isCreator && !auth.isAdmin` 与 `auth.isAdmin && !isCreator` 导致 admin+creator 双重身份用户看不到任何按钮的问题
+
+**管理员强制停用确认按钮修复（1个文件）：**
+
+- `frontend/src/views/AdminProblemsView.vue` — 确认按钮增加 `:disabled="confirmLoading || !deactivateReason.trim()"`
+
+### 测试结果
+
+```
+后端 Tests run: 379, Failures: 0, Errors: 0, Skipped: 0
+前端 Tests run: 166, Failures: 0 (7 文件, 166 tests)
+```
+
+### 已知剩余缺口
+
+- 训练计划题目选择器（创建/编辑时不支持批量选题和排序）
+- 训练计划成员进度详情页
+- 训练计划赛时统计快照
+- Codeforces API 真实同步未实现
+- 禁用用户 Session 未失效
+
+### 提交
+
+`977eb9a` feat: complete in-app notification workflow
+
+---
+
 ## 2026-07-28：站内通知系统完善
 
 ### 本次目标

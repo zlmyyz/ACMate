@@ -854,6 +854,293 @@ GET 请求不需要 CSRF Token。
 
 ---
 
+## 训练计划 API
+
+### GET /api/training-plans
+
+分页查询训练计划列表。
+
+#### 认证
+
+需要登录后携带 JSESSIONID Cookie。
+
+#### 查询参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| type | string | PUBLIC | 计划类型：PUBLIC / PERSONAL |
+| timeStatus | string | — | 时间状态：NOT_STARTED / ONGOING / ENDED |
+| keyword | string | — | 关键词，匹配标题 |
+| page | int | 1 | 页码，最小 1 |
+| size | int | 20 | 每页数量，1-100 |
+
+#### 成功响应
+
+**200 OK**
+
+```json
+{
+  "plans": [
+    {
+      "id": 1,
+      "title": "2026 暑期集训",
+      "planType": "PUBLIC",
+      "timeStatus": "ONGOING",
+      "isActive": true,
+      "creatorUserId": 1,
+      "creatorNickname": "Admin",
+      "problemCount": 10,
+      "memberCount": 5,
+      "myProgress": {"completed": 3, "total": 10},
+      "startTime": "2026-07-01T00:00:00",
+      "endTime": "2026-08-31T23:59:59",
+      "createTime": "2026-07-01T00:00:00",
+      "updateTime": "2026-07-15T12:00:00"
+    }
+  ],
+  "total": 5,
+  "page": 1,
+  "size": 20
+}
+```
+
+---
+
+### POST /api/training-plans
+
+创建训练计划。
+
+#### 认证
+
+需要登录后携带 JSESSIONID Cookie。
+
+#### CSRF
+
+需要携带有效 CSRF Token。
+
+#### 请求字段
+
+| 字段 | 类型 | 必填 | 校验规则 |
+|------|------|------|----------|
+| title | string | 是 | 非空，最大 128 字符 |
+| description | string | 否 | 最大 5000 字符 |
+| planType | string | 否 | PERSONAL（默认）/ PUBLIC，仅管理员可创建 PUBLIC |
+| startTime | datetime | 否 | ISO 8601 格式 |
+| endTime | datetime | 否 | ISO 8601 格式 |
+
+#### 成功响应
+
+**200 OK** — 返回 PlanDetailResponse，包含题目列表（初始为空）。
+
+#### 错误响应
+
+**400 Bad Request** — 字段校验失败
+
+**401 Unauthorized** — 未登录
+
+**403 Forbidden** — 缺少/无效 CSRF Token，或非管理员尝试创建 PUBLIC 计划
+
+---
+
+### GET /api/training-plans/{id}
+
+获取训练计划详情，包含题目列表、成员列表和当前用户进度。
+
+#### 认证
+
+需要登录后携带 JSESSIONID Cookie。
+
+#### 可见性
+
+- PUBLIC 计划：所有已登录用户可见
+- PERSONAL 计划：仅创建者和管理员可见
+- 停用计划：已有参与者和管理员可见
+
+#### 成功响应
+
+**200 OK**
+
+```json
+{
+  "id": 1,
+  "title": "2026 暑期集训",
+  "description": "暑期专项训练",
+  "planType": "PUBLIC",
+  "timeStatus": "ONGOING",
+  "isActive": true,
+  "creatorUserId": 1,
+  "creatorNickname": "Admin",
+  "startTime": "2026-07-01T00:00:00",
+  "endTime": "2026-08-31T23:59:59",
+  "problems": [
+    {
+      "problemId": 1,
+      "title": "Two Sum",
+      "platform": "CUSTOM",
+      "difficulty": "800",
+      "sortOrder": 0,
+      "active": true,
+      "myStatus": "ACCEPTED"
+    }
+  ],
+  "members": [
+    {
+      "userId": 2,
+      "nickname": "Bob",
+      "progress": {"completed": 3, "total": 10},
+      "joinedAt": "2026-07-05T10:00:00"
+    }
+  ],
+  "myProgress": {"completed": 5, "total": 10},
+  "createTime": "2026-07-01T00:00:00",
+  "updateTime": "2026-07-15T12:00:00"
+}
+```
+
+#### 错误响应
+
+**401 Unauthorized** — 未登录
+
+**404 Not Found** — 计划不存在或无权查看
+
+---
+
+### PUT /api/training-plans/{id}
+
+更新训练计划标题、说明和时间。仅创建者或管理员可操作。
+
+#### 认证
+
+需要登录后携带 JSESSIONID Cookie。
+
+#### CSRF
+
+需要携带有效 CSRF Token。
+
+#### 请求字段
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| title | string | 否 | 最大 128 字符 |
+| description | string | 否 | 最大 5000 字符 |
+| startTime | datetime | 否 | ISO 8601 格式 |
+| endTime | datetime | 否 | ISO 8601 格式 |
+
+#### 成功响应
+
+**200 OK** — 返回更新后的 PlanDetailResponse。
+
+#### 错误响应
+
+**401 Unauthorized** — 未登录
+
+**403 Forbidden** — 缺少/无效 CSRF Token，或无管理权限
+
+**404 Not Found** — 计划不存在
+
+---
+
+### PUT /api/training-plans/{id}/deactivate
+
+停用训练计划。仅创建者或管理员可操作。
+
+#### 请求体（可选）
+
+```json
+{"reason": "停用原因，最长 500 字符"}
+```
+
+#### 成功响应
+
+**204 No Content**
+
+---
+
+### PUT /api/training-plans/{id}/restore
+
+恢复训练计划。仅创建者或管理员可操作。
+
+#### 成功响应
+
+**204 No Content**
+
+---
+
+### POST /api/training-plans/{id}/problems
+
+向训练计划添加题目。仅创建者或管理员可操作。
+
+#### 请求字段
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| problemId | long | 是 | 题目 ID |
+| sortOrder | int | 否 | 排序位置，默认追加到末尾 |
+
+#### 成功响应
+
+**204 No Content**
+
+#### 错误响应
+
+**400 Bad Request** — 题目不存在或已停用
+
+**409 Conflict** — 题目已在计划中
+
+---
+
+### DELETE /api/training-plans/{id}/problems/{problemId}
+
+从训练计划移除题目。仅创建者或管理员可操作。
+
+#### 成功响应
+
+**204 No Content**
+
+---
+
+### POST /api/training-plans/{id}/members/me
+
+加入公开训练计划。
+
+#### 成功响应
+
+**204 No Content**
+
+#### 错误响应
+
+**400 Bad Request** — 计划已停用或已结束（不接受新成员）
+
+**409 Conflict** — 已是计划成员
+
+---
+
+### DELETE /api/training-plans/{id}/members/{userId}
+
+从训练计划移除成员。仅创建者或管理员可操作。
+
+#### 成功响应
+
+**204 No Content**
+
+---
+
+### 计划中/尚未实现的训练计划 API（草稿）
+
+以下接口为后续版本规划，当前未实现：
+
+| 方法 | 路径 | 说明 | 状态 |
+|------|------|------|------|
+| PUT | `/api/training-plans/{id}/problems` | 批量更新题目列表（含排序） | 计划中/尚未实现 |
+| GET | `/api/training-plans/{id}/members` | 分页查询成员列表及进度 | 计划中/尚未实现 |
+| PUT | `/api/training-plans/{id}/members/{userId}/status` | 更新成员题目完成状态 | 计划中/尚未实现 |
+| GET | `/api/training-plans/{id}/statistics` | 训练计划统计（完成率、排名快照） | 计划中/尚未实现 |
+| GET | `/api/training-plans/{id}/rankings` | 赛时排名快照 | 计划中/尚未实现 |
+
+当前创建和更新训练计划不支持通过 `problemIds` 字段批量设置题目。题目只能通过 `POST /{id}/problems` 逐条添加和 `DELETE /{id}/problems/{problemId}` 逐条移除。计划类型（PERSONAL/PUBLIC）创建后不可更改。
+
+---
+
 ## GET /api/notifications
 
 分页查询当前用户的站内通知。
