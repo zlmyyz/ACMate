@@ -1,56 +1,25 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useNotificationStore } from '@/stores/notifications'
 import { useRouter } from 'vue-router'
 import { navLabels, actionLabels } from '@/constants/labels'
-import { getUnreadCount } from '@/api/notifications'
 
 const auth = useAuthStore()
+const notification = useNotificationStore()
 const router = useRouter()
-const unreadCount = ref(0)
 
-let pollTimer: ReturnType<typeof setInterval> | null = null
+const badgeText = computed(() => {
+  const c = notification.unreadCount
+  if (c <= 0) return ''
+  return c > 99 ? '99+' : String(c)
+})
 
 async function handleLogout() {
-  stopPolling()
   await auth.logout()
+  notification.reset()
   router.push({ name: 'login' })
 }
-
-async function refreshUnread() {
-  try { unreadCount.value = await getUnreadCount() } catch { /* ignore */ }
-}
-
-function startPolling() {
-  if (pollTimer !== null) return
-  refreshUnread()
-  pollTimer = setInterval(refreshUnread, 30_000)
-}
-
-function stopPolling() {
-  if (pollTimer !== null) {
-    clearInterval(pollTimer)
-    pollTimer = null
-  }
-}
-
-function handleVisibilityChange() {
-  if (document.hidden) {
-    stopPolling()
-  } else {
-    startPolling()
-  }
-}
-
-onMounted(() => {
-  startPolling()
-  document.addEventListener('visibilitychange', handleVisibilityChange)
-})
-
-onUnmounted(() => {
-  stopPolling()
-  document.removeEventListener('visibilitychange', handleVisibilityChange)
-})
 </script>
 
 <template>
@@ -103,7 +72,7 @@ onUnmounted(() => {
       <div class="header-right">
         <RouterLink v-if="auth.user" to="/notifications" class="notif-bell">
           &#128276;
-          <span v-if="unreadCount > 0" class="badge">{{ unreadCount }}</span>
+          <span v-if="badgeText" class="badge">{{ badgeText }}</span>
         </RouterLink>
         <RouterLink v-if="auth.user" to="/settings/profile" class="user-greeting">
           {{ auth.user.nickname || auth.user.username }}

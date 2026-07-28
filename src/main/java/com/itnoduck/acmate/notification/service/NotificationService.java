@@ -5,7 +5,7 @@ import com.itnoduck.acmate.security.AuthenticatedUser;
 import java.util.*;
 
 public interface NotificationService {
-    Map<String, Object> listNotifications(AuthenticatedUser user, int page, int size);
+    Map<String, Object> listNotifications(AuthenticatedUser user, int page, int size, boolean unreadOnly);
     long countUnread(AuthenticatedUser user);
     void markRead(Long id, AuthenticatedUser user);
     void markAllRead(AuthenticatedUser user);

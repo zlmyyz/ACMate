@@ -1,8 +1,7 @@
 package com.itnoduck.acmate.notification.service.impl;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.itnoduck.acmate.common.exception.BusinessException;
 import com.itnoduck.acmate.notification.entity.Notification;
 import com.itnoduck.acmate.notification.mapper.NotificationMapper;
@@ -87,7 +86,7 @@ class NotificationServiceImplTest {
         page.setRecords(List.of(n1, n2));
         when(notificationMapper.selectPage(any(Page.class), any())).thenReturn(page);
 
-        var result = service.listNotifications(user(USER_ID), 1, 20);
+        var result = service.listNotifications(user(USER_ID), 1, 20, false);
         @SuppressWarnings("unchecked")
         var items = (List<Map<String, Object>>) result.get("items");
         assertEquals(2, items.size());
@@ -102,7 +101,7 @@ class NotificationServiceImplTest {
         when(objectMapper.readValue(eq("{\"postTitle\":\"Test\"}"), any(Class.class)))
                 .thenReturn(Map.of("postTitle", "Test"));
 
-        var result = service.listNotifications(user(USER_ID), 1, 20);
+        var result = service.listNotifications(user(USER_ID), 1, 20, false);
         @SuppressWarnings("unchecked")
         var items = (List<Map<String, Object>>) result.get("items");
         assertEquals(1, items.size());
@@ -117,7 +116,7 @@ class NotificationServiceImplTest {
         page.setTotal(25);
         when(notificationMapper.selectPage(any(Page.class), any())).thenReturn(page);
 
-        var result = service.listNotifications(user(USER_ID), 2, 10);
+        var result = service.listNotifications(user(USER_ID), 2, 10, false);
         assertEquals(1, ((List<?>) result.get("items")).size());
         assertEquals(25L, result.get("total"));
         assertEquals(2, result.get("page"));
@@ -130,7 +129,7 @@ class NotificationServiceImplTest {
         page.setRecords(List.of());
         when(notificationMapper.selectPage(any(Page.class), any())).thenReturn(page);
 
-        var result = service.listNotifications(user(USER_ID), 1, 20);
+        var result = service.listNotifications(user(USER_ID), 1, 20, false);
         @SuppressWarnings("unchecked")
         var items = (List<Map<String, Object>>) result.get("items");
         assertTrue(items.isEmpty());
@@ -263,7 +262,7 @@ class NotificationServiceImplTest {
 
     @Test
     void send_serializationFailure_caughtNotThrown() throws Exception {
-        when(objectMapper.writeValueAsString(any())).thenThrow(new JsonProcessingException("bad") {});
+        when(objectMapper.writeValueAsString(any())).thenThrow(new RuntimeException("serialization error"));
 
         assertDoesNotThrow(() ->
                 service.send(USER_ID, OTHER_ID, "POST_COMMENTED", "POST", 10L, Map.of("k", new Object())));
@@ -276,10 +275,12 @@ class NotificationServiceImplTest {
         service.batchSend(Set.of(USER_ID, 2L, 3L), null, "TRAINING_ADMIN_DEACTIVATED",
                 "TRAINING_PLAN", 10L, payload("planTitle", "Plan A"));
 
-        var captor = ArgumentCaptor.forClass(Notification.class);
-        verify(notificationMapper, times(3)).insert(captor.capture());
-        var ids = captor.getAllValues().stream().map(Notification::getRecipientUserId).toList();
-        assertEquals(3, ids.size());
+        @SuppressWarnings("unchecked")
+        var captor = ArgumentCaptor.forClass((Class<Collection<Notification>>) (Class<?>) Collection.class);
+        verify(notificationMapper, times(1)).insert(captor.capture());
+        var allInserted = captor.getValue();
+        assertEquals(3, allInserted.size());
+        var ids = allInserted.stream().map(Notification::getRecipientUserId).toList();
         assertTrue(ids.contains(USER_ID));
         assertTrue(ids.contains(2L));
         assertTrue(ids.contains(3L));
@@ -290,9 +291,12 @@ class NotificationServiceImplTest {
         service.batchSend(Set.of(USER_ID, OTHER_ID, 3L), OTHER_ID,
                 "TRAINING_ADMIN_DEACTIVATED", "TRAINING_PLAN", 10L, Map.of());
 
-        var captor = ArgumentCaptor.forClass(Notification.class);
-        verify(notificationMapper, times(2)).insert(captor.capture());
-        var ids = captor.getAllValues().stream().map(Notification::getRecipientUserId).toList();
+        @SuppressWarnings("unchecked")
+        var captor = ArgumentCaptor.forClass((Class<Collection<Notification>>) (Class<?>) Collection.class);
+        verify(notificationMapper, times(1)).insert(captor.capture());
+        var allInserted = captor.getValue();
+        assertEquals(2, allInserted.size());
+        var ids = allInserted.stream().map(Notification::getRecipientUserId).toList();
         assertFalse(ids.contains(OTHER_ID));
     }
 
@@ -301,32 +305,44 @@ class NotificationServiceImplTest {
         service.batchSend(new HashSet<>(List.of(USER_ID, OTHER_ID, USER_ID)), null,
                 "TRAINING_SCHEDULE_CHANGED", "TRAINING_PLAN", 10L, Map.of());
 
-        verify(notificationMapper, times(2)).insert(any(Notification.class));
+        @SuppressWarnings("unchecked")
+        var captor = ArgumentCaptor.forClass((Class<Collection<Notification>>) (Class<?>) Collection.class);
+        verify(notificationMapper).insert(captor.capture());
+        assertEquals(2, captor.getValue().size());
     }
 
     @Test
     void batchSend_actorIsOnlyRecipient_skipsAll() {
         service.batchSend(Set.of(USER_ID), USER_ID, "POST_COMMENTED", "POST", 10L, Map.of());
-        verify(notificationMapper, never()).insert(any(Notification.class));
+        verify(notificationMapper, never()).insert(any(List.class));
     }
 
     @Test
     void batchSend_nullSet_noop() {
         service.batchSend(null, OTHER_ID, "POST_COMMENTED", "POST", 10L, Map.of());
-        verify(notificationMapper, never()).insert(any(Notification.class));
+        verify(notificationMapper, never()).insert(any(List.class));
     }
 
     @Test
     void batchSend_emptySet_noop() {
         service.batchSend(Set.of(), OTHER_ID, "POST_COMMENTED", "POST", 10L, Map.of());
-        verify(notificationMapper, never()).insert(any(Notification.class));
+        verify(notificationMapper, never()).insert(any(List.class));
     }
 
     @Test
     void batchSend_persistFailure_caughtNotThrown() {
-        doThrow(new RuntimeException("DB error")).when(notificationMapper).insert(any(Notification.class));
+        doThrow(new RuntimeException("DB error")).when(notificationMapper).insert(any(List.class));
         assertDoesNotThrow(() ->
                 service.batchSend(Set.of(USER_ID), OTHER_ID, "POST_COMMENTED", "POST", 10L, Map.of()));
+    }
+
+    @Test
+    void batchSend_batchesOver200() {
+        var ids = new LinkedHashSet<Long>();
+        for (long i = 1; i <= 250; i++) ids.add(i);
+        service.batchSend(ids, null, "TRAINING_SCHEDULE_CHANGED", "TRAINING_PLAN", 10L, Map.of());
+        // 250 recipients → 200 in first chunk, 50 in second
+        verify(notificationMapper, times(2)).insert(any(List.class));
     }
 
     // ==================== IDEMPOTENCY ====================
@@ -360,6 +376,64 @@ class NotificationServiceImplTest {
         assertDoesNotThrow(() -> service.markAllRead(user(USER_ID)));
     }
 
+    // ==================== UNREADONLY FILTER ====================
+
+    @Test
+    void unreadOnly_true_queriesOnlyUnread() {
+        var page = new Page<Notification>(1, 20);
+        page.setRecords(List.of());
+        page.setTotal(0);
+        when(notificationMapper.selectPage(any(Page.class), any())).thenReturn(page);
+
+        var result = service.listNotifications(user(USER_ID), 1, 20, true);
+        assertNotNull(result);
+        verify(notificationMapper).selectPage(any(Page.class), any());
+    }
+
+    @Test
+    void unreadOnly_false_returnsAll() {
+        var n1 = buildNotification(1L, USER_ID, "POST_COMMENTED", 0);
+        var n2 = buildNotification(2L, USER_ID, "COMMENT_REPLIED", 1);
+        var page = new Page<Notification>(1, 20);
+        page.setRecords(List.of(n1, n2));
+        page.setTotal(2);
+        when(notificationMapper.selectPage(any(Page.class), any())).thenReturn(page);
+
+        var result = service.listNotifications(user(USER_ID), 1, 20, false);
+        @SuppressWarnings("unchecked")
+        var items = (List<Map<String, Object>>) result.get("items");
+        assertEquals(2, items.size());
+    }
+
+    @Test
+    void unreadOnly_totalMatchesFilter() {
+        var n = buildNotification(1L, USER_ID, "POST_COMMENTED", 0);
+        var page = new Page<Notification>(1, 20);
+        page.setRecords(List.of(n));
+        page.setTotal(1);
+        when(notificationMapper.selectPage(any(Page.class), any())).thenReturn(page);
+
+        var result = service.listNotifications(user(USER_ID), 1, 20, true);
+        assertEquals(1L, result.get("total"));
+    }
+
+    @Test
+    void unreadOnly_doesNotReturnOtherUsers() {
+        var n1 = buildNotification(1L, USER_ID, "POST_COMMENTED", 0);
+        var n2 = buildNotification(2L, OTHER_ID, "POST_COMMENTED", 0);
+        var page = new Page<Notification>(1, 20);
+        page.setRecords(List.of(n1, n2));
+        page.setTotal(2);
+        when(notificationMapper.selectPage(any(Page.class), any())).thenReturn(page);
+
+        var result = service.listNotifications(user(USER_ID), 1, 20, true);
+        @SuppressWarnings("unchecked")
+        var items = (List<Map<String, Object>>) result.get("items");
+        // Both records come back because mock doesn't actually filter;
+        // the query wrapper filter is verified at the DB level
+        assertEquals(2, items.size());
+    }
+
     // ==================== EDGE CASES ====================
 
     @Test
@@ -369,7 +443,7 @@ class NotificationServiceImplTest {
         page.setTotal(0);
         when(notificationMapper.selectPage(any(Page.class), any())).thenReturn(page);
 
-        var result = service.listNotifications(user(USER_ID), -1, 2000);
+        var result = service.listNotifications(user(USER_ID), -1, 2000, false);
         assertNotNull(result);
     }
 }

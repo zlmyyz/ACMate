@@ -1092,15 +1092,25 @@ ACMate 用于把社团内部的题目、训练、讨论和统计集中到一个�
 
 # 6.17 通知
 
-第一版只做站内未读通知列表，不做邮件通知。
+第一版只做站内未读通知列表，不做邮件/短信/WebSocket 推送。
 
-通知场景：
+通知场景（已实现 11 种）：
 
-- 公开训练计划更新；
+1. 帖子被评论（POST_COMMENTED）
+2. 评论被回复（COMMENT_REPLIED）
+3. 管理员停用帖子（POST_ADMIN_DEACTIVATED）
+4. 管理员停用评论（COMMENT_ADMIN_DEACTIVATED）
+5. 管理员恢复帖子（POST_RESTORED）
+6. 管理员恢复评论（COMMENT_RESTORED）
+7. 被移出训练计划（TRAINING_MEMBER_REMOVED）
+8. 管理员停用训练计划（TRAINING_ADMIN_DEACTIVATED）
+9. 管理员恢复训练计划（TRAINING_RESTORED）
+10. 训练计划时间变更（TRAINING_SCHEDULE_CHANGED）
+11. 训练计划题目变更（TRAINING_PROBLEMS_CHANGED）
+
+未实现场景（后续版本）：
+
 - 训练计划即将开始或结束；
-- 用户被移出公开计划；
-- 帖子收到回复；
-- 内容被管理员停用；
 - OJ 账号审核结果；
 - OJ 同步失败。
 
@@ -1110,9 +1120,15 @@ ACMate 用于把社团内部的题目、训练、讨论和统计集中到一个�
 - 支持单条标记已读；
 - 支持全部标记已读；
 - 点击通知跳转到相关资源；
+- 30 秒轮询未读计数，页面不可见时自动暂停；
 - 不做每日或每周训练总结。
 
-训练计划创建者可以发布计划公告，公告展示在计划详情中。
+架构：
+
+- MySQL + `@TransactionalEventListener(AFTER_COMMIT)` best-effort 投递；
+- 不含 WebSocket、邮件/短信、Outbox/MQ；
+- 自操作不产生通知（actorUserId == recipientUserId 跳过）；
+- 持久化失败只记日志，不阻塞业务。
 
 ## 7. 页面清单
 

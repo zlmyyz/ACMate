@@ -851,3 +851,217 @@ GET 请求不需要 CSRF Token。
 
 - UPDATE WHERE 包含 status=0，防止并发重复恢复
 - 恢复后的题目重新出现在公共题库中
+
+---
+
+## GET /api/notifications
+
+分页查询当前用户的站内通知。
+
+### 认证
+
+需要登录后携带 JSESSIONID Cookie。
+
+### CSRF
+
+GET 请求不需要 CSRF Token。
+
+### 查询参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| page | int | 1 | 页码，最小 1 |
+| size | int | 20 | 每页数量，1-100 |
+| unreadOnly | boolean | false | 仅返回未读通知 |
+
+### 成功响应
+
+**200 OK**
+
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "notificationType": "POST_COMMENTED",
+      "actorUserId": 2,
+      "resourceType": "POST",
+      "resourceId": 10,
+      "payload": {
+        "postTitle": "Test Post",
+        "actorNickname": "Alice"
+      },
+      "isRead": false,
+      "readTime": null,
+      "createTime": "2026-07-28T12:00:00"
+    }
+  ],
+  "total": 25,
+  "page": 1,
+  "size": 20
+}
+```
+
+### 错误响应
+
+**401 Unauthorized** — 未登录
+
+**400 Bad Request** — page < 1 或 size 不在 1-100 范围内
+
+---
+
+## GET /api/notifications/unread-count
+
+获取当前用户未读通知数量。
+
+### 认证
+
+需要登录后携带 JSESSIONID Cookie。
+
+### 成功响应
+
+**200 OK**
+
+```json
+{"count": 5}
+```
+
+### 错误响应
+
+**401 Unauthorized** — 未登录
+
+---
+
+## PUT /api/notifications/{id}/read
+
+标记单条通知为已读。仅通知接收者可操作。
+
+### 认证
+
+需要登录后携带 JSESSIONID Cookie。
+
+### CSRF
+
+需要携带有效 CSRF Token。
+
+### 权限
+
+- 仅通知的 `recipientUserId` 匹配当前用户可操作
+- 操作他人通知返回 403
+
+### 幂等
+
+已读通知重复标记无副作用，不重复更新 `readTime`。
+
+### 成功响应
+
+**204 No Content**
+
+### 错误响应
+
+**401 Unauthorized** — 未登录
+
+**403 Forbidden** — 缺少/无效 CSRF Token，或通知不属于当前用户
+
+**404 Not Found** — 通知不存在
+
+---
+
+## PUT /api/notifications/read-all
+
+将当前用户所有未读通知标记为已读。幂等操作。
+
+### 认证
+
+需要登录后携带 JSESSIONID Cookie。
+
+### CSRF
+
+需要携带有效 CSRF Token。
+
+### 成功响应
+
+**204 No Content**
+
+### 错误响应
+
+**401 Unauthorized** — 未登录
+
+**403 Forbidden** — 缺少/无效 CSRF Token
+
+---
+
+## 通知类型与 Payload 结构
+
+### POST_COMMENTED — 帖子被评论
+
+```json
+{"postTitle": "...", "actorNickname": "..."}
+```
+
+### COMMENT_REPLIED — 评论被回复
+
+```json
+{"postTitle": "...", "actorNickname": "..."}
+```
+
+### POST_ADMIN_DEACTIVATED — 管理员停用帖子
+
+```json
+{"postTitle": "...", "reason": "..."}
+```
+
+### COMMENT_ADMIN_DEACTIVATED — 管理员停用评论
+
+```json
+{"reason": "..."}
+```
+
+### POST_RESTORED — 管理员恢复帖子
+
+```json
+{"postTitle": "..."}
+```
+
+### COMMENT_RESTORED — 管理员恢复评论
+
+```json
+{}
+```
+
+### TRAINING_MEMBER_REMOVED — 被移出训练计划
+
+```json
+{"planTitle": "..."}
+```
+
+### TRAINING_ADMIN_DEACTIVATED — 管理员停用训练计划
+
+```json
+{"planTitle": "...", "reason": "..."}
+```
+
+### TRAINING_RESTORED — 管理员恢复训练计划
+
+```json
+{"planTitle": "..."}
+```
+
+### TRAINING_SCHEDULE_CHANGED — 训练计划时间更新
+
+```json
+{"planTitle": "..."}
+```
+
+### TRAINING_PROBLEMS_CHANGED — 训练计划题目更新
+
+```json
+{"planTitle": "..."}
+```
+
+### 实现说明
+
+- 自操作不产生通知（actorUserId == recipientUserId 时跳过）
+- 持久化失败只记日志，不抛出异常（best-effort）
+- 批量发送每批 200 条 chunk 插入
+- 事件通过 `@TransactionalEventListener(phase = AFTER_COMMIT)` 投递

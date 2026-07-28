@@ -25,7 +25,7 @@ public class NotificationController {
                                      @AuthenticationPrincipal AuthenticatedUser user) {
         if (page < 1) throw new com.itnoduck.acmate.common.exception.BusinessException(400, "页码无效");
         if (size < 1 || size > 100) throw new com.itnoduck.acmate.common.exception.BusinessException(400, "每页数量无效");
-        return notificationService.listNotifications(user, page, size);
+        return notificationService.listNotifications(user, page, size, unreadOnly != null && unreadOnly);
     }
 
     @GetMapping("/unread-count")

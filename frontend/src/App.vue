@@ -1,18 +1,26 @@
 <script setup lang="ts">
 import { useAuthStore } from '@/stores/auth'
+import { useNotificationStore } from '@/stores/notifications'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import { watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
 const auth = useAuthStore()
+const notification = useNotificationStore()
 const router = useRouter()
 const route = useRoute()
 
 watch(
   () => auth.isLoggedIn,
   (loggedIn) => {
-    if (!loggedIn && route.meta.requiresAuth) {
-      router.push({ name: 'login', query: { redirect: route.fullPath } })
+    if (loggedIn) {
+      notification.startPolling()
+      notification.startVisibilityListener()
+    } else {
+      notification.reset()
+      if (route.meta.requiresAuth) {
+        router.push({ name: 'login', query: { redirect: route.fullPath } })
+      }
     }
   },
 )

@@ -2,8 +2,8 @@ import apiClient from './client'
 import { withCsrf } from './csrf'
 import type { NotificationListResponse } from '@/types/notification'
 
-export async function getNotifications(page: number = 1, size: number = 20): Promise<NotificationListResponse> {
-  const r = await apiClient.get<NotificationListResponse>('/notifications', { params: { page, size } })
+export async function getNotifications(page: number = 1, size: number = 20, unreadOnly: boolean = false): Promise<NotificationListResponse> {
+  const r = await apiClient.get<NotificationListResponse>('/notifications', { params: { page, size, unreadOnly } })
   return r.data
 }
 

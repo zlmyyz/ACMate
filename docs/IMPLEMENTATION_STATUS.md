@@ -1,6 +1,6 @@
 # IMPLEMENTATION STATUS
 
-> Updated: 2026-07-27 | Discussion lifecycle completion
+> Updated: 2026-07-28 | Notification system end-to-end verified
 
 ## Feature Status
 
@@ -24,7 +24,7 @@
 | CF账号 | 绑定/审核/同步/冷却 | 完成 | 完成 | 8 pass | 待联调 | **真实同步服务未实现** |
 | 同步任务 | 手动/定时/日志/重试 | 完成 | 完成 | — | 待联调 | **真实CF API同步未实现** |
 | 管理员用户管理 | 列表/禁用/改昵称/提权 | 完成 | 完成 | 8 pass | 待联调 | **禁用用户Session未失效** |
-| 通知 | 7种场景/已读/未读 | 完成 | 完成 | — | 待联调 | **事件触发发送待实现** |
+| 通知 | 11种场景/已读/未读/轮询 | **端到端联调通过** | 完成 | 42 pass | **11/11 事件联调** | — |
 | 管理员内容管理 | 帖子/评论管理 | **已完成** | 完成 | — | 待联调 | 审计日志已集成 |
 | 操作日志 | 管理员审计 | **已完成** | 完成 | — | 待联调 | 高风险操作写入已集成 |
 | 数据导出 | CSV | 完成 | 完成 | — | 待联调 | 训练进度/成员数据导出 |
@@ -34,10 +34,10 @@
 
 | 层 | 测试数 | 通过 | 失败 |
 |---|---|---|---|
-| 后端 | 289 | 289 | 0 |
-| 前端 | 110 | 109 | 1（预存超时） |
+| 后端 | 379 | 379 | 0 |
+| 前端 | 166 | 166 | 0 |
 
-全部测试无需数据库。Problem*Test lambda cache 通过 MybatisPlusTestHelper 初始化 TableInfo 修复。SessionLogin 新增 4 个认证异常语义测试（DB 异常→500、密码错误→401、用户不存在→401、500 响应不泄露 SQL）。
+全部后端测试无需数据库，使用 Mockito 和 MybatisPlusTestHelper。通知系统 42 个后端测试覆盖发送、批量发送、权限、JSON 序列化、分页、unreadOnly 过滤、幂等和错误处理。前端 39 个通知专项测试覆盖 Pinia store（轮询、可见性暂停/恢复、标记已读、reset）、AppHeader 角标（99+ 截断）、NotificationsView（unreadOnly 切换、11 种文案、已读/未读样式）。
 
 ## 数据库迁移
 
@@ -54,8 +54,22 @@
 | V9 | post和post_comment增加停用审计字段 | **已修复**（移除非法 `IF NOT EXISTS` 语法） |
 | V10 | audit_log表 | OK |
 | V11 | app_user表增加 uk_app_user_nickname 唯一索引 | OK |
+| V12 | training_plan_member表增加 performance_note 和 completion_summary 列 | OK |
+| V13 | notification表重构（rename columns, add payload_json, drop title/content） | **已执行**（checksum=-1267897753，重启幂等确认） |
 
-Flyway 在 Spring Boot 4.1.0 中无自动配置，通过手动 `FlywayConfig`（`@ConditionalOnProperty("spring.flyway.enabled")`）启用。现有数据库 baseline 在 V11，全新数据库 `acmate_fresh` 验证 V1-V11 完整迁移通过，重启幂等。未来 V12+ 对两种数据库均正常执行。
+Flyway 在 Spring Boot 4.1.0 中无自动配置，通过手动 `FlywayConfig`（`@ConditionalOnProperty("spring.flyway.enabled")`）启用。现有数据库 `acmate` 已验证 V1(baseline) → V12 → V13 迁移，V13 checksum=-1267897753，重启幂等确认（"Schema is up to date"）。
+
+---
+
+## 通知系统架构
+
+- **事件驱动**：使用 Spring `ApplicationEventPublisher` + `@TransactionalEventListener(phase = AFTER_COMMIT)` 实现可靠事件投递
+- **批量插入**：`batchSend` 每批 200 条 chunk 插入，避免单次 INSERT 过大
+- **11 种通知类型**：POST_COMMENTED, COMMENT_REPLIED, POST_ADMIN_DEACTIVATED, COMMENT_ADMIN_DEACTIVATED, POST_RESTORED, COMMENT_RESTORED, TRAINING_MEMBER_REMOVED, TRAINING_ADMIN_DEACTIVATED, TRAINING_RESTORED, TRAINING_SCHEDULE_CHANGED, TRAINING_PROBLEMS_CHANGED
+- **自通知抑制**：`actorUserId == recipientUserId` 时自动跳过
+- **Best-effort 可靠性**：持久化失败只记日志，不阻塞业务流程（`AFTER_COMMIT` + try-catch）
+- **不含**：WebSocket 推送、邮件/短信通知、Outbox 模式、MQ 消息队列
+- **前端轮询**：Pinia store 30 秒轮询 `GET /api/notifications/unread-count`，页面不可见时自动暂停
 
 ---
 
@@ -110,9 +124,7 @@ V9 首次出现在 `bd56c20`（Phase 8），含非法 `ADD COLUMN IF NOT EXISTS`
 | 问题 | 严重程度 | 说明 |
 |---|---|---|
 | Codeforces API 未集成 | 高 | 无 RestTemplate/WebClient/HttpURLConnection；无 @Scheduled 定时同步 |
-| 通知事件触发未实现 | 中 | 通知 CRUD 已就绪，但 7 种场景事件触发代码不存在 |
 | 禁用用户 Session 仍有效 | 中 | AdminUserService.toggleStatus 只改数据库，不失效已登录 Session |
-| 操作日志未写入 | **已修复** | AdminContentServiceImpl 停用/恢复操作已调用 AuditLogService |
 
 ### Codeforces 能力审计
 

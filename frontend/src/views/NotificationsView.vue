@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { getNotifications, markRead, markAllRead } from '@/api/notifications'
+import { getNotifications } from '@/api/notifications'
+import { useNotificationStore } from '@/stores/notifications'
 import type { NotificationItem } from '@/types/notification'
 import PageContainer from '@/components/layout/PageContainer.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
 import ErrorState from '@/components/common/ErrorState.vue'
 import PaginationBar from '@/components/common/PaginationBar.vue'
+
+const notification = useNotificationStore()
 
 const items = ref<NotificationItem[]>([])
 const total = ref(0)
@@ -13,11 +16,12 @@ const loading = ref(true)
 const error = ref('')
 const page = ref(1)
 const size = 20
+const unreadOnly = ref(false)
 
 async function fetch() {
   loading.value = true; error.value = ''
   try {
-    const r = await getNotifications(page.value, size)
+    const r = await getNotifications(page.value, size, unreadOnly.value)
     items.value = r.items
     total.value = r.total
   } catch {
@@ -26,14 +30,23 @@ async function fetch() {
 }
 
 async function onMarkRead(id: number) {
-  try { await markRead(id); items.value.find(i => i.id === id)!.isRead = true } catch { /* ignore */ }
+  await notification.markOneRead(id)
+  const item = items.value.find(i => i.id === id)
+  if (item) item.isRead = true
 }
 
 async function onMarkAllRead() {
-  try { await markAllRead(); items.value.forEach(i => i.isRead = true) } catch { /* ignore */ }
+  await notification.markAllAsRead()
+  items.value.forEach(i => i.isRead = true)
 }
 
 function onPageChange(p: number) { page.value = p; fetch() }
+
+function toggleFilter() {
+  unreadOnly.value = !unreadOnly.value
+  page.value = 1
+  fetch()
+}
 
 function linkFor(n: NotificationItem): string | null {
   if (!n.resourceType || !n.resourceId) return null
@@ -91,7 +104,13 @@ onMounted(fetch)
     <template #header>
       <div class="header-row">
         <h1 class="page-title">通知中心</h1>
-        <button v-if="items.some(i => !i.isRead)" class="mark-all-btn" @click="onMarkAllRead">全部已读</button>
+        <div class="header-actions">
+          <label class="filter-toggle">
+            <input type="checkbox" :checked="unreadOnly" @change="toggleFilter" />
+            <span>只看未读</span>
+          </label>
+          <button v-if="items.some(i => !i.isRead)" class="mark-all-btn" @click="onMarkAllRead">全部已读</button>
+        </div>
       </div>
     </template>
 
@@ -136,6 +155,8 @@ onMounted(fetch)
 .page-title { font-family: var(--font-headline); font-size: var(--text-display-lg); font-weight: 700; color: var(--color-on-surface); }
 
 .header-row { display: flex; align-items: center; justify-content: space-between; }
+.header-actions { display: flex; align-items: center; gap: 16px; }
+.filter-toggle { display: flex; align-items: center; gap: 6px; font-size: var(--text-body-sm); color: var(--color-on-surface-variant); cursor: pointer; }
 .mark-all-btn {
   font-size: var(--text-body-sm); color: var(--color-primary); cursor: pointer;
   padding: 4px 12px; border: 1px solid var(--color-primary); border-radius: var(--radius-md);

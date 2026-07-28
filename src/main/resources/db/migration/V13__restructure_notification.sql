@@ -5,6 +5,15 @@ ALTER TABLE notification
     ADD COLUMN payload_json TEXT NULL AFTER resource_id,
     ADD COLUMN read_time DATETIME NULL AFTER is_read;
 
+-- Migrate legacy title/content into payload_json before dropping columns
+UPDATE notification
+SET payload_json = JSON_OBJECT('legacyTitle', title, 'legacyContent', content)
+WHERE payload_json IS NULL;
+
+ALTER TABLE notification
+    DROP COLUMN title,
+    DROP COLUMN content;
+
 ALTER TABLE notification
     DROP INDEX idx_user_read_time,
     ADD INDEX idx_recipient_read_time (recipient_user_id, is_read, create_time DESC),

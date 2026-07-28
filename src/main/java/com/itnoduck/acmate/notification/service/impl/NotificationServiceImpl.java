@@ -2,8 +2,7 @@ package com.itnoduck.acmate.notification.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.itnoduck.acmate.common.exception.BusinessException;
 import com.itnoduck.acmate.notification.entity.Notification;
 import com.itnoduck.acmate.notification.mapper.NotificationMapper;
@@ -31,10 +30,13 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public Map<String, Object> listNotifications(AuthenticatedUser user, int page, int size) {
+    public Map<String, Object> listNotifications(AuthenticatedUser user, int page, int size, boolean unreadOnly) {
         var qw = new LambdaQueryWrapper<Notification>()
-                .eq(Notification::getRecipientUserId, user.getId())
-                .orderByDesc(Notification::getCreateTime);
+                .eq(Notification::getRecipientUserId, user.getId());
+        if (unreadOnly) {
+            qw.eq(Notification::getIsRead, 0);
+        }
+        qw.orderByDesc(Notification::getCreateTime);
         var result = notificationMapper.selectPage(new Page<>(page, size), qw);
         List<Map<String, Object>> items = new ArrayList<>();
         for (var n : result.getRecords()) {
@@ -124,8 +126,9 @@ public class NotificationServiceImpl implements NotificationService {
         if (batch.isEmpty()) return;
 
         try {
-            for (Notification n : batch) {
-                notificationMapper.insert(n);
+            for (int i = 0; i < batch.size(); i += 200) {
+                int end = Math.min(i + 200, batch.size());
+                notificationMapper.insert(batch.subList(i, end));
             }
         } catch (Exception e) {
             log.error("Failed to persist batch notifications: type={} count={}", notificationType, batch.size(), e);
@@ -136,7 +139,7 @@ public class NotificationServiceImpl implements NotificationService {
         if (payload == null || payload.isEmpty()) return null;
         try {
             return objectMapper.writeValueAsString(payload);
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             log.error("Failed to serialize notification payload", e);
             return null;
         }

@@ -1,5 +1,71 @@
 # DEVLOG
 
+## 2026-07-28：站内通知系统完善
+
+### 本次目标
+
+完成通知系统端到端实现：11 种通知事件、事件驱动架构、批量插入优化、Pinia 轮询、前端通知中心、34 个后端测试。
+
+### 修改文件
+
+**数据库迁移：**
+- `db/migration/V13__restructure_notification.sql` — notification 表重构：`user_id` → `recipient_user_id`，`type` → `notification_type`，新增 `actor_user_id`、`payload_json`、`read_time`，删除废弃的 `title`、`content` 列
+
+**后端修改：**
+- `notification/service/NotificationService.java` — 新增 `send`、`batchSend`，`listNotifications` 增加 `unreadOnly` 参数
+- `notification/service/impl/NotificationServiceImpl.java` — 完整重写：发送/批量发送/分页查询/unreadOnly 过滤/权限校验/JSON 序列化。批量插入 200 条/chunk
+- `notification/controller/NotificationController.java` — 新增 `unreadOnly` 参数透传，标记已读使用 PUT 方法
+- `discussion/service/impl/DiscussionServiceImpl.java` — 评论/回复/停用/恢复操作发送 `ApplicationEvent`（LinkedHashMap 替代 Map.of 避免 null NPE）
+- `training/service/impl/TrainingPlanServiceImpl.java` — 成员移除/计划停用/恢复/时间变更/题目变更发送通知事件
+- `notification/event/NotificationEvent.java` — 新建，事件 POJO
+- `notification/event/NotificationEventListener.java` — 新建，`@TransactionalEventListener(AFTER_COMMIT)` 统一处理
+
+**前端修改：**
+- `stores/notifications.ts` — 新建 Pinia store：轮询、可见性暂停/恢复、标记已读、未读计数
+- `views/NotificationsView.vue` — 重构：unreadOnly 复选框、store 集成、11 种通知文案
+- `components/layout/AppHeader.vue` — 重构：移除本地轮询，使用 notificationStore，99+ badge
+- `App.vue` — 新增 `auth.isLoggedIn` 监听，启动/停止通知轮询
+- `api/notifications.ts` — 新增 `unreadOnly` 参数，PUT 标记已读
+
+**测试：**
+- `NotificationServiceImplTest.java` — 34 个测试（发送/批量/权限/JSON/分页/unreadOnly/幂等/批量大小/错误处理）
+- `DiscussionServiceImplTest.java` — 新增 `@Mock ApplicationEventPublisher`
+- `TrainingPlanServiceImplTest.java` — 新增 `@Mock ApplicationEventPublisher`
+- `MybatisPlusTestHelper.java` — 新增 Notification 实体和 Mapper 注册
+
+### 核心设计
+
+**事件可靠性**：`@TransactionalEventListener(phase = AFTER_COMMIT)` 确保数据库事务提交后才发送通知，避免事务回滚后通知已发出。持久化失败只记日志（best-effort），不阻塞业务操作。
+
+**自通知抑制**：`actorUserId == recipientUserId` 时自动跳过发送。
+
+**批量插入优化**：`batchSend` 每批 200 条 chunk 调用 `notificationMapper.insert(Collection)`，避免单次 INSERT 过大。
+
+**11 种通知场景**：
+| 类型 | 触发点 | 模块 |
+|---|---|---|
+| POST_COMMENTED | 帖子收到评论 | 讨论 |
+| COMMENT_REPLIED | 评论收到回复 | 讨论 |
+| POST_ADMIN_DEACTIVATED | 管理员停用帖子 | 讨论 |
+| COMMENT_ADMIN_DEACTIVATED | 管理员停用评论 | 讨论 |
+| POST_RESTORED | 管理员恢复帖子 | 讨论 |
+| COMMENT_RESTORED | 管理员恢复评论 | 讨论 |
+| TRAINING_MEMBER_REMOVED | 被移出训练计划 | 训练 |
+| TRAINING_ADMIN_DEACTIVATED | 管理员停用计划 | 训练 |
+| TRAINING_RESTORED | 管理员恢复计划 | 训练 |
+| TRAINING_SCHEDULE_CHANGED | 计划时间变更 | 训练 |
+| TRAINING_PROBLEMS_CHANGED | 计划题目变更 | 训练 |
+
+**V8→V13 兼容性修复**：V8 创建 notification 表时 `title NOT NULL` 无默认值，新实体不再设置 title。V13 迁移将旧数据 title/content 序列化到 payload_json 后删除这两列。
+
+### 测试结果
+
+```
+后端 Tests run: 378, Failures: 0, Errors: 0, Skipped: 0
+前端 Tests run: 127, Failures: 0
+前端 type-check + lint + build 全部通过
+```
+
 ## 2026-07-27：讨论区后端完善
 
 ### 本次目标
@@ -1478,6 +1544,69 @@ BUILD SUCCESS（后端编译通过，前端 type-check + lint + build + test 全
 后端 Tests run: 239, Failures: 0
 前端 Tests run: 110, Failures: 0
 ```
+
+## 2026-07-28（二轮）：通知系统端到端联调与修复
+
+### 本次目标
+
+完成 V13 数据库迁移、11 种通知事件真实联调、自通知抑制验证、unreadOnly 验证、前端通知专项测试。
+
+### 修改文件
+
+**数据库迁移：**
+- `db/migration/V13__restructure_notification.sql` — acmate 库 V12→V13 迁移成功，checksum=-1267897753，restart 幂等确认
+
+**后端（无修改）：**
+- 所有修复在上一轮已完成，本轮无后端代码变更
+
+**前端新增：**
+- `__tests__/notifications.test.ts` — 39 个通知专项测试（Store: 轮询、可见性、标记已读、reset；AppHeader: 角标 99+；NotificationsView: unreadOnly、11 种文案）
+
+### 11 种事件联调结果
+
+| # | 事件类型 | 触发方式 | 验证结果 |
+|---|----------|----------|----------|
+| 1 | POST_COMMENTED | Bob 评论 Alice 帖子 | 通过 |
+| 2 | COMMENT_REPLIED | Bob 回复 Alice 评论 | 通过 |
+| 3 | POST_ADMIN_DEACTIVATED | Admin deactivate Bob 帖子 | 通过 |
+| 4 | COMMENT_ADMIN_DEACTIVATED | Admin deactivate Bob 评论 | 通过 |
+| 5 | POST_RESTORED | Admin restore Bob 帖子 | 通过 |
+| 6 | COMMENT_RESTORED | Admin restore Bob 评论 | 通过 |
+| 7 | TRAINING_MEMBER_REMOVED | Admin 移除 Bob | 通过 |
+| 8 | TRAINING_ADMIN_DEACTIVATED | Cross-admin deactivate | 通过 |
+| 9 | TRAINING_RESTORED | Cross-admin restore | 通过 |
+| 10 | TRAINING_SCHEDULE_CHANGED | 更新时间 | 通过 |
+| 11 | TRAINING_PROBLEMS_CHANGED | 添加题目 | 通过 |
+
+### 验证通过项
+
+- 自通知抑制（actorUserId==recipientUserId 跳过）
+- unreadOnly 过滤（all=4, unreadOnly=3 after marking 1 read）
+- 单条标记已读（HTTP 204）
+- 全部已读（HTTP 204, count→0）
+- 权限校验（Bob 无法标记 Alice 的通知 → 403）
+- 幂等性（重复标记已读 → 204）
+- 飞轮二次启动幂等（Schema up to date）
+
+### 测试结果
+
+```
+后端 Tests run: 379, Failures: 0, Errors: 0, Skipped: 0
+  通知后端: NotificationServiceImplTest (34) + NotificationEventListenerTest (8) = 42
+前端 Tests run: 166, Failures: 0
+  通知前端: notifications.test.ts (39)
+type-check + lint + build 全部通过
+```
+
+### 数据库迁移结果
+
+- acmate 库：V11(baseline) → V12 → V13
+- V13 checksum: -1267897753
+- notification 表：recipient_user_id, notification_type, actor_user_id, payload_json, read_time
+- 旧列 title/content 已删除，索引已重建
+- 重启幂等确认
+
+---
 
 ## 2026-07-27：发布前审计
 
