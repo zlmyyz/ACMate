@@ -1,5 +1,66 @@
 # DEVLOG
 
+## 2026-07-28（五轮）：Codeforces 提交同步最终验收
+
+### 本次目标
+
+完成 Codeforces 提交增量同步的可靠性验证与最终验收：修复 contextLoads、数据库级 first-AC 原子约束、CF API 真实验证、前端同步界面。
+
+### 修改文件
+
+**新建：**
+- `db/migration/V14__add_first_ac_constraint.sql` — oj_first_ac 表，UNIQUE KEY (user_id, platform, external_problem_key)
+- `oj/entity/FirstAc.java` — first-AC 实体
+- `oj/mapper/FirstAcMapper.java` — Mapper
+- `frontend/src/__tests__/oj.test.ts` — 7 个前端同步测试
+
+**修改：**
+- `config/RestClientConfig.java` — Spring Boot 4.x 无 RestClient.Builder 自动配置，改用 `RestClient.builder()` 静态方法
+- `oj/client/CodeforcesApiClient.java` — RestTemplate → RestClient（Spring 7.x）；Jackson 3.x import 修正
+- `oj/controller/OjAccountController.java` — 新增 POST /me/sync
+- `oj/service/impl/OjAccountServiceImpl.java` — 完整重写 sync：cursor 分页增量同步、DB 级 first-AC 原子约束、任务日志、幂等
+- `oj/service/impl/OjAccountServiceImplTest.java` — 34 个测试
+- `testutil/MybatisPlusTestHelper.java` — 注册 FirstAc 实体
+- `frontend/src/views/OJAccountView.vue` — 同步按钮、结果展示、错误提示
+- `frontend/src/api/oj.ts` — syncMyAccount()
+- `frontend/src/types/oj.ts` — SyncResult 类型
+- `docs/API.md` — OJ 账号 API 完整文档
+
+### 核心设计
+
+**cursor 分页增量同步**：取已存储提交中最大 remote_submission_id 作为 cursor，仅插入新提交。`LIMIT 1 ORDER BY DESC` 高效。
+
+**DB 级 first-AC 原子性**：oj_first_ac 表 UNIQUE KEY (user_id, platform, external_problem_key)。插入流程：先 insert submission（DuplicateKeyException → 已同步，跳过 first-AC）；OK 时 insert first_ac（DuplicateKeyException → 非首次 AC），成功则标记 is_first_ac=1。
+
+**幂等性**：重复同步 0 新提交，cursor 不变，任务日志独立记录。
+
+**上游失败**：CF API 不可达返回 502，handle 不存在返回 404，Rate limit 返回 429。异常统一记录到 SyncTaskLog 和 account.lastSyncSuccess=0。
+
+### 实际 CF API 验证
+
+使用 `tourist` handle 真实调用 `https://codeforces.com/api/user.status?handle=tourist&from=1&count=500`，返回 `{"status":"OK","result":[...]}`。不存在的 handle 返回 `{"status":"FAILED","comment":"handle: User ... not found"}`。
+
+### 测试结果
+
+```
+后端 Tests run: 428, Failures: 0, Errors: 0, Skipped: 0
+  OjAccountServiceImplTest: 34（同步、幂等、first-AC、上游失败）
+前端 Tests run: 173, Failures: 0
+type-check + lint + build 全部通过
+```
+
+### 已知限制
+
+- 同步冷却 1 小时未在服务端强制（PRD 要求）
+- @Scheduled 定时同步未启用
+- 牛客同步未实现
+
+### 提交
+
+`be8175d` feat: implement Codeforces submission sync with idempotent AC tracking
+
+---
+
 ## 2026-07-28（四轮）：训练计划题目选择器
 
 ### 本次目标

@@ -43,7 +43,7 @@
 
 - [x] Codeforces 账号绑定
 - [x] 牛客账号绑定（仅记录）
-- [ ] Codeforces 提交增量同步
+- [x] Codeforces 提交增量同步（cursor 分页 + first-AC 原子约束 + 幂等）
 - [x] 同步任务日志
 
 ## 阶段 7：Redis 排行榜优化
@@ -54,7 +54,7 @@
 ## 阶段 8：测试、接口文档与部署
 
 - [x] 站内通知系统（11 种事件 + 轮询 + Pinia store + unreadOnly）
-- [x] 单元测试（后端 379 pass, 前端 166 pass）
+- [x] 单元测试（后端 428 pass, 前端 173 pass）
 - [ ] 集成测试
 - [ ] 接口文档
 - [ ] 部署文档

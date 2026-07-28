@@ -7,8 +7,10 @@ import com.itnoduck.acmate.oj.client.CodeforcesApiClient;
 import com.itnoduck.acmate.oj.client.CodeforcesProblemDto;
 import com.itnoduck.acmate.oj.client.CodeforcesSubmissionDto;
 import com.itnoduck.acmate.oj.dto.SyncResult;
+import com.itnoduck.acmate.oj.entity.FirstAc;
 import com.itnoduck.acmate.oj.entity.OjAccount;
 import com.itnoduck.acmate.oj.entity.OjSubmission;
+import com.itnoduck.acmate.oj.mapper.FirstAcMapper;
 import com.itnoduck.acmate.oj.mapper.OjAccountMapper;
 import com.itnoduck.acmate.oj.mapper.OjSubmissionMapper;
 import com.itnoduck.acmate.oj.service.OjAccountService;
@@ -35,17 +37,20 @@ public class OjAccountServiceImpl implements OjAccountService {
 
     private final OjAccountMapper accountMapper;
     private final OjSubmissionMapper submissionMapper;
+    private final FirstAcMapper firstAcMapper;
     private final SyncTaskLogMapper taskLogMapper;
     private final AuditLogService auditLogService;
     private final CodeforcesApiClient cfClient;
 
     public OjAccountServiceImpl(OjAccountMapper accountMapper,
                                 OjSubmissionMapper submissionMapper,
+                                FirstAcMapper firstAcMapper,
                                 SyncTaskLogMapper taskLogMapper,
                                 AuditLogService auditLogService,
                                 CodeforcesApiClient cfClient) {
         this.accountMapper = accountMapper;
         this.submissionMapper = submissionMapper;
+        this.firstAcMapper = firstAcMapper;
         this.taskLogMapper = taskLogMapper;
         this.auditLogService = auditLogService;
         this.cfClient = cfClient;
@@ -233,9 +238,6 @@ public class OjAccountServiceImpl implements OjAccountService {
         int newAc = 0;
         Long maxSubId = null;
 
-        // preload existing AC problem keys for this user to detect new AC
-        Set<String> existingAcKeys = loadExistingAcKeys(account.getUserId());
-
         for (CodeforcesSubmissionDto s : raw) {
             if (s.getId() == null) continue;
 
@@ -253,15 +255,6 @@ public class OjAccountServiceImpl implements OjAccountService {
             boolean isOk = "OK".equals(verdict);
             boolean firstAc = false;
 
-            if (isOk) {
-                String acKey = account.getUserId() + ":" + "CODEFORCES" + ":" + problemKey;
-                if (!existingAcKeys.contains(acKey)) {
-                    firstAc = true;
-                    newAc++;
-                    existingAcKeys.add(acKey);
-                }
-            }
-
             OjSubmission sub = new OjSubmission();
             sub.setOjAccountId(account.getId());
             sub.setUserId(account.getUserId());
@@ -272,14 +265,33 @@ public class OjAccountServiceImpl implements OjAccountService {
             sub.setVerdict(verdict);
             sub.setLanguage(s.getProgrammingLanguage());
             sub.setSubmittedTime(submittedTime);
-            sub.setIsFirstAc(firstAc ? 1 : 0);
+            sub.setIsFirstAc(0);
 
             try {
                 submissionMapper.insert(sub);
                 inserted++;
                 if (isOk) accepted++;
             } catch (DuplicateKeyException e) {
-                // already exists, skip
+                continue; // already synced, skip first-AC check
+            }
+
+            if (isOk) {
+                FirstAc ac = new FirstAc();
+                ac.setUserId(account.getUserId());
+                ac.setPlatform("CODEFORCES");
+                ac.setExternalProblemKey(problemKey);
+                ac.setSubmissionId(subId);
+                try {
+                    firstAcMapper.insert(ac);
+                    firstAc = true;
+                    newAc++;
+                } catch (DuplicateKeyException e) {
+                    // not first AC — DB unique constraint guarantees atomicity
+                }
+                if (firstAc) {
+                    sub.setIsFirstAc(1);
+                    submissionMapper.updateById(sub);
+                }
             }
         }
 
@@ -289,20 +301,6 @@ public class OjAccountServiceImpl implements OjAccountService {
         r.newAcProblemCount = newAc;
         r.maxSubId = maxSubId;
         return r;
-    }
-
-    private Set<String> loadExistingAcKeys(Long userId) {
-        var subs = submissionMapper.selectList(new LambdaQueryWrapper<OjSubmission>()
-                .eq(OjSubmission::getUserId, userId)
-                .eq(OjSubmission::getPlatform, "CODEFORCES")
-                .eq(OjSubmission::getIsFirstAc, 1));
-        Set<String> keys = new HashSet<>();
-        for (var s : subs) {
-            if (s.getExternalProblemKey() != null) {
-                keys.add(userId + ":" + s.getPlatform() + ":" + s.getExternalProblemKey());
-            }
-        }
-        return keys;
     }
 
     private String buildProblemKey(CodeforcesProblemDto problem) {

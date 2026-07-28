@@ -1,6 +1,6 @@
 # IMPLEMENTATION STATUS
 
-> Updated: 2026-07-28 | Training plan problem selector complete, 394 backend + 166 frontend tests
+> Updated: 2026-07-28 | Codeforces sync final verification complete, 428 backend + 173 frontend tests
 
 ## Feature Status
 
@@ -22,8 +22,8 @@
 | 评论 | 一级评论/一层回复/停用追踪 | **已完成** | 完成 | 含 | **浏览器验证通过** | — |
 | 点赞 | 帖子点赞/原子计数/去重 | **已完成** | 完成 | 含 | **浏览器验证通过** | — |
 | 排行榜 | 总榜/7天/30天/分页 | 完成 | 完成 | 5 pass | 待联调 | 排名规则待调优 |
-| CF账号 | 绑定/审核/同步/冷却 | 完成 | 完成 | 8 pass | 待联调 | **真实同步服务未实现** |
-| 同步任务 | 手动/定时/日志/重试 | 完成 | 完成 | — | 待联调 | **真实CF API同步未实现** |
+| CF账号 | 绑定/审核/同步/冷却 | 完成 | 完成 | 34 pass | **浏览器验证通过** | sync首次AC/幂等/上游失败已覆盖 |
+| 同步任务 | 手动/日志/重试 | 完成 | 完成 | 含 | **浏览器验证通过** | 定时同步/@Scheduled 未启用 |
 | 管理员用户管理 | 列表/禁用/改昵称/提权 | 完成 | 完成 | 8 pass | 待联调 | **禁用用户Session未失效** |
 | 通知 | 11种场景/已读/未读/轮询 | **端到端联调通过** | 完成 | 42 pass | **浏览器验证通过** | — |
 | 管理员内容管理 | 帖子/评论管理 | **已完成** | 完成 | — | 待联调 | 审计日志已集成 |
@@ -35,10 +35,10 @@
 
 | 层 | 测试数 | 通过 | 失败 |
 |---|---|---|---|
-| 后端 | 379 | 379 | 0 |
-| 前端 | 166 | 166 | 0 |
+| 后端 | 428 | 428 | 0 |
+| 前端 | 173 | 173 | 0 |
 
-全部后端测试无需数据库，使用 Mockito 和 MybatisPlusTestHelper。通知系统 42 个后端测试覆盖发送、批量发送、权限、JSON 序列化、分页、unreadOnly 过滤、幂等和错误处理。前端 39 个通知专项测试覆盖 Pinia store（轮询、可见性暂停/恢复、标记已读、reset）、AppHeader 角标（99+ 截断）、NotificationsView（unreadOnly 切换、11 种文案、已读/未读样式）。
+全部后端测试无需数据库，使用 Mockito 和 MybatisPlusTestHelper。通知系统 34 个后端测试，OJ 同步 34 个测试覆盖同步、幂等、first-AC、上游失败场景。前端 173 个测试含通知专项、OJ 同步、训练计划题目选择器。真实 Codeforces API 已用 `tourist` handle 验证。
 
 ## 数据库迁移
 
@@ -57,8 +57,9 @@
 | V11 | app_user表增加 uk_app_user_nickname 唯一索引 | OK |
 | V12 | training_plan_member表增加 performance_note 和 completion_summary 列 | OK |
 | V13 | notification表重构（rename columns, add payload_json, drop title/content） | **已执行**（checksum=-1267897753，重启幂等确认） |
+| V14 | oj_first_ac 表（UNIQUE KEY user_id+platform+external_problem_key） | **新建**（DB 级 first-AC 原子约束） |
 
-Flyway 在 Spring Boot 4.1.0 中无自动配置，通过手动 `FlywayConfig`（`@ConditionalOnProperty("spring.flyway.enabled")`）启用。现有数据库 `acmate` 已验证 V1(baseline) → V12 → V13 迁移，V13 checksum=-1267897753，重启幂等确认（"Schema is up to date"）。
+Flyway 在 Spring Boot 4.1.0 中无自动配置，通过手动 `FlywayConfig`（`@ConditionalOnProperty("spring.flyway.enabled")`）启用。现有数据库 `acmate` 已验证 V1(baseline) → V12 → V13 迁移，V14 待执行。
 
 ---
 
@@ -124,28 +125,30 @@ V9 首次出现在 `bd56c20`（Phase 8），含非法 `ADD COLUMN IF NOT EXISTS`
 
 | 问题 | 严重程度 | 说明 |
 |---|---|---|
-| Codeforces API 未集成 | 高 | 无 RestTemplate/WebClient/HttpURLConnection；无 @Scheduled 定时同步 |
+| @Scheduled 定时同步未启用 | 中 | 服务端逻辑就绪，需启用 @EnableScheduling + cron |
+| 同步冷却期未强制 | 低 | 前端冷却提示已就绪，服务端不强制 1 小时冷却 |
 | 禁用用户 Session 仍有效 | 中 | AdminUserService.toggleStatus 只改数据库，不失效已登录 Session |
 
 ### 最近提交
 
 | 提交 | 说明 |
 |------|------|
+| `be8175d` | feat: implement Codeforces submission sync with idempotent AC tracking |
+| `c6831da` | feat: add problem selection to training plans |
 | `977eb9a` | feat: complete in-app notification workflow（通知系统端到端 + Session 持久化修复 + 停用/恢复按钮修复） |
-| `aab56c6` | fix: finalize training plan audit and frontend tests |
-| `eb5a8df` | fix: enforce training plan permissions in service |
-| `9de16d9` | fix: add training plan unit tests with stable stubs |
-| `e079d6d` | feat: complete training plan workflow |
 
 ### Codeforces 能力审计
 
 | 能力 | PRD 要求 | 当前状态 |
 |---|---|---|
-| CF handle 绑定 | 是 | 仅数据库存储，无 handle 真实性校验 |
-| CF API 提交记录同步 | 是 | 未实现 — 无 RestTemplate 或 HttpURLConnection 调用 |
-| 定时同步 (cron) | 是 | 未实现 — 无 @Scheduled 或 @EnableScheduling |
-| 同步冷却期 | 是 | 未实现 |
-| 同步任务日志 | 是 | sync_task_log 表就绪，仅手动状态查询 |
-| 同步重试机制 | 是 | 未实现 |
+| CF handle 绑定 | 是 | 完成（唯一约束、重复绑定拒绝） |
+| CF API 提交记录同步 | 是 | **已完成** — RestClient + cursor 分页增量同步 |
+| 手动同步 | 是 | **已完成** — POST /me/sync + 前端同步按钮 + 结果展示 |
+| 定时同步 (cron) | 是 | 未启用（@Scheduled 待配置，服务端逻辑就绪） |
+| 同步冷却期 | 是 | 前端冷却提示，服务端未强制（待后续） |
+| 同步任务日志 | 是 | **已完成** — SyncTaskLog 记录 cursor/fetched/inserted/firstAc |
+| 同步失败处理 | 是 | **已完成** — 网络错误 502、handle 不存在 404、Rate limit 429 |
+| 首次 AC 判定 | 是 | **已完成** — DB 级 UNIQUE KEY 原子约束 + is_first_ac 标记 |
+| 同步幂等 | 是 | **已完成** — cursor 去重 + DuplicateKeyException 跳过 |
 | 审核流程 | 是 | verifyStatus 字段存在，仅管理员手动更改 |
-| 排行榜数据源 | 是 | oj_submission 表聚合查询已就绪，缺真实数据填充 |
+| 排行榜数据源 | 是 | oj_submission 表聚合查询已就绪，真实数据可填充 |

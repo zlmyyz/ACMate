@@ -1404,3 +1404,219 @@ GET 请求不需要 CSRF Token。
 - 持久化失败只记日志，不抛出异常（best-effort）
 - 批量发送每批 200 条 chunk 插入
 - 事件通过 `@TransactionalEventListener(phase = AFTER_COMMIT)` 投递
+
+---
+
+## OJ 账号 API
+
+### GET /api/oj-accounts/me
+
+获取当前用户的 OJ 账号绑定状态。
+
+#### 认证
+
+需要登录后携带 JSESSIONID Cookie。
+
+#### 成功响应
+
+**200 OK**
+
+```json
+{
+  "hasAccount": true,
+  "id": 1,
+  "platform": "CODEFORCES",
+  "externalUserId": "tourist",
+  "displayName": "tourist",
+  "verifyStatus": 1,
+  "syncEnabled": 1,
+  "lastSyncTime": "2026-07-28T12:00:00",
+  "lastSyncSuccess": 1
+}
+```
+
+未绑定时返回 `{"hasAccount": false}`。
+
+---
+
+### POST /api/oj-accounts
+
+绑定 Codeforces 账号。
+
+#### 认证
+
+需要登录后携带 JSESSIONID Cookie。
+
+#### CSRF
+
+需要携带有效 CSRF Token。
+
+#### 请求字段
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| handle | string | 是 | Codeforces 用户名，去除首尾空格 |
+
+#### 成功响应
+
+**204 No Content**
+
+#### 错误响应
+
+**400 Bad Request** — handle 为空
+
+**409 Conflict** — 已绑定过账号，或该 handle 已被其他用户绑定
+
+---
+
+### DELETE /api/oj-accounts/me
+
+解绑当前用户的 OJ 账号。
+
+#### 认证
+
+需要登录后携带 JSESSIONID Cookie。
+
+#### CSRF
+
+需要携带有效 CSRF Token。
+
+#### 成功响应
+
+**204 No Content**
+
+---
+
+### GET /api/oj-accounts/admin
+
+管理员查看待审核的 OJ 账号列表（verifyStatus=0）。
+
+#### 认证
+
+需要管理员角色。
+
+#### 成功响应
+
+**200 OK**
+
+```json
+[
+  {
+    "id": 1,
+    "userId": 5,
+    "platform": "CODEFORCES",
+    "externalUserId": "new_user",
+    "displayName": "new_user",
+    "verifyStatus": 0,
+    "syncEnabled": 1,
+    "lastSyncTime": null
+  }
+]
+```
+
+#### 错误响应
+
+**403 Forbidden** — 非管理员
+
+---
+
+### POST /api/oj-accounts/admin/{id}/verify
+
+管理员审核 OJ 账号。
+
+#### 认证
+
+需要管理员角色。
+
+#### CSRF
+
+需要携带有效 CSRF Token。
+
+#### 查询参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| status | int | 1 | 1=通过, 2=拒绝 |
+
+#### 成功响应
+
+**204 No Content**
+
+#### 错误响应
+
+**403 Forbidden** — 非管理员
+**404 Not Found** — 账号不存在
+
+---
+
+### POST /api/oj-accounts/me/sync
+
+同步当前用户已验证 Codeforces 账号的提交记录。
+
+#### 认证
+
+需要登录后携带 JSESSIONID Cookie。
+
+#### CSRF
+
+需要携带有效 CSRF Token。
+
+#### 前置条件
+
+- 已绑定 Codeforces 账号（`platform=CODEFORCES`）
+- 账号审核状态为 VERIFIED（`verifyStatus=1`）
+
+#### 同步语义
+
+- 从 Codeforces API 获取最多 500 条最新提交
+- 使用 `last_sync_cursor`（最大 `remote_submission_id`）做增量同步
+- 已同步的提交自动跳过（游标比对）
+- 提交记录通过 `uk_platform_submission (platform, remote_submission_id)` 保证幂等
+- 首次 AC 通过 `oj_first_ac` 表的 `uk_user_platform_problem (user_id, platform, external_problem_key)` 保证原子唯一
+
+#### AC 判定规则
+
+- 仅 `verdict=OK` 计为 AC
+- 同一用户同一题多次 OK 只计一次 AC
+- 题目标识：`contestId + index`（如 `123A`），无 contestId 时使用 `problemsetName + index`
+- 首次 AC 写入 `oj_first_ac` 表，DB 唯一约束做并发兜底
+
+#### 成功响应
+
+**200 OK**
+
+```json
+{
+  "accountId": 1,
+  "handle": "tourist",
+  "fetchedCount": 100,
+  "insertedCount": 10,
+  "acceptedCount": 5,
+  "newAcceptedProblemCount": 2,
+  "lastSyncTime": "2026-07-28T12:00:00",
+  "syncStatus": "SUCCESS"
+}
+```
+
+#### 错误响应
+
+**401 Unauthorized** — 未登录
+
+**403 Forbidden** — 缺少/无效 CSRF Token
+
+**404 Not Found** — 未绑定 Codeforces 账号，或 CF 账号不存在
+
+**409 Conflict** — 账号审核未通过
+
+**429 Too Many Requests** — Codeforces API 频率限制
+
+**502 Bad Gateway** — Codeforces API 返回异常数据
+
+**503 Service Unavailable** — Codeforces 服务不可达
+
+#### 幂等保证
+
+- 重复同步不产生重复提交（`uk_platform_submission` 唯一约束兜底）
+- 重复同步 `insertedCount=0`
+- 游标仅在实际同步成功后推进
+- 同步失败时旧提交和 AC 数据完整保留

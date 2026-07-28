@@ -1,13 +1,14 @@
 package com.itnoduck.acmate.oj.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.itnoduck.acmate.auditlog.service.AuditLogService;
 import com.itnoduck.acmate.common.exception.BusinessException;
 import com.itnoduck.acmate.oj.client.CodeforcesApiClient;
 import com.itnoduck.acmate.oj.client.CodeforcesProblemDto;
 import com.itnoduck.acmate.oj.client.CodeforcesSubmissionDto;
+import com.itnoduck.acmate.oj.entity.FirstAc;
 import com.itnoduck.acmate.oj.entity.OjAccount;
 import com.itnoduck.acmate.oj.entity.OjSubmission;
+import com.itnoduck.acmate.oj.mapper.FirstAcMapper;
 import com.itnoduck.acmate.oj.mapper.OjAccountMapper;
 import com.itnoduck.acmate.oj.mapper.OjSubmissionMapper;
 import com.itnoduck.acmate.security.AuthenticatedUser;
@@ -37,6 +38,7 @@ class OjAccountServiceImplTest {
 
     @Mock private OjAccountMapper accountMapper;
     @Mock private OjSubmissionMapper submissionMapper;
+    @Mock private FirstAcMapper firstAcMapper;
     @Mock private SyncTaskLogMapper taskLogMapper;
     @Mock private AuditLogService auditLogService;
     @Mock private CodeforcesApiClient cfClient;
@@ -287,7 +289,6 @@ class OjAccountServiceImplTest {
         OjAccount acc = verifiedAccount();
         when(accountMapper.selectOne(any())).thenReturn(acc);
         when(submissionMapper.selectOne(any())).thenReturn(null);
-        when(submissionMapper.selectList(any())).thenReturn(Collections.emptyList());
 
         var prob = new CodeforcesProblemDto();
         prob.setContestId(123L);
@@ -310,6 +311,8 @@ class OjAccountServiceImplTest {
         assertEquals(1, result.getNewAcceptedProblemCount());
 
         verify(submissionMapper).insert(ArgumentMatchers.<OjSubmission>any());
+        verify(firstAcMapper).insert(ArgumentMatchers.<FirstAc>any());
+        verify(submissionMapper).updateById(ArgumentMatchers.<OjSubmission>any());
         verify(accountMapper).updateById(acc);
         assertEquals(1, acc.getLastSyncSuccess());
         assertEquals("100", acc.getLastSyncCursor());
@@ -346,7 +349,6 @@ class OjAccountServiceImplTest {
         OjAccount acc = verifiedAccount();
         when(accountMapper.selectOne(any())).thenReturn(acc);
         when(submissionMapper.selectOne(any())).thenReturn(null);
-        when(submissionMapper.selectList(any())).thenReturn(Collections.emptyList());
 
         var prob = new CodeforcesProblemDto();
         prob.setContestId(123L);
@@ -363,6 +365,7 @@ class OjAccountServiceImplTest {
         assertEquals(1, result.getInsertedCount());
         assertEquals(0, result.getAcceptedCount());
         assertEquals(0, result.getNewAcceptedProblemCount());
+        verify(firstAcMapper, never()).insert(ArgumentMatchers.<FirstAc>any());
     }
 
     @Test
@@ -370,7 +373,6 @@ class OjAccountServiceImplTest {
         OjAccount acc = verifiedAccount();
         when(accountMapper.selectOne(any())).thenReturn(acc);
         when(submissionMapper.selectOne(any())).thenReturn(null);
-        when(submissionMapper.selectList(any())).thenReturn(Collections.emptyList());
 
         var prob = new CodeforcesProblemDto();
         prob.setContestId(123L);
@@ -387,6 +389,8 @@ class OjAccountServiceImplTest {
         var result = service.syncMyAccount(normalUser);
         assertEquals(0, result.getInsertedCount());
         assertEquals(0, result.getAcceptedCount());
+        assertEquals(0, result.getNewAcceptedProblemCount());
+        verify(firstAcMapper, never()).insert(ArgumentMatchers.<FirstAc>any());
     }
 
     @Test
@@ -394,13 +398,6 @@ class OjAccountServiceImplTest {
         OjAccount acc = verifiedAccount();
         when(accountMapper.selectOne(any())).thenReturn(acc);
         when(submissionMapper.selectOne(any())).thenReturn(null);
-
-        OjSubmission existingAc = new OjSubmission();
-        existingAc.setUserId(USER_ID);
-        existingAc.setPlatform("CODEFORCES");
-        existingAc.setExternalProblemKey("123A");
-        existingAc.setIsFirstAc(1);
-        when(submissionMapper.selectList(any())).thenReturn(List.of(existingAc));
 
         var prob = new CodeforcesProblemDto();
         prob.setContestId(123L);
@@ -412,11 +409,13 @@ class OjAccountServiceImplTest {
         sub.setProblem(prob);
 
         when(cfClient.fetchSubmissions("test_handle", 1, 500)).thenReturn(List.of(sub));
+        doThrow(new DuplicateKeyException("dup")).when(firstAcMapper).insert(ArgumentMatchers.<FirstAc>any());
 
         var result = service.syncMyAccount(normalUser);
         assertEquals(1, result.getInsertedCount());
         assertEquals(1, result.getAcceptedCount());
         assertEquals(0, result.getNewAcceptedProblemCount());
+        verify(submissionMapper, never()).updateById(ArgumentMatchers.<OjSubmission>any());
     }
 
     @Test
@@ -424,7 +423,6 @@ class OjAccountServiceImplTest {
         OjAccount acc = verifiedAccount();
         when(accountMapper.selectOne(any())).thenReturn(acc);
         when(submissionMapper.selectOne(any())).thenReturn(null);
-        when(submissionMapper.selectList(any())).thenReturn(Collections.emptyList());
 
         var prob = new CodeforcesProblemDto();
         prob.setContestId(null);
@@ -451,7 +449,6 @@ class OjAccountServiceImplTest {
         OjAccount acc = verifiedAccount();
         when(accountMapper.selectOne(any())).thenReturn(acc);
         when(submissionMapper.selectOne(any())).thenReturn(null);
-        when(submissionMapper.selectList(any())).thenReturn(Collections.emptyList());
 
         var sub = new CodeforcesSubmissionDto();
         sub.setId(500L);
@@ -522,7 +519,6 @@ class OjAccountServiceImplTest {
         OjAccount acc = verifiedAccount();
         when(accountMapper.selectOne(any())).thenReturn(acc);
         when(submissionMapper.selectOne(any())).thenReturn(null);
-        when(submissionMapper.selectList(any())).thenReturn(Collections.emptyList());
 
         var probA = new CodeforcesProblemDto();
         probA.setContestId(1L);
@@ -551,6 +547,7 @@ class OjAccountServiceImplTest {
         assertEquals(3, result.getInsertedCount());
         assertEquals(2, result.getAcceptedCount());
         assertEquals(2, result.getNewAcceptedProblemCount());
+        verify(firstAcMapper, times(2)).insert(ArgumentMatchers.<FirstAc>any());
     }
 
     @Test
@@ -561,5 +558,32 @@ class OjAccountServiceImplTest {
         verify(accountMapper).insert(captor.capture());
         assertEquals("myHandle", captor.getValue().getExternalUserId());
         assertEquals("myHandle", captor.getValue().getDisplayName());
+    }
+
+    @Test
+    void sync_concurrentFirstAc_secondInsertFails_atomic() {
+        OjAccount acc = verifiedAccount();
+        when(accountMapper.selectOne(any())).thenReturn(acc);
+        when(submissionMapper.selectOne(any())).thenReturn(null);
+
+        var prob = new CodeforcesProblemDto();
+        prob.setContestId(123L);
+        prob.setIndex("A");
+
+        var sub = new CodeforcesSubmissionDto();
+        sub.setId(600L);
+        sub.setVerdict("OK");
+        sub.setProblem(prob);
+
+        when(cfClient.fetchSubmissions("test_handle", 1, 500)).thenReturn(List.of(sub));
+        // firstAcMapper insert throws DKE → concurrent already claimed this AC
+        doThrow(new DuplicateKeyException("dup")).when(firstAcMapper).insert(ArgumentMatchers.<FirstAc>any());
+
+        var result = service.syncMyAccount(normalUser);
+        assertEquals(1, result.getInsertedCount());
+        assertEquals(1, result.getAcceptedCount());
+        assertEquals(0, result.getNewAcceptedProblemCount());
+        // is_first_ac should NOT be set
+        verify(submissionMapper, never()).updateById(ArgumentMatchers.<OjSubmission>any());
     }
 }
