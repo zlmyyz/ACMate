@@ -59,7 +59,7 @@
 
 ### 提交
 
-`<pending>` feat: complete admin user management workflow
+`6a15e6e` feat: complete admin user management workflow
 
 ---
 
