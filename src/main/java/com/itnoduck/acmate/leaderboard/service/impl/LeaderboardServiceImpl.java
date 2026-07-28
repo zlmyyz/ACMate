@@ -54,7 +54,7 @@ public class LeaderboardServiceImpl implements LeaderboardService {
         if (!userIds.isEmpty()) {
             userMap = new HashMap<>();
             for (var u : userMapper.selectBatchIds(userIds)) {
-                if (u.getStatus() != null && u.getStatus() == 1) userMap.put(u.getId(), u);
+                userMap.put(u.getId(), u);
             }
         }
 
