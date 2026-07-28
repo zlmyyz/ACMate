@@ -397,7 +397,7 @@ onMounted(() => {
             <button class="dialog-btn cancel-btn" :disabled="confirmLoading" @click="confirmVisible = false">
               {{ actionLabels.cancel }}
             </button>
-            <button class="dialog-btn confirm-btn" :disabled="confirmLoading" @click="doAdminDeactivate">
+            <button class="dialog-btn confirm-btn" :disabled="confirmLoading || !deactivateReason.trim()" @click="doAdminDeactivate">
               {{ confirmLoading ? '处理中...' : '确认停用' }}
             </button>
           </div>

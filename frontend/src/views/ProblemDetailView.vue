@@ -87,7 +87,7 @@ async function handleDeactivate() {
   actionError.value = ''
   actionLoading.value = true
   try {
-    if (isCreator.value && !auth.isAdmin) {
+    if (isCreator.value) {
       await deactivateProblem(problemId.value)
     } else {
       if (!deactivateReason.value.trim()) {
@@ -149,10 +149,10 @@ onMounted(fetchDetail)
         <div class="detail-top">
           <h1 class="detail-title">{{ problem.title }}</h1>
           <div class="detail-actions">
-            <template v-if="canDeactivate && isCreator && !auth.isAdmin">
+            <template v-if="canDeactivate && isCreator">
               <button class="deactivate-btn" @click="showDeactivateDialog = true">停用</button>
             </template>
-            <template v-if="canDeactivate && auth.isAdmin && !isCreator">
+            <template v-else-if="canDeactivate">
               <button class="deactivate-btn admin" @click="showDeactivateDialog = true">强制停用</button>
             </template>
             <button v-if="canRestore" class="restore-btn" @click="handleRestore" :disabled="actionLoading">恢复</button>
@@ -161,7 +161,7 @@ onMounted(fetchDetail)
         </div>
 
         <div v-if="showDeactivateDialog" class="deactivate-dialog">
-          <template v-if="isCreator && !auth.isAdmin">
+          <template v-if="isCreator">
             <p>确定要停用该题目吗？停用后该题目将不会出现在公共题库中。</p>
           </template>
           <template v-else>

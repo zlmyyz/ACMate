@@ -16,7 +16,7 @@ watch(
     if (loggedIn) {
       notification.startPolling()
       notification.startVisibilityListener()
-    } else {
+    } else if (auth.initialized) {
       notification.reset()
       if (route.meta.requiresAuth) {
         router.push({ name: 'login', query: { redirect: route.fullPath } })
