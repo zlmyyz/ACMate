@@ -14,6 +14,8 @@ public record ProblemDetailResponse(
         Long creatorUserId,
         String creatorUsername,
         String creatorNickname,
+        Boolean active,
+        String deactivationSource,
         LocalDateTime createTime,
         LocalDateTime updateTime
 ) {}

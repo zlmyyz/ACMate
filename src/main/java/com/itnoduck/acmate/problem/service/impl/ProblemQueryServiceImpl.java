@@ -171,6 +171,8 @@ public class ProblemQueryServiceImpl implements ProblemQueryService {
                 p.getId(), p.getPlatform(), p.getExternalProblemKey(), p.getTitle(),
                 p.getSourceUrl(), p.getDifficulty(), p.getTags(), p.getContentMd(),
                 p.getCreatorUserId(), creatorUsername, creatorNickname,
+                p.getStatus() != null && p.getStatus() == 1,
+                p.getDeactivationSource(),
                 p.getCreateTime(), p.getUpdateTime());
     }
 

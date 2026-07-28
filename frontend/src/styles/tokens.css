@@ -48,6 +48,9 @@
   --color-status-ongoing: #3A8BFF;
   --color-status-ended: #BCBFC4;
   --color-status-pending: #F3A13C;
+  --color-status-error: #BA1A1A;
+  --color-status-success: #34A853;
+  --color-status-critical: #D92D20;
 
   /* Error */
   --color-error: #ba1a1a;

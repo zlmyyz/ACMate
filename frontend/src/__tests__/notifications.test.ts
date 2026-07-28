@@ -78,7 +78,7 @@ describe('Notification Store', () => {
 
   function loginUser() {
     const auth = useAuthStore()
-    auth.user = { id: 1, username: 'test', nickname: 'Test', email: null, admin: false }
+    auth.user = { id: 1, username: 'test', nickname: 'Test', email: null, avatarUrl: null, bio: null, admin: false }
     auth.initialized = true
     return auth
   }
@@ -130,7 +130,7 @@ describe('Notification Store', () => {
     mockMarkRead.mockResolvedValueOnce(undefined)
     await store.markOneRead(1)
     expect(mockMarkRead).toHaveBeenCalledWith(1)
-    expect(store.notifications[0].isRead).toBe(true)
+    expect(store.notifications[0]!.isRead).toBe(true)
     expect(store.unreadCount).toBe(2)
   })
 
@@ -168,7 +168,7 @@ describe('Notification Store', () => {
     mockMarkRead.mockRejectedValueOnce(new Error('network'))
     await store.markOneRead(1)
     expect(store.unreadCount).toBe(3)
-    expect(store.notifications[0].isRead).toBe(false)
+    expect(store.notifications[0]!.isRead).toBe(false)
   })
 
   it('markAllAsRead sets all to read and zeros count', async () => {
@@ -309,7 +309,7 @@ describe('AppHeader notification badge', () => {
 
   function mountHeader(unreadCount: number) {
     const auth = useAuthStore()
-    auth.user = { id: 1, username: 'test', nickname: 'Test', email: null, admin: false }
+    auth.user = { id: 1, username: 'test', nickname: 'Test', email: null, avatarUrl: null, bio: null, admin: false }
     auth.initialized = true
     const store = useNotificationStore()
     store.unreadCount = unreadCount
@@ -366,7 +366,7 @@ describe('NotificationsView', () => {
 
   function mountView() {
     const auth = useAuthStore()
-    auth.user = { id: 1, username: 'test', nickname: 'Test', email: null, admin: false }
+    auth.user = { id: 1, username: 'test', nickname: 'Test', email: null, avatarUrl: null, bio: null, admin: false }
     auth.initialized = true
     const router = createRouter({
       history: createWebHistory(),
@@ -431,7 +431,8 @@ describe('NotificationsView', () => {
     expect(mockGetNotifications).toHaveBeenCalledWith(1, 20, false)
 
     const checkbox = wrapper.find('input[type="checkbox"]')
-    await checkbox.setChecked(true)
+    ;(checkbox.element as HTMLInputElement).checked = true
+    await checkbox.trigger('change')
     expect(mockGetNotifications).toHaveBeenCalledWith(1, 20, true)
     expect(mockGetNotifications).toHaveBeenCalledTimes(2)
   })

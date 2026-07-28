@@ -22,13 +22,6 @@ function buildDateTime(dateVal: string, timeVal: string): string | undefined {
   const t = timeVal || '00:00'
   return `${dateVal}T${t}:00`
 }
-
-function splitDateTime(iso: string | null): { date: string; time: string } {
-  if (!iso) return { date: '', time: '' }
-  const d = iso.substring(0, 10)
-  const t = iso.substring(11, 16)
-  return { date: d, time: t }
-}
 const saving = ref(false)
 const error = ref('')
 

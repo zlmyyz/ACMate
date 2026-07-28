@@ -214,6 +214,7 @@ describe('ProblemForm draft', () => {
           id: 1, platform: 'CUSTOM', title: 'Real Title',
           externalProblemKey: null, sourceUrl: null, difficulty: null,
           tags: null, contentMd: null, creatorUserId: 1,
+          creatorUsername: null, creatorNickname: null, active: true, deactivationSource: null,
           createTime: '2026-01-01T00:00:00', updateTime: '2026-01-01T00:00:00',
         },
       },
@@ -561,7 +562,7 @@ describe('ProblemTable', () => {
     const { default: ProblemTable } = await import('@/components/problem/ProblemTable.vue')
     const wrapper = mount(ProblemTable, {
       props: {
-        problems: [{ id: 1, platform: 'CODEFORCES', externalProblemKey: '1A', title: 'Test', sourceUrl: null, difficulty: '800', tags: 'dp,math', creatorUserId: 1, createTime: '2026-07-20T12:00:00' }],
+        problems: [{ id: 1, platform: 'CODEFORCES', externalProblemKey: '1A', title: 'Test', sourceUrl: null, difficulty: '800', tags: 'dp,math', creatorUserId: 1, creatorUsername: null, creatorNickname: null, createTime: '2026-07-20T12:00:00' }],
         loading: false,
       },
       global: { stubs: { 'router-link': true } },
@@ -575,7 +576,7 @@ describe('ProblemTable', () => {
     const { default: ProblemTable } = await import('@/components/problem/ProblemTable.vue')
     const wrapper = mount(ProblemTable, {
       props: {
-        problems: [{ id: 1, platform: 'CUSTOM', externalProblemKey: null, title: 'Test', sourceUrl: null, difficulty: null, tags: null, creatorUserId: 42, createTime: '2026-07-20T12:00:00' }],
+        problems: [{ id: 1, platform: 'CUSTOM', externalProblemKey: null, title: 'Test', sourceUrl: null, difficulty: null, tags: null, creatorUserId: 42, creatorUsername: null, creatorNickname: null, createTime: '2026-07-20T12:00:00' }],
         loading: false,
       },
       global: { stubs: { 'router-link': true } },

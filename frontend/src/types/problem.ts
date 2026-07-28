@@ -24,6 +24,8 @@ export interface ProblemDetail {
   creatorUserId: number
   creatorUsername: string | null
   creatorNickname: string | null
+  active: boolean
+  deactivationSource: string | null
   createTime: string
   updateTime: string
 }
