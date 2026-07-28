@@ -6,6 +6,7 @@ import type {
   CreatePlanRequest,
   UpdatePlanRequest,
   AddProblemRequest,
+  UpdateProblemsRequest,
 } from '@/types/training'
 
 export async function listPlans(params: {
@@ -76,6 +77,14 @@ export async function removePlanProblem(planId: number, problemId: number): Prom
 export async function joinPlan(id: number): Promise<void> {
   return withCsrf((headerName, token) =>
     apiClient.post(`/training-plans/${id}/members/me`, null, {
+      headers: { [headerName]: token },
+    }),
+  )
+}
+
+export async function updatePlanProblems(id: number, data: UpdateProblemsRequest): Promise<void> {
+  return withCsrf((headerName, token) =>
+    apiClient.put(`/training-plans/${id}/problems`, data, {
       headers: { [headerName]: token },
     }),
   )

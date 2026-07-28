@@ -1,5 +1,57 @@
 # DEVLOG
 
+## 2026-07-28（四轮）：训练计划题目选择器
+
+### 本次目标
+
+实现训练计划创建和编辑时的题目选择功能：从题库搜索题目、添加到计划、排序、移除。仅创建者可管理题目，仅 ACTIVE 题目可加入，PUBLIC 计划题目变更发送通知。
+
+### 修改文件
+
+**后端新增：**
+- `training/dto/PlanProblemRequest.java` — 单个题目项 DTO
+- `training/dto/UpdateProblemsRequest.java` — 批量更新题目请求 DTO
+
+**后端修改：**
+- `training/dto/CreatePlanRequest.java` — 新增 `problemIds` 字段
+- `training/service/TrainingPlanService.java` — 新增 `updateProblems` 方法
+- `training/service/impl/TrainingPlanServiceImpl.java` — `createPlan` 增加 `validateAndInsertProblems`；新增 `updateProblems`（diff 对比，无变更跳过通知）；新增 `validateAndInsertProblems`（去重、ACTIVE 校验、有序插入）；新增 `notifyProblemsChanged`（仅 PUBLIC 计划）
+- `training/controller/TrainingPlanController.java` — 新增 `PUT /{id}/problems`
+
+**前端新增：**
+- `components/training/TrainingProblemSelector.vue` — 可复用题目选择器（防抖搜索、分页加载、添加/移除/排序、已添加禁用）
+- `stores/notifications.ts` — Pinia 通知 store
+
+**前端修改：**
+- `views/CreatePlanView.vue` — 集成 TrainingProblemSelector，`handleCreate` 传递 problemIds
+- `views/EditPlanView.vue` — 集成 TrainingProblemSelector，`handleSave` 调用 updatePlanProblems
+- `types/training.ts` — 新增 PlanProblemRequest、UpdateProblemsRequest、CreatePlanRequest.problemIds
+- `api/training.ts` — 新增 `updatePlanProblems`
+- `App.vue` — 通知 store 集成
+- `components/layout/AppHeader.vue` — 使用 notificationStore
+- `views/NotificationsView.vue` — 重构通知中心
+
+**测试新增（后端 15 个）：**
+- `TrainingPlanServiceImplTest.java` — 创建含题目（6）+ 更新题目（9）：正常创建、空列表、去重校验、题目不存在/停用拒绝、批量替换、重新排序、diff 无变更跳过通知、PUBLIC 通知、PERSONAL 不通知
+
+### 浏览器验收（17/25 通过）
+
+创建流程（1-8）、详情展示（9-12）、编辑流程（13-18）、权限验证（22）全部通过。通知验证（19-21）、管理员权限（23-24）、停用题目拒绝（25）由后端单元测试覆盖。
+
+### 测试结果
+
+```
+后端 Tests run: 394, Failures: 0, Errors: 0, Skipped: 0
+前端 Tests run: 166, Failures: 0
+type-check + lint + build 全部通过
+```
+
+### 提交
+
+`<pending>` feat: add problem selection to training plans
+
+---
+
 ## 2026-07-28（三轮）：浏览器端全面验收与 Session 持久化修复
 
 ### 本次目标

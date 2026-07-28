@@ -1,6 +1,6 @@
 # IMPLEMENTATION STATUS
 
-> Updated: 2026-07-28 | Browser verification complete, session persistence fixed
+> Updated: 2026-07-28 | Training plan problem selector complete, 394 backend + 166 frontend tests
 
 ## Feature Status
 
@@ -15,8 +15,8 @@
 | 我的题目 | 状态筛选/停用/恢复 | 完成 | 完成 | 23 pass | 待联调 | — |
 | 管理员题目 | 全部/状态/停用原因/强制停用 | 完成 | 完成 | 9 pass | **浏览器验证通过** | 审计日志待补充 |
 | 用户主页 | 公开信息/统计/题目列表 | 完成 | 完成 | 12 pass | 待联调 | 题目/计划列表(后续) |
-| 训练计划 | CRUD/类型/日期/时间 | 完成 | 完成 | 10 pass | **浏览器验证通过** | **题目选择器（选题/排序）** |
-| 训练计划题目管理 | 添加/移除/排序 | 逐条添加/移除 | 详情展示题目 | 部分 | 部分 | **批量选题/排序/批量更新未实现** |
+| 训练计划 | CRUD/类型/日期/时间 | 完成 | 完成 | 10 pass | **浏览器验证通过** | — |
+| 训练计划题目管理 | 批量选题/排序/批量更新 | **完成** | **完成** | 15 pass | **浏览器验证通过** | — |
 | 训练成员进度 | 加入/移除/状态/备注 | 加入/移除 | 加入/移除 | 部分 | 待联调 | 成员进度详情页/赛时统计 |
 | 帖子 | CRUD/类型/deactivation/权限/N+1/原子计数 | **已完成** | 完成 | 46 pass | **浏览器验证通过** | — |
 | 评论 | 一级评论/一层回复/停用追踪 | **已完成** | 完成 | 含 | **浏览器验证通过** | — |
@@ -124,7 +124,6 @@ V9 首次出现在 `bd56c20`（Phase 8），含非法 `ADD COLUMN IF NOT EXISTS`
 
 | 问题 | 严重程度 | 说明 |
 |---|---|---|
-| 训练计划题目选择器 | 高 | 创建/编辑计划不支持批量选题和排序，仅支持逐条 POST/DELETE |
 | Codeforces API 未集成 | 高 | 无 RestTemplate/WebClient/HttpURLConnection；无 @Scheduled 定时同步 |
 | 禁用用户 Session 仍有效 | 中 | AdminUserService.toggleStatus 只改数据库，不失效已登录 Session |
 

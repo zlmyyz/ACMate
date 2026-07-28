@@ -72,6 +72,7 @@ export interface CreatePlanRequest {
   startTime?: string
   endTime?: string
   planType?: PlanType
+  problemIds?: number[]
 }
 
 export interface UpdatePlanRequest {
@@ -79,6 +80,15 @@ export interface UpdatePlanRequest {
   description?: string
   startTime?: string
   endTime?: string
+}
+
+export interface PlanProblemRequest {
+  problemId: number
+  sortOrder?: number
+}
+
+export interface UpdateProblemsRequest {
+  problems: PlanProblemRequest[]
 }
 
 export interface DeactivateRequest {

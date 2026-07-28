@@ -14,6 +14,7 @@ public interface TrainingPlanService {
     void restorePlan(Long planId, Long userId);
     void addProblem(Long planId, AddProblemRequest request, Long userId);
     void removeProblem(Long planId, Long problemId, Long userId);
+    void updateProblems(Long planId, UpdateProblemsRequest request, Long userId);
     void joinPlan(Long planId, Long userId);
     void removeMember(Long planId, Long memberUserId, Long operatorUserId);
 }

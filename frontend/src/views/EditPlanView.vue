@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getPlanDetail, updatePlan } from '@/api/training'
+import { getPlanDetail, updatePlan, updatePlanProblems } from '@/api/training'
 import type { PlanDetail } from '@/types/training'
 import PageContainer from '@/components/layout/PageContainer.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
 import ErrorState from '@/components/common/ErrorState.vue'
+import TrainingProblemSelector from '@/components/training/TrainingProblemSelector.vue'
+import type { SelectedProblem } from '@/components/training/TrainingProblemSelector.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -20,6 +22,7 @@ const startDate = ref('')
 const startTimeInput = ref('')
 const endDate = ref('')
 const endTimeInput = ref('')
+const selectedProblems = ref<SelectedProblem[]>([])
 const saving = ref(false)
 const saveError = ref('')
 
@@ -55,6 +58,15 @@ async function fetchPlan() {
     const e = splitDateTime(plan.value.endTime)
     endDate.value = e.date
     endTimeInput.value = e.time
+    if (plan.value.problems) {
+      selectedProblems.value = plan.value.problems.map(p => ({
+        problemId: p.problemId,
+        title: p.problemTitle,
+        platform: p.platform,
+        difficulty: p.difficulty,
+        sortOrder: p.sortOrder,
+      }))
+    }
   } catch (e: unknown) {
     const err = e as { response?: { status: number; data?: { message?: string } } }
     if (err.response?.status === 404) { error.value = '计划不存在'; return }
@@ -79,6 +91,12 @@ async function handleSave() {
       description: description.value.trim() || undefined,
       startTime: buildDateTime(startDate.value, startTimeInput.value),
       endTime: buildDateTime(endDate.value, endTimeInput.value),
+    })
+    await updatePlanProblems(planId.value, {
+      problems: selectedProblems.value.map((p, i) => ({
+        problemId: p.problemId,
+        sortOrder: i,
+      })),
     })
     router.push({ name: 'plan-detail', params: { id: planId.value } })
   } catch (e: unknown) {
@@ -136,6 +154,8 @@ onMounted(fetchPlan)
           <input v-model="endTimeInput" type="time" class="field-input" />
         </div>
       </div>
+
+      <TrainingProblemSelector v-model="selectedProblems" />
 
       <div class="form-actions">
         <p v-if="saveError" class="form-error">{{ saveError }}</p>

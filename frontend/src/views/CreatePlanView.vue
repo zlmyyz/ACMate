@@ -5,6 +5,8 @@ import { useAuthStore } from '@/stores/auth'
 import { createPlan } from '@/api/training'
 import type { PlanType } from '@/types/training'
 import PageContainer from '@/components/layout/PageContainer.vue'
+import TrainingProblemSelector from '@/components/training/TrainingProblemSelector.vue'
+import type { SelectedProblem } from '@/components/training/TrainingProblemSelector.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -16,6 +18,7 @@ const startDate = ref('')
 const startTimeInput = ref('')
 const endDate = ref('')
 const endTimeInput = ref('')
+const selectedProblems = ref<SelectedProblem[]>([])
 
 function buildDateTime(dateVal: string, timeVal: string): string | undefined {
   if (!dateVal) return undefined
@@ -32,12 +35,16 @@ async function handleCreate() {
   error.value = ''
   saving.value = true
   try {
+    const problemIds = selectedProblems.value.length > 0
+      ? selectedProblems.value.map(p => p.problemId)
+      : undefined
     const result = await createPlan({
       title: title.value.trim(),
       description: description.value.trim() || undefined,
       planType: planType.value,
       startTime: buildDateTime(startDate.value, startTimeInput.value),
       endTime: buildDateTime(endDate.value, endTimeInput.value),
+      problemIds,
     })
     router.push({ name: 'plan-detail', params: { id: result.id } })
   } catch (e: unknown) {
@@ -107,6 +114,8 @@ async function handleCreate() {
           <input v-model="endTimeInput" type="time" class="field-input" />
         </div>
       </div>
+
+      <TrainingProblemSelector v-model="selectedProblems" />
 
       <div class="form-actions">
         <p v-if="error" class="form-error">{{ error }}</p>

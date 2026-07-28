@@ -94,6 +94,11 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
             memberMapper.insert(member);
         }
 
+        List<Long> problemIds = request.getProblemIds();
+        if (problemIds != null && !problemIds.isEmpty()) {
+            validateAndInsertProblems(plan.getId(), problemIds);
+        }
+
         return toDetailResponse(plan, creatorUserId);
     }
 
@@ -358,6 +363,93 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
 
     @Override
     @Transactional
+    public void updateProblems(Long planId, UpdateProblemsRequest request, Long userId) {
+        TrainingPlan plan = getPlan(planId);
+        checkEditPermission(plan, userId);
+
+        List<PlanProblemRequest> reqProblems = request.getProblems();
+        if (reqProblems == null) reqProblems = List.of();
+
+        // deduplicate and validate
+        Set<Long> reqProblemIds = new LinkedHashSet<>();
+        for (PlanProblemRequest ppr : reqProblems) {
+            if (ppr.getProblemId() == null || ppr.getProblemId() <= 0) {
+                throw new BusinessException(400, "题目ID无效");
+            }
+            if (!reqProblemIds.add(ppr.getProblemId())) {
+                throw new BusinessException(400, "题目ID重复: " + ppr.getProblemId());
+            }
+        }
+
+        // validate all problems exist and are active
+        if (!reqProblemIds.isEmpty()) {
+            List<Problem> probs = problemMapper.selectBatchIds(reqProblemIds);
+            Map<Long, Problem> probMap = new HashMap<>();
+            for (Problem p : probs) probMap.put(p.getId(), p);
+            for (Long pid : reqProblemIds) {
+                Problem p = probMap.get(pid);
+                if (p == null) throw new BusinessException(404, "题目不存在: " + pid);
+                if (p.getStatus() == null || p.getStatus() == 0) {
+                    throw new BusinessException(400, "停用题目不能加入计划: " + pid);
+                }
+            }
+        }
+
+        // get current problems
+        List<TrainingPlanProblem> current = planProblemMapper.selectList(
+                new LambdaQueryWrapper<TrainingPlanProblem>()
+                        .eq(TrainingPlanProblem::getPlanId, planId)
+                        .orderByAsc(TrainingPlanProblem::getSortOrder));
+        Map<Long, Integer> currentMap = new LinkedHashMap<>();
+        for (TrainingPlanProblem tpp : current) {
+            currentMap.put(tpp.getProblemId(), tpp.getSortOrder());
+        }
+
+        // compare
+        boolean changed = currentMap.size() != reqProblems.size();
+        if (!changed) {
+            int i = 0;
+            for (Long pid : currentMap.keySet()) {
+                if (!pid.equals(reqProblems.get(i).getProblemId())) { changed = true; break; }
+                i++;
+            }
+        }
+
+        if (!changed) {
+            // check sort orders match
+            for (int i = 0; i < reqProblems.size(); i++) {
+                PlanProblemRequest ppr = reqProblems.get(i);
+                Integer curSort = currentMap.get(ppr.getProblemId());
+                int newSort = ppr.getSortOrder() != null ? ppr.getSortOrder() : i;
+                if (curSort == null || curSort != newSort) { changed = true; break; }
+            }
+        }
+
+        if (!changed) return;
+
+        // delete old and insert new
+        planProblemMapper.delete(new LambdaQueryWrapper<TrainingPlanProblem>()
+                .eq(TrainingPlanProblem::getPlanId, planId));
+
+        for (int i = 0; i < reqProblems.size(); i++) {
+            PlanProblemRequest ppr = reqProblems.get(i);
+            TrainingPlanProblem tpp = new TrainingPlanProblem();
+            tpp.setPlanId(planId);
+            tpp.setProblemId(ppr.getProblemId());
+            tpp.setSortOrder(ppr.getSortOrder() != null ? ppr.getSortOrder() : i);
+            tpp.setRequiredFlag(1);
+            try {
+                planProblemMapper.insert(tpp);
+            } catch (DuplicateKeyException e) {
+                throw new BusinessException(409, "题目已在计划中: " + ppr.getProblemId());
+            }
+        }
+
+        notifyProblemsChanged(plan, userId);
+    }
+
+    @Override
+    @Transactional
     public void joinPlan(Long planId, Long userId) {
         TrainingPlan plan = getPlan(planId);
         if (!"PUBLIC".equals(plan.getPlanType())) {
@@ -588,6 +680,31 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
         r.setProblemCount(problems.size());
 
         return r;
+    }
+
+    private void validateAndInsertProblems(Long planId, List<Long> problemIds) {
+        Set<Long> seen = new LinkedHashSet<>();
+        for (Long pid : problemIds) {
+            if (pid == null || pid <= 0) throw new BusinessException(400, "题目ID无效");
+            if (!seen.add(pid)) throw new BusinessException(400, "题目ID重复: " + pid);
+        }
+        List<Problem> probs = problemMapper.selectBatchIds(seen);
+        Map<Long, Problem> probMap = new HashMap<>();
+        for (Problem p : probs) probMap.put(p.getId(), p);
+        int sort = 0;
+        for (Long pid : problemIds) {
+            Problem p = probMap.get(pid);
+            if (p == null) throw new BusinessException(404, "题目不存在: " + pid);
+            if (p.getStatus() == null || p.getStatus() == 0) {
+                throw new BusinessException(400, "停用题目不能加入计划: " + pid);
+            }
+            TrainingPlanProblem tpp = new TrainingPlanProblem();
+            tpp.setPlanId(planId);
+            tpp.setProblemId(pid);
+            tpp.setSortOrder(sort++);
+            tpp.setRequiredFlag(1);
+            planProblemMapper.insert(tpp);
+        }
     }
 
     private void notifyProblemsChanged(TrainingPlan plan, Long userId) {

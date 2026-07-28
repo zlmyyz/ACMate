@@ -92,6 +92,14 @@ public class TrainingPlanController {
         return ResponseEntity.noContent().build();
     }
 
+    @PutMapping("/{id}/problems")
+    public ResponseEntity<Void> updateProblems(@PathVariable Long id,
+                                                @Valid @RequestBody UpdateProblemsRequest request,
+                                                @AuthenticationPrincipal AuthenticatedUser user) {
+        trainingPlanService.updateProblems(id, request, user.getId());
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/{id}/members/me")
     public ResponseEntity<Void> join(@PathVariable Long id,
                                       @AuthenticationPrincipal AuthenticatedUser user) {

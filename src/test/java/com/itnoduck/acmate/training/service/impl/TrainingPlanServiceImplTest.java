@@ -15,6 +15,7 @@ import com.itnoduck.acmate.problem.entity.Problem;
 import com.itnoduck.acmate.problem.mapper.ProblemMapper;
 import com.itnoduck.acmate.user.entity.AppUser;
 import com.itnoduck.acmate.user.mapper.AppUserMapper;
+import com.itnoduck.acmate.notification.event.NotificationEvent;
 import com.itnoduck.acmate.testutil.MybatisPlusTestHelper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -563,5 +564,255 @@ class TrainingPlanServiceImplTest {
         BusinessException ex = assertThrows(BusinessException.class,
                 () -> service.createPlan(req, CREATOR_ID));
         assertEquals(400, ex.getCode());
+    }
+
+    // ======================== CREATE PLAN WITH PROBLEMS ========================
+
+    @Test
+    void createPlan_withOneProblem_insertsRelation() {
+        CreatePlanRequest req = new CreatePlanRequest();
+        req.setTitle("Plan with problem");
+        req.setPlanType("PERSONAL");
+        req.setProblemIds(List.of(1L));
+        when(problemMapper.selectBatchIds(Set.of(1L))).thenReturn(List.of(createProblem(1L)));
+
+        service.createPlan(req, CREATOR_ID);
+
+        verify(planProblemMapper, atLeast(1)).insert(any(TrainingPlanProblem.class));
+    }
+
+    @Test
+    void createPlan_withMultipleProblems_insertsAll() {
+        CreatePlanRequest req = new CreatePlanRequest();
+        req.setTitle("Plan with problems");
+        req.setPlanType("PERSONAL");
+        req.setProblemIds(List.of(1L, 2L, 3L));
+        when(problemMapper.selectBatchIds(Set.of(1L, 2L, 3L)))
+                .thenReturn(List.of(createProblem(1L), createProblem(2L), createProblem(3L)));
+
+        service.createPlan(req, CREATOR_ID);
+
+        verify(planProblemMapper, times(3)).insert(any(TrainingPlanProblem.class));
+    }
+
+    @Test
+    void createPlan_duplicateProblemId_returns400() {
+        CreatePlanRequest req = new CreatePlanRequest();
+        req.setTitle("Plan");
+        req.setPlanType("PERSONAL");
+        req.setProblemIds(List.of(1L, 1L));
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.createPlan(req, CREATOR_ID));
+        assertEquals(400, ex.getCode());
+        assertTrue(ex.getMessage().contains("重复"));
+    }
+
+    @Test
+    void createPlan_nonexistentProblem_returns404() {
+        CreatePlanRequest req = new CreatePlanRequest();
+        req.setTitle("Plan");
+        req.setPlanType("PERSONAL");
+        req.setProblemIds(List.of(999L));
+        when(problemMapper.selectBatchIds(Set.of(999L))).thenReturn(List.of());
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.createPlan(req, CREATOR_ID));
+        assertEquals(404, ex.getCode());
+    }
+
+    @Test
+    void createPlan_inactiveProblem_returns400() {
+        Problem inactive = new Problem();
+        inactive.setId(1L); inactive.setTitle("Inactive"); inactive.setPlatform("CUSTOM");
+        inactive.setStatus(0);
+
+        CreatePlanRequest req = new CreatePlanRequest();
+        req.setTitle("Plan"); req.setPlanType("PERSONAL");
+        req.setProblemIds(List.of(1L));
+        when(problemMapper.selectBatchIds(Set.of(1L))).thenReturn(List.of(inactive));
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.createPlan(req, CREATOR_ID));
+        assertEquals(400, ex.getCode());
+        assertTrue(ex.getMessage().contains("停用"));
+    }
+
+    @Test
+    void createPlan_withoutProblems_createsNormally() {
+        CreatePlanRequest req = new CreatePlanRequest();
+        req.setTitle("No problems"); req.setPlanType("PERSONAL");
+
+        assertDoesNotThrow(() -> service.createPlan(req, CREATOR_ID));
+        verify(planProblemMapper, never()).insert(any(TrainingPlanProblem.class));
+    }
+
+    // ======================== UPDATE PROBLEMS ========================
+
+    @Test
+    void updateProblems_replacesAllProblems() {
+        TrainingPlan plan = createPlanInDb("PUBLIC", CREATOR_ID, 1);
+        when(planMapper.selectById(PLAN_ID)).thenReturn(plan);
+        when(problemMapper.selectBatchIds(Set.of(1L, 2L)))
+                .thenReturn(List.of(createProblem(1L), createProblem(2L)));
+        when(planProblemMapper.selectList(any())).thenReturn(List.of());
+        when(planProblemMapper.delete(any())).thenReturn(1);
+
+        UpdateProblemsRequest req = new UpdateProblemsRequest();
+        PlanProblemRequest p1 = new PlanProblemRequest(); p1.setProblemId(1L); p1.setSortOrder(0);
+        PlanProblemRequest p2 = new PlanProblemRequest(); p2.setProblemId(2L); p2.setSortOrder(1);
+        req.setProblems(List.of(p1, p2));
+
+        doNothing().when(eventPublisher).publishEvent(any(NotificationEvent.class));
+
+        service.updateProblems(PLAN_ID, req, CREATOR_ID);
+
+        verify(planProblemMapper, times(2)).insert(any(TrainingPlanProblem.class));
+        verify(eventPublisher).publishEvent(any(NotificationEvent.class));
+    }
+
+    @Test
+    void updateProblems_noChange_doesNotNotify() {
+        TrainingPlan plan = createPlanInDb("PUBLIC", CREATOR_ID, 1);
+        when(planMapper.selectById(PLAN_ID)).thenReturn(plan);
+        when(problemMapper.selectBatchIds(Set.of(1L))).thenReturn(List.of(createProblem(1L)));
+
+        TrainingPlanProblem existing = new TrainingPlanProblem();
+        existing.setId(1L); existing.setPlanId(PLAN_ID);
+        existing.setProblemId(1L); existing.setSortOrder(0);
+        when(planProblemMapper.selectList(any())).thenReturn(List.of(existing));
+
+        UpdateProblemsRequest req = new UpdateProblemsRequest();
+        PlanProblemRequest p1 = new PlanProblemRequest(); p1.setProblemId(1L); p1.setSortOrder(0);
+        req.setProblems(List.of(p1));
+
+        service.updateProblems(PLAN_ID, req, CREATOR_ID);
+
+        verify(eventPublisher, never()).publishEvent(any(NotificationEvent.class));
+        verify(planProblemMapper, never()).delete(any());
+    }
+
+    @Test
+    void updateProblems_reorderNotifiesOnce() {
+        TrainingPlan plan = createPlanInDb("PUBLIC", CREATOR_ID, 1);
+        when(planMapper.selectById(PLAN_ID)).thenReturn(plan);
+        when(problemMapper.selectBatchIds(Set.of(1L, 2L)))
+                .thenReturn(List.of(createProblem(1L), createProblem(2L)));
+
+        TrainingPlanProblem e1 = new TrainingPlanProblem();
+        e1.setId(1L); e1.setPlanId(PLAN_ID); e1.setProblemId(1L); e1.setSortOrder(0);
+        TrainingPlanProblem e2 = new TrainingPlanProblem();
+        e2.setId(2L); e2.setPlanId(PLAN_ID); e2.setProblemId(2L); e2.setSortOrder(1);
+        when(planProblemMapper.selectList(any())).thenReturn(List.of(e1, e2));
+        when(planProblemMapper.delete(any())).thenReturn(1);
+        doNothing().when(eventPublisher).publishEvent(any(NotificationEvent.class));
+
+        UpdateProblemsRequest req = new UpdateProblemsRequest();
+        PlanProblemRequest p2 = new PlanProblemRequest(); p2.setProblemId(2L); p2.setSortOrder(0);
+        PlanProblemRequest p1 = new PlanProblemRequest(); p1.setProblemId(1L); p1.setSortOrder(1);
+        req.setProblems(List.of(p2, p1));
+
+        service.updateProblems(PLAN_ID, req, CREATOR_ID);
+
+        verify(eventPublisher, times(1)).publishEvent(any(NotificationEvent.class));
+    }
+
+    @Test
+    void updateProblems_nonCreator_returns403() {
+        TrainingPlan plan = createPlanInDb("PUBLIC", CREATOR_ID, 1);
+        when(planMapper.selectById(PLAN_ID)).thenReturn(plan);
+
+        UpdateProblemsRequest req = new UpdateProblemsRequest();
+        req.setProblems(List.of());
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.updateProblems(PLAN_ID, req, OTHER_USER_ID));
+        assertEquals(403, ex.getCode());
+    }
+
+    @Test
+    void updateProblems_adminNonCreator_returns403() {
+        TrainingPlan plan = createPlanInDb("PUBLIC", CREATOR_ID, 1);
+        when(planMapper.selectById(PLAN_ID)).thenReturn(plan);
+
+        UpdateProblemsRequest req = new UpdateProblemsRequest();
+        req.setProblems(List.of());
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.updateProblems(PLAN_ID, req, ADMIN_ID));
+        assertEquals(403, ex.getCode());
+    }
+
+    @Test
+    void updateProblems_duplicateInRequest_returns400() {
+        TrainingPlan plan = createPlanInDb("PUBLIC", CREATOR_ID, 1);
+        when(planMapper.selectById(PLAN_ID)).thenReturn(plan);
+
+        UpdateProblemsRequest req = new UpdateProblemsRequest();
+        PlanProblemRequest p1 = new PlanProblemRequest(); p1.setProblemId(1L);
+        PlanProblemRequest p1dup = new PlanProblemRequest(); p1dup.setProblemId(1L);
+        req.setProblems(List.of(p1, p1dup));
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.updateProblems(PLAN_ID, req, CREATOR_ID));
+        assertEquals(400, ex.getCode());
+        assertTrue(ex.getMessage().contains("重复"));
+    }
+
+    @Test
+    void updateProblems_inactiveProblem_returns400() {
+        TrainingPlan plan = createPlanInDb("PUBLIC", CREATOR_ID, 1);
+        when(planMapper.selectById(PLAN_ID)).thenReturn(plan);
+
+        Problem inactive = new Problem();
+        inactive.setId(1L); inactive.setTitle("Inactive"); inactive.setStatus(0);
+        when(problemMapper.selectBatchIds(Set.of(1L))).thenReturn(List.of(inactive));
+
+        UpdateProblemsRequest req = new UpdateProblemsRequest();
+        PlanProblemRequest p1 = new PlanProblemRequest(); p1.setProblemId(1L);
+        req.setProblems(List.of(p1));
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.updateProblems(PLAN_ID, req, CREATOR_ID));
+        assertEquals(400, ex.getCode());
+        assertTrue(ex.getMessage().contains("停用"));
+    }
+
+    @Test
+    void updateProblems_duplicateKeyConcurrent_returns409() {
+        TrainingPlan plan = createPlanInDb("PUBLIC", CREATOR_ID, 1);
+        when(planMapper.selectById(PLAN_ID)).thenReturn(plan);
+        when(problemMapper.selectBatchIds(Set.of(1L))).thenReturn(List.of(createProblem(1L)));
+        when(planProblemMapper.selectList(any())).thenReturn(List.of());
+        when(planProblemMapper.delete(any())).thenReturn(1);
+        doThrow(new DuplicateKeyException("Duplicate")).when(planProblemMapper).insert(any(TrainingPlanProblem.class));
+
+        UpdateProblemsRequest req = new UpdateProblemsRequest();
+        PlanProblemRequest p1 = new PlanProblemRequest(); p1.setProblemId(1L);
+        req.setProblems(List.of(p1));
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.updateProblems(PLAN_ID, req, CREATOR_ID));
+        assertEquals(409, ex.getCode());
+    }
+
+    @Test
+    void updateProblems_emptyList_clearsAllProblems() {
+        TrainingPlan plan = createPlanInDb("PUBLIC", CREATOR_ID, 1);
+        when(planMapper.selectById(PLAN_ID)).thenReturn(plan);
+
+        TrainingPlanProblem existing = new TrainingPlanProblem();
+        existing.setId(1L); existing.setPlanId(PLAN_ID); existing.setProblemId(1L); existing.setSortOrder(0);
+        when(planProblemMapper.selectList(any())).thenReturn(List.of(existing));
+        when(planProblemMapper.delete(any())).thenReturn(1);
+        doNothing().when(eventPublisher).publishEvent(any(NotificationEvent.class));
+
+        UpdateProblemsRequest req = new UpdateProblemsRequest();
+        req.setProblems(List.of());
+
+        service.updateProblems(PLAN_ID, req, CREATOR_ID);
+
+        verify(planProblemMapper).delete(any());
+        verify(eventPublisher).publishEvent(any(NotificationEvent.class));
     }
 }

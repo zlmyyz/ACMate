@@ -927,10 +927,11 @@ GET 请求不需要 CSRF Token。
 | planType | string | 否 | PERSONAL（默认）/ PUBLIC，仅管理员可创建 PUBLIC |
 | startTime | datetime | 否 | ISO 8601 格式 |
 | endTime | datetime | 否 | ISO 8601 格式 |
+| problemIds | number[] | 否 | 题目 ID 列表，按顺序加入计划。仅 ACTIVE 题目可加入，重复 ID 返回 400 |
 
 #### 成功响应
 
-**200 OK** — 返回 PlanDetailResponse，包含题目列表（初始为空）。
+**200 OK** — 返回 PlanDetailResponse，包含题目列表和成员列表。
 
 #### 错误响应
 
@@ -1089,6 +1090,57 @@ GET 请求不需要 CSRF Token。
 
 ---
 
+### PUT /api/training-plans/{id}/problems
+
+批量更新训练计划题目列表（替换整个列表）。仅创建者可操作。会对比新旧列表，无变更时跳过通知。
+
+#### 认证
+
+需要登录后携带 JSESSIONID Cookie。
+
+#### 权限
+
+仅计划创建者可操作。非创建者（包括管理员）返回 403。
+
+#### CSRF
+
+需要携带有效 CSRF Token。
+
+#### 请求字段
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| problems | object[] | 否 | 题目列表（空数组清除所有题目） |
+| problems[].problemId | long | 是 | 题目 ID |
+| problems[].sortOrder | int | 否 | 排序位置 |
+
+#### 业务规则
+
+- 仅 ACTIVE（status=1）题目可加入，停用题目返回 400
+- 重复 problemId 返回 400
+- 不存在的题目返回 404
+- 新旧列表完全相同时跳过实际更新（不触发通知）
+- PUBLIC 计划题目变更触发 TRAINING_PROBLEMS_CHANGED 通知
+- 所有操作在一个事务中完成
+
+#### 成功响应
+
+**204 No Content**
+
+#### 错误响应
+
+**400 Bad Request** — 题目不存在、已停用、或 ID 重复
+
+**401 Unauthorized** — 未登录
+
+**403 Forbidden** — 非计划创建者
+
+**404 Not Found** — 计划不存在
+
+**409 Conflict** — 题目重复
+
+---
+
 ### DELETE /api/training-plans/{id}/problems/{problemId}
 
 从训练计划移除题目。仅创建者或管理员可操作。
@@ -1131,7 +1183,7 @@ GET 请求不需要 CSRF Token。
 
 | 方法 | 路径 | 说明 | 状态 |
 |------|------|------|------|
-| PUT | `/api/training-plans/{id}/problems` | 批量更新题目列表（含排序） | 计划中/尚未实现 |
+| PUT | `/api/training-plans/{id}/problems` | 批量更新题目列表（含排序） | 已实现 |
 | GET | `/api/training-plans/{id}/members` | 分页查询成员列表及进度 | 计划中/尚未实现 |
 | PUT | `/api/training-plans/{id}/members/{userId}/status` | 更新成员题目完成状态 | 计划中/尚未实现 |
 | GET | `/api/training-plans/{id}/statistics` | 训练计划统计（完成率、排名快照） | 计划中/尚未实现 |

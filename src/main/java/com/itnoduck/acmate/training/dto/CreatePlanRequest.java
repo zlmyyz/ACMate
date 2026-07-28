@@ -23,6 +23,8 @@ public class CreatePlanRequest {
 
     private String planType = "PERSONAL";
 
+    private java.util.List<Long> problemIds;
+
     public String getPlanType() { return planType; }
     public void setPlanType(String planType) { this.planType = planType; }
 
@@ -37,4 +39,7 @@ public class CreatePlanRequest {
 
     public LocalDateTime getEndTime() { return endTime; }
     public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
+
+    public java.util.List<Long> getProblemIds() { return problemIds; }
+    public void setProblemIds(java.util.List<Long> problemIds) { this.problemIds = problemIds; }
 }
