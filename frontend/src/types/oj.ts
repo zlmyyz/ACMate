@@ -20,3 +20,14 @@ export interface PendingAccount {
   syncEnabled: number
   lastSyncTime: string | null
 }
+
+export interface SyncResult {
+  accountId: number
+  handle: string
+  fetchedCount: number
+  insertedCount: number
+  acceptedCount: number
+  newAcceptedProblemCount: number
+  lastSyncTime: string | null
+  syncStatus: string
+}

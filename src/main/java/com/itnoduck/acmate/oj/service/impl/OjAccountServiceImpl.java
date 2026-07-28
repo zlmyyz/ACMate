@@ -3,24 +3,52 @@ package com.itnoduck.acmate.oj.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.itnoduck.acmate.auditlog.service.AuditLogService;
 import com.itnoduck.acmate.common.exception.BusinessException;
+import com.itnoduck.acmate.oj.client.CodeforcesApiClient;
+import com.itnoduck.acmate.oj.client.CodeforcesProblemDto;
+import com.itnoduck.acmate.oj.client.CodeforcesSubmissionDto;
+import com.itnoduck.acmate.oj.dto.SyncResult;
 import com.itnoduck.acmate.oj.entity.OjAccount;
+import com.itnoduck.acmate.oj.entity.OjSubmission;
 import com.itnoduck.acmate.oj.mapper.OjAccountMapper;
+import com.itnoduck.acmate.oj.mapper.OjSubmissionMapper;
 import com.itnoduck.acmate.oj.service.OjAccountService;
 import com.itnoduck.acmate.security.AuthenticatedUser;
+import com.itnoduck.acmate.synctask.entity.SyncTaskLog;
+import com.itnoduck.acmate.synctask.mapper.SyncTaskLogMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class OjAccountServiceImpl implements OjAccountService {
 
-    private final OjAccountMapper accountMapper;
-    private final AuditLogService auditLogService;
+    private static final Logger log = LoggerFactory.getLogger(OjAccountServiceImpl.class);
+    private static final int CF_FETCH_COUNT = 500;
 
-    public OjAccountServiceImpl(OjAccountMapper accountMapper, AuditLogService auditLogService) {
+    private final OjAccountMapper accountMapper;
+    private final OjSubmissionMapper submissionMapper;
+    private final SyncTaskLogMapper taskLogMapper;
+    private final AuditLogService auditLogService;
+    private final CodeforcesApiClient cfClient;
+
+    public OjAccountServiceImpl(OjAccountMapper accountMapper,
+                                OjSubmissionMapper submissionMapper,
+                                SyncTaskLogMapper taskLogMapper,
+                                AuditLogService auditLogService,
+                                CodeforcesApiClient cfClient) {
         this.accountMapper = accountMapper;
+        this.submissionMapper = submissionMapper;
+        this.taskLogMapper = taskLogMapper;
         this.auditLogService = auditLogService;
+        this.cfClient = cfClient;
     }
 
     @Override
@@ -74,6 +102,7 @@ public class OjAccountServiceImpl implements OjAccountService {
     public List<Map<String, Object>> getPendingAccounts(AuthenticatedUser user) {
         if (!user.isAdmin()) throw new BusinessException(403, "无权访问");
         var accounts = accountMapper.selectList(new LambdaQueryWrapper<OjAccount>()
+                .eq(OjAccount::getVerifyStatus, 0)
                 .orderByAsc(OjAccount::getCreateTime));
         List<Map<String, Object>> result = new ArrayList<>();
         for (var a : accounts) {
@@ -102,5 +131,227 @@ public class OjAccountServiceImpl implements OjAccountService {
         accountMapper.updateById(acc);
         String label = status == 1 ? "approved" : "rejected";
         auditLogService.log(user.getId(), "VERIFY_OJ_ACCOUNT", "OJ_ACCOUNT", id, label, before, String.valueOf(status));
+    }
+
+    @Override
+    public SyncResult syncMyAccount(AuthenticatedUser user) {
+        // Step 1: get verified CF account
+        var acc = accountMapper.selectOne(new LambdaQueryWrapper<OjAccount>()
+                .eq(OjAccount::getUserId, user.getId()));
+        if (acc == null) throw new BusinessException(404, "未绑定 Codeforces 账号");
+        if (!"CODEFORCES".equals(acc.getPlatform())) throw new BusinessException(400, "仅支持 Codeforces 平台同步");
+        if (acc.getVerifyStatus() == null || acc.getVerifyStatus() != 1)
+            throw new BusinessException(409, "Codeforces 账号未通过审核，审核通过后才能同步");
+
+        String handle = acc.getExternalUserId();
+
+        // Step 2: get sync cursor (max remote_submission_id already stored)
+        Long maxExistingSubId = getMaxRemoteSubmissionId(acc.getId());
+
+        // Step 3: fetch from CF API (no DB transaction during external call)
+        List<CodeforcesSubmissionDto> fetched;
+        try {
+            fetched = cfClient.fetchSubmissions(handle, 1, CF_FETCH_COUNT);
+        } catch (BusinessException e) {
+            recordFailedSync(acc, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.warn("Unexpected sync error for userId={}: {}", user.getId(), e.getMessage());
+            recordFailedSync(acc, "同步异常，请稍后重试");
+            throw new BusinessException(500, "同步异常，请稍后重试");
+        }
+
+        // Step 4: normalize, filter new, and save in short transaction
+        List<CodeforcesSubmissionDto> newSubs = fetched.stream()
+                .filter(s -> s.getId() != null && s.getId() > 0)
+                .filter(s -> maxExistingSubId == null || s.getId() > maxExistingSubId)
+                .collect(Collectors.toList());
+
+        int acceptedCount = 0;
+        int insertedCount = 0;
+        int newAcProblemCount = 0;
+        Long maxNewSubId = maxExistingSubId;
+
+        if (!newSubs.isEmpty()) {
+            var result = saveSubmissions(newSubs, acc);
+            insertedCount = result.insertedCount;
+            acceptedCount = result.acceptedCount;
+            newAcProblemCount = result.newAcProblemCount;
+            maxNewSubId = result.maxSubId;
+        }
+
+        // Step 5: update account sync state
+        updateAccountSyncState(acc, maxNewSubId != null ? String.valueOf(maxNewSubId) : null);
+
+        // Step 6: write sync task log
+        SyncTaskLog taskLog = new SyncTaskLog();
+        taskLog.setOjAccountId(acc.getId());
+        taskLog.setPlatform("CODEFORCES");
+        taskLog.setTriggerType("MANUAL");
+        taskLog.setTaskStatus("SUCCESS");
+        taskLog.setCursorBefore(maxExistingSubId != null ? String.valueOf(maxExistingSubId) : null);
+        taskLog.setCursorAfter(maxNewSubId != null ? String.valueOf(maxNewSubId) : null);
+        taskLog.setFetchedCount(fetched.size());
+        taskLog.setInsertedCount(insertedCount);
+        taskLog.setFirstAcCount(newAcProblemCount);
+        taskLog.setStartTime(LocalDateTime.now().minusSeconds(30));
+        taskLog.setEndTime(LocalDateTime.now());
+        taskLogMapper.insert(taskLog);
+
+        SyncResult result = new SyncResult();
+        result.setAccountId(acc.getId());
+        result.setHandle(handle);
+        result.setFetchedCount(fetched.size());
+        result.setInsertedCount(insertedCount);
+        result.setAcceptedCount(acceptedCount);
+        result.setNewAcceptedProblemCount(newAcProblemCount);
+        result.setLastSyncTime(acc.getLastSyncTime() != null ? acc.getLastSyncTime().toString() : null);
+        result.setSyncStatus("SUCCESS");
+        return result;
+    }
+
+    // ---------- helpers ----------
+
+    private Long getMaxRemoteSubmissionId(Long accountId) {
+        var wrapper = new LambdaQueryWrapper<OjSubmission>()
+                .eq(OjSubmission::getOjAccountId, accountId)
+                .orderByDesc(OjSubmission::getRemoteSubmissionId)
+                .last("LIMIT 1");
+        var latest = submissionMapper.selectOne(wrapper);
+        if (latest == null) return null;
+        try {
+            return Long.parseLong(latest.getRemoteSubmissionId());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    @Transactional
+    public SaveResult saveSubmissions(List<CodeforcesSubmissionDto> raw, OjAccount account) {
+        int inserted = 0;
+        int accepted = 0;
+        int newAc = 0;
+        Long maxSubId = null;
+
+        // preload existing AC problem keys for this user to detect new AC
+        Set<String> existingAcKeys = loadExistingAcKeys(account.getUserId());
+
+        for (CodeforcesSubmissionDto s : raw) {
+            if (s.getId() == null) continue;
+
+            Long subId = s.getId();
+            if (maxSubId == null || subId > maxSubId) maxSubId = subId;
+
+            String problemKey = buildProblemKey(s.getProblem());
+            if (problemKey == null) continue;
+
+            LocalDateTime submittedTime = s.getCreationTimeSeconds() != null
+                    ? LocalDateTime.ofInstant(Instant.ofEpochSecond(s.getCreationTimeSeconds()), ZoneId.systemDefault())
+                    : LocalDateTime.now();
+
+            String verdict = s.getVerdict() != null ? s.getVerdict() : "UNKNOWN";
+            boolean isOk = "OK".equals(verdict);
+            boolean firstAc = false;
+
+            if (isOk) {
+                String acKey = account.getUserId() + ":" + "CODEFORCES" + ":" + problemKey;
+                if (!existingAcKeys.contains(acKey)) {
+                    firstAc = true;
+                    newAc++;
+                    existingAcKeys.add(acKey);
+                }
+            }
+
+            OjSubmission sub = new OjSubmission();
+            sub.setOjAccountId(account.getId());
+            sub.setUserId(account.getUserId());
+            sub.setPlatform("CODEFORCES");
+            sub.setRemoteSubmissionId(String.valueOf(subId));
+            sub.setProblemId(null);
+            sub.setExternalProblemKey(problemKey);
+            sub.setVerdict(verdict);
+            sub.setLanguage(s.getProgrammingLanguage());
+            sub.setSubmittedTime(submittedTime);
+            sub.setIsFirstAc(firstAc ? 1 : 0);
+
+            try {
+                submissionMapper.insert(sub);
+                inserted++;
+                if (isOk) accepted++;
+            } catch (DuplicateKeyException e) {
+                // already exists, skip
+            }
+        }
+
+        SaveResult r = new SaveResult();
+        r.insertedCount = inserted;
+        r.acceptedCount = accepted;
+        r.newAcProblemCount = newAc;
+        r.maxSubId = maxSubId;
+        return r;
+    }
+
+    private Set<String> loadExistingAcKeys(Long userId) {
+        var subs = submissionMapper.selectList(new LambdaQueryWrapper<OjSubmission>()
+                .eq(OjSubmission::getUserId, userId)
+                .eq(OjSubmission::getPlatform, "CODEFORCES")
+                .eq(OjSubmission::getIsFirstAc, 1));
+        Set<String> keys = new HashSet<>();
+        for (var s : subs) {
+            if (s.getExternalProblemKey() != null) {
+                keys.add(userId + ":" + s.getPlatform() + ":" + s.getExternalProblemKey());
+            }
+        }
+        return keys;
+    }
+
+    private String buildProblemKey(CodeforcesProblemDto problem) {
+        if (problem == null) return null;
+        if (problem.getContestId() != null && problem.getIndex() != null) {
+            return problem.getContestId() + problem.getIndex();
+        }
+        if (problem.getProblemsetName() != null && problem.getIndex() != null) {
+            return problem.getProblemsetName().replaceAll("[^a-zA-Z0-9]", "") + problem.getIndex();
+        }
+        return null;
+    }
+
+    private void updateAccountSyncState(OjAccount acc, String cursor) {
+        acc.setLastSyncCursor(cursor);
+        acc.setLastSyncTime(LocalDateTime.now());
+        acc.setLastSyncSuccess(1);
+        accountMapper.updateById(acc);
+    }
+
+    private void recordFailedSync(OjAccount acc, String errorMsg) {
+        try {
+            acc.setLastSyncTime(LocalDateTime.now());
+            acc.setLastSyncSuccess(0);
+            accountMapper.updateById(acc);
+
+            SyncTaskLog taskLog = new SyncTaskLog();
+            taskLog.setOjAccountId(acc.getId());
+            taskLog.setPlatform("CODEFORCES");
+            taskLog.setTriggerType("MANUAL");
+            taskLog.setTaskStatus("FAILED");
+            taskLog.setCursorBefore(acc.getLastSyncCursor());
+            taskLog.setErrorMessage(errorMsg != null && errorMsg.length() > 1000
+                    ? errorMsg.substring(0, 997) + "..." : errorMsg);
+            taskLog.setFetchedCount(0);
+            taskLog.setInsertedCount(0);
+            taskLog.setFirstAcCount(0);
+            taskLog.setStartTime(LocalDateTime.now().minusSeconds(5));
+            taskLog.setEndTime(LocalDateTime.now());
+            taskLogMapper.insert(taskLog);
+        } catch (Exception e) {
+            log.error("Failed to record sync failure", e);
+        }
+    }
+
+    static class SaveResult {
+        int insertedCount;
+        int acceptedCount;
+        int newAcProblemCount;
+        Long maxSubId;
     }
 }

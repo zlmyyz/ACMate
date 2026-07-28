@@ -1,6 +1,6 @@
 import apiClient from './client'
 import { withCsrf } from './csrf'
-import type { MyAccount, PendingAccount } from '@/types/oj'
+import type { MyAccount, PendingAccount, SyncResult } from '@/types/oj'
 
 export async function getMyAccount(): Promise<MyAccount> {
   const r = await apiClient.get<MyAccount>('/oj-accounts/me')
@@ -25,4 +25,8 @@ export async function verifyAccount(id: number, status: number): Promise<void> {
     params: { status },
     headers: { [h]: t },
   }))
+}
+
+export async function syncMyAccount(): Promise<SyncResult> {
+  return withCsrf((h, t) => apiClient.post<SyncResult>('/oj-accounts/me/sync', null, { headers: { [h]: t } }))
 }

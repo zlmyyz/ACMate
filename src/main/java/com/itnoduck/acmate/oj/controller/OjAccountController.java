@@ -1,5 +1,6 @@
 package com.itnoduck.acmate.oj.controller;
 
+import com.itnoduck.acmate.oj.dto.SyncResult;
 import com.itnoduck.acmate.oj.service.OjAccountService;
 import com.itnoduck.acmate.security.AuthenticatedUser;
 import org.springframework.http.ResponseEntity;
@@ -47,5 +48,10 @@ public class OjAccountController {
                                         @AuthenticationPrincipal AuthenticatedUser user) {
         ojAccountService.verify(id, status, user);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/me/sync")
+    public SyncResult sync(@AuthenticationPrincipal AuthenticatedUser user) {
+        return ojAccountService.syncMyAccount(user);
     }
 }

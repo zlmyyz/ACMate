@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { getMyAccount, bindAccount, unbindAccount, getPendingAccounts, verifyAccount } from '@/api/oj'
-import type { MyAccount, PendingAccount } from '@/types/oj'
+import { getMyAccount, bindAccount, unbindAccount, getPendingAccounts, verifyAccount, syncMyAccount } from '@/api/oj'
+import type { MyAccount, PendingAccount, SyncResult } from '@/types/oj'
 import PageContainer from '@/components/layout/PageContainer.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
 import ErrorState from '@/components/common/ErrorState.vue'
@@ -18,6 +18,10 @@ const msg = ref('')
 
 const pendingAccounts = ref<PendingAccount[]>([])
 const pendingLoading = ref(false)
+
+const syncResult = ref<SyncResult | null>(null)
+const syncing = ref(false)
+const syncError = ref('')
 
 const verifyLabels: Record<number, string> = { 0: '待审核', 1: '已通过', 2: '已拒绝' }
 
@@ -74,6 +78,29 @@ async function handleVerify(id: number, status: number) {
   }
 }
 
+function canSync(): boolean {
+  return account.value.hasAccount === true && account.value.verifyStatus === 1
+}
+
+function syncDisabledReason(): string {
+  if (!account.value.hasAccount) return '请先绑定 Codeforces 账号'
+  if (account.value.verifyStatus === 0) return '账号审核通过后才能同步'
+  if (account.value.verifyStatus === 2) return '账号已被拒绝'
+  return ''
+}
+
+async function handleSync() {
+  if (!canSync() || syncing.value) return
+  syncing.value = true; syncError.value = ''; syncResult.value = null
+  try {
+    syncResult.value = await syncMyAccount()
+    await fetchMyAccount()
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { message?: string } } }
+    syncError.value = err?.response?.data?.message || '同步失败'
+  } finally { syncing.value = false }
+}
+
 onMounted(() => { fetchMyAccount(); fetchPending() })
 </script>
 
@@ -109,6 +136,16 @@ onMounted(() => { fetchMyAccount(); fetchPending() })
             <span class="label">最后同步</span>
             <span class="value">{{ new Date(account.lastSyncTime).toLocaleString('zh-CN') }}</span>
           </div>
+          <div class="sync-row">
+            <button class="sync-btn" :disabled="!canSync() || syncing" @click="handleSync">
+              {{ syncing ? '同步中...' : '同步' }}
+            </button>
+            <span v-if="!canSync()" class="sync-disabled-hint">{{ syncDisabledReason() }}</span>
+          </div>
+          <div v-if="syncResult" class="sync-result">
+            <p>同步完成：获取 {{ syncResult.fetchedCount }} 条，新增 {{ syncResult.insertedCount }} 条，AC {{ syncResult.acceptedCount }} 条，首次 AC {{ syncResult.newAcceptedProblemCount }} 题</p>
+          </div>
+          <p v-if="syncError" class="sync-error">{{ syncError }}</p>
           <button class="unbind-btn" :disabled="submitting" @click="handleUnbind">解绑</button>
         </div>
 
@@ -175,6 +212,17 @@ onMounted(() => { fetchMyAccount(); fetchPending() })
   font-size: var(--text-body-md); cursor: pointer;
 }
 .unbind-btn:hover { background: rgba(220,50,50,0.08); }
+
+.sync-row { margin-top: 16px; display: flex; align-items: center; gap: 12px; }
+.sync-btn {
+  padding: 6px 20px; border: none; border-radius: var(--radius-md);
+  background: var(--color-primary-container); color: var(--color-on-primary);
+  font-size: var(--text-body-md); font-weight: 600; cursor: pointer;
+}
+.sync-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.sync-disabled-hint { font-size: var(--text-body-sm); color: var(--color-on-surface-variant); }
+.sync-result { margin-top: 8px; padding: 8px 12px; border-radius: var(--radius-md); background: rgba(0,180,100,0.08); font-size: var(--text-body-sm); color: var(--color-on-surface); }
+.sync-error { margin-top: 8px; font-size: var(--text-body-sm); color: var(--color-status-error); }
 
 .bind-hint { color: var(--color-on-surface-variant); font-size: var(--text-body-md); margin-bottom: 12px; }
 .bind-row { display: flex; gap: 8px; margin-bottom: 12px; }
