@@ -1,6 +1,6 @@
 # ACMate 项目交接文档
 
-生成时间：2026-07-29
+生成时间：2026-07-29 | 最后更新：2026-07-29
 
 ---
 
@@ -12,11 +12,12 @@
 
 ### HEAD commit
 ```
-f3ae145 docs: update devlog with admin user management entry
+1acd7b4 feat: complete admin audit log workflow
 ```
 
 ### 最近 10 个 commit（从新到旧）
 ```
+1acd7b4 feat: complete admin audit log workflow
 f3ae145 docs: update devlog with admin user management entry
 6a15e6e feat: complete admin user management workflow
 f76bbf1 docs: mark trusted leaderboard verification pending
@@ -26,46 +27,15 @@ be8175d feat: implement Codeforces submission sync with idempotent AC tracking
 c6831da feat: add problem selection to training plans
 85f5914 docs: synchronize verified workflows and training gaps
 977eb9a fix: complete browser-verified core workflows
-cbea390 fix: restore core action buttons and notification badge
 ```
 
-### 工作区状态（有未提交变更）
+### 工作区状态（Chromium 验收后最终状态）
 
-**已暂存（staged）：**
-```
-M docs/API.md
-```
-
-**已修改（unstaged）：**
-```
-M docs/DEVLOG.md
-M docs/IMPLEMENTATION_STATUS.md
-M docs/ROADMAP.md
-M frontend/src/api/audit-logs.ts
-M frontend/src/types/audit-log.ts
-M frontend/src/views/AdminAuditLogsView.vue
-M src/main/java/com/itnoduck/acmate/admin/service/impl/AdminContentServiceImpl.java
-M src/main/java/com/itnoduck/acmate/auditlog/controller/AuditLogController.java
-M src/main/java/com/itnoduck/acmate/auditlog/service/AuditLogService.java
-M src/main/java/com/itnoduck/acmate/auditlog/service/impl/AuditLogServiceImpl.java
-M src/main/java/com/itnoduck/acmate/oj/service/impl/OjAccountServiceImpl.java
-M src/main/java/com/itnoduck/acmate/problem/service/impl/ProblemCommandServiceImpl.java
-M src/main/java/com/itnoduck/acmate/training/service/impl/TrainingPlanServiceImpl.java
-M src/test/java/com/itnoduck/acmate/oj/service/impl/OjAccountServiceImplTest.java
-M src/test/java/com/itnoduck/acmate/testutil/MybatisPlusTestHelper.java
-M src/test/java/com/itnoduck/acmate/training/service/impl/TrainingPlanServiceImplTest.java
-```
-
-**未追踪：**
 ```
 ?? .codex/                               # Codex 配置目录，不提交
-?? frontend/src/__tests__/audit-logs.test.ts
-?? src/main/java/com/itnoduck/acmate/auditlog/AuditLogConstants.java
-?? src/main/java/com/itnoduck/acmate/auditlog/dto/AuditLogResponse.java
-?? src/main/java/com/itnoduck/acmate/auditlog/dto/AuditLogListResponse.java
-?? src/test/java/com/itnoduck/acmate/auditlog/controller/AuditLogControllerTest.java
-?? src/test/java/com/itnoduck/acmate/auditlog/service/impl/AuditLogServiceImplTest.java
 ```
+
+所有业务变更已纳入 `1acd7b4` 提交，无未提交变更。审计日志前端/后端代码、测试、文档均已提交。
 
 ---
 
@@ -148,7 +118,7 @@ M src/test/java/com/itnoduck/acmate/training/service/impl/TrainingPlanServiceImp
 | 功能 | 14 种标准化 actionType 常量 + 6 种 targetType + 白名单校验、完整过滤接口（actionType/targetType/targetId/actorKeyword/startTime/endTime + 分页 + 稳定排序）、批量 actor 加载防 N+1、所有高风险操作写日志全覆盖、前端页面（URL 同步 + 筛选 + 状态变更列） |
 | 后端测试 | 25（AuditLogServiceImplTest:16 + AuditLogControllerTest:9） |
 | 前端测试 | 7（audit-logs.test.ts） |
-| 浏览器验收 | 已通过真实 MySQL + Spring Boot + Vite + Chromium 验收 |
+| Chromium 验收 | **已通过** — 14 种 actionType 全部通过真实 API 生成并验证、页面加载/筛选/分页/操作人/状态变更/原因显示均正确 |
 | 待办 | 无功能待办 |
 
 ---
@@ -174,6 +144,7 @@ Tests run: 502, Failures: 0, Errors: 0, Skipped: 0
 ```
 - 全部纯 Mockito / @WebMvcTest，无需数据库
 - `MybatisPlusTestHelper.initEntityTables()` 初始化 MyBatis-Plus lambda 缓存
+- 两次全量运行确认无 flaky 测试
 
 ### 前端
 ```
@@ -182,6 +153,7 @@ Tests: 188 passed, 188 total
 ```
 - vitest + @vue/test-utils + jsdom
 - 9 个测试文件：auth.test.ts, markdown.test.ts, problems.test.ts, training.test.ts, users.test.ts, notifications.test.ts, oj.test.ts, phases567.test.ts, audit-logs.test.ts
+- 两次全量运行确认无 flaky 测试
 
 ### type-check / lint / build
 | 检查 | 结果 |
