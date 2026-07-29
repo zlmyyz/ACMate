@@ -271,7 +271,7 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
             }
             plan.setDeactivationSource("ADMIN");
             plan.setDeactivationReason(reason.strip());
-            auditLogService.log(userId, "DEACTIVATE", "TRAINING_PLAN", planId, reason.strip(), "ACTIVE", "DEACTIVATED");
+            auditLogService.log(userId, "TRAINING_ADMIN_DEACTIVATED", "TRAINING_PLAN", planId, reason.strip(), "ACTIVE", "DEACTIVATED");
             Set<Long> memberIds = getCurrentMemberUserIds(planId);
             memberIds.add(plan.getCreatorUserId());
             var payload = new LinkedHashMap<String, Object>();
@@ -312,7 +312,7 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
         planMapper.updateById(plan);
 
         if (isAdmin && !isCreator) {
-            auditLogService.log(userId, "RESTORE", "TRAINING_PLAN", planId, null, "DEACTIVATED", "ACTIVE");
+            auditLogService.log(userId, "TRAINING_RESTORED", "TRAINING_PLAN", planId, null, "DEACTIVATED", "ACTIVE");
             Set<Long> memberIdsR = getCurrentMemberUserIds(planId);
             memberIdsR.add(plan.getCreatorUserId());
             var payload = new LinkedHashMap<String, Object>();

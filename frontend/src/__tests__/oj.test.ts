@@ -27,7 +27,18 @@ vi.mock('@/api/auth', () => ({
 
 function mountView() {
   const auth = useAuthStore()
-  auth.$patch({ user: { id: 1, username: 'test', nickname: 'Test', isAdmin: false }, initialLoadingDone: true, loaded: true })
+  auth.$patch({
+    user: {
+      id: 1,
+      username: 'test',
+      nickname: 'Test',
+      email: null,
+      avatarUrl: null,
+      bio: null,
+      admin: false,
+    },
+    initialized: true,
+  })
   const router = createRouter({
     history: createWebHistory(),
     routes: [

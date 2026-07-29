@@ -559,7 +559,8 @@ describe('Admin users route guard', () => {
     await useAuthStore().init()
 
     const { default: router } = await import('@/router/index')
-    expect(router.resolve('/admin/users').name).toBe('admin-users')
+    await router.push('/admin/users')
+    expect(router.currentRoute.value.name).toBe('forbidden')
   })
 
   it('should allow admin to access admin users', async () => {

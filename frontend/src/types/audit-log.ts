@@ -1,17 +1,19 @@
-export interface AuditLogItem {
+export interface AuditLogResponse {
   id: number
-  operatorId: number
-  action: string
-  resourceType: string
-  resourceId: number | null
-  reason: string | null
+  actionType: string
+  actorUserId: number
+  actorUsername: string
+  actorNickname: string | null
+  targetType: string
+  targetId: number | null
   beforeState: string | null
   afterState: string | null
+  reason: string | null
   createTime: string
 }
 
 export interface AuditLogListResponse {
-  items: AuditLogItem[]
+  items: AuditLogResponse[]
   total: number
   page: number
   size: number

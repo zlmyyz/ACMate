@@ -10,11 +10,12 @@ import './styles/main.css'
 
 const app = createApp(App)
 
-app.use(createPinia())
-app.use(router)
-app.use(ElementPlus)
+const pinia = createPinia()
+app.use(pinia)
 
 const auth = useAuthStore()
 auth.init().then(() => {
+  app.use(router)
+  app.use(ElementPlus)
   app.mount('#app')
 })

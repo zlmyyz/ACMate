@@ -2,6 +2,8 @@ package com.itnoduck.acmate.testutil;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.itnoduck.acmate.auditlog.entity.AuditLog;
+import com.itnoduck.acmate.auditlog.mapper.AuditLogMapper;
 import com.itnoduck.acmate.problem.entity.Problem;
 import com.itnoduck.acmate.problem.mapper.ProblemMapper;
 import com.itnoduck.acmate.training.entity.TrainingPlan;
@@ -48,6 +50,7 @@ public final class MybatisPlusTestHelper {
         config.addMapper(OjSubmissionMapper.class);
         config.addMapper(FirstAcMapper.class);
         config.addMapper(SyncTaskLogMapper.class);
+        config.addMapper(AuditLogMapper.class);
 
         if (TableInfoHelper.getTableInfo(TrainingPlan.class) == null
                 || TableInfoHelper.getTableInfo(TrainingPlanProblem.class) == null

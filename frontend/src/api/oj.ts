@@ -28,5 +28,6 @@ export async function verifyAccount(id: number, status: number): Promise<void> {
 }
 
 export async function syncMyAccount(): Promise<SyncResult> {
-  return withCsrf((h, t) => apiClient.post<SyncResult>('/oj-accounts/me/sync', null, { headers: { [h]: t } }))
+  const r = await withCsrf((h, t) => apiClient.post<SyncResult>('/oj-accounts/me/sync', null, { headers: { [h]: t } }))
+  return r.data
 }

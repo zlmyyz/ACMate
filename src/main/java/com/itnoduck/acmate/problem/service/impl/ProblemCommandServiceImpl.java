@@ -291,6 +291,8 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
             }
             throw new RuntimeException("恢复题目异常：状态不匹配");
         }
+        auditLogService.log(operatorUserId, "PROBLEM_RESTORED", "PROBLEM", problemId, null,
+                existing.getStatus() != null && existing.getStatus() == 1 ? "active" : "deactivated", "active");
     }
 
     @Override
@@ -342,7 +344,7 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
             }
             throw new RuntimeException("停用题目异常：状态不匹配");
         }
-        auditLogService.log(operatorUserId, "FORCE_DEACTIVATE_PROBLEM", "PROBLEM", problemId, reason, "active", "deactivated");
+        auditLogService.log(operatorUserId, "PROBLEM_ADMIN_DEACTIVATED", "PROBLEM", problemId, reason, "active", "deactivated");
     }
 
     private ProblemDetailResponse toDetailResponse(Problem p) {

@@ -1934,3 +1934,88 @@ type-check + lint + build 全部通过
 
 - `IMPLEMENTATION_STATUS.md` — 完整重写，审计发现记录
 
+---
+
+## 2026-07-29（八轮）：管理员操作日志系统
+
+### 本次目标
+
+完成管理员操作日志系统：标准化 actionType/targetType 常量体系、完整过滤查询接口（3 种精确 + 2 种模糊 + 1 种时间范围 + 稳定排序）、批量 actor 加载防 N+1、白名单校验、14 种高风险操作写日志全覆盖、前后端联调、25 后端测试 + 7 前端测试。
+
+### 新增文件
+
+**后端常量（1 个）：**
+- `auditlog/AuditLogConstants.java` — 14 种标准化 actionType（USER_DEACTIVATED、USER_RESTORED、ADMIN_GRANTED、ADMIN_REVOKED、POST_ADMIN_DEACTIVATED、POST_RESTORED、COMMENT_ADMIN_DEACTIVATED、COMMENT_RESTORED、TRAINING_ADMIN_DEACTIVATED、TRAINING_RESTORED、PROBLEM_ADMIN_DEACTIVATED、PROBLEM_RESTORED、OJ_ACCOUNT_VERIFIED、OJ_ACCOUNT_REJECTED）+ 6 种 targetType（USER、POST、COMMENT、TRAINING_PLAN、PROBLEM、OJ_ACCOUNT）+ 白名单 Sets
+
+**后端 DTO（2 个）：**
+- `auditlog/dto/AuditLogResponse.java` — record(id, actionType, actorUserId, actorUsername, actorNickname, targetType, targetId, beforeState, afterState, reason, createTime)
+- `auditlog/dto/AuditLogListResponse.java` — record(items, total, page, size)
+
+**测试（2 个）：**
+- `auditlog/service/impl/AuditLogServiceImplTest.java` — 17 个 Mockito 测试（auth 校验、分页、空结果、actionType 合法/非法、targetType 合法/非法、actorKeyword、targetId、timeRange、timeRange 非法、稳定排序、total 匹配、批量 actor N+1 验证、敏感字段防护、log 方法）
+- `auditlog/controller/AuditLogControllerTest.java` — 9 个 WebMvcTest（admin 查询、401、403、分页参数、actionType 过滤、targetType 过滤、参数钳位、字段完整性、keyword+time 透传）
+
+### 修改文件
+
+**后端 Service（2 个）：**
+- `auditlog/service/AuditLogService.java` — 接口参数新增 actorKeyword/actionType/targetType/targetId/startTime/endTime，返回 AuditLogListResponse
+- `auditlog/service/impl/AuditLogServiceImpl.java` — 完整重写：白名单校验、LambdaQueryWrapper 全过滤、稳定排序（create_time DESC, id DESC）、批量 selectBatchIds 加载 actor、内存 actorKeyword 匹配、响应 DTO 转换
+
+**后端 Controller（1 个）：**
+- `auditlog/controller/AuditLogController.java` — 新增 6 个查询参数 + page/size 钳位 + 管理员权限校验
+
+**actionType 标准化（4 个 Service）：**
+- `admin/service/impl/AdminContentServiceImpl.java` — 4 个 action 重命名：ADMIN_DEACTIVATE_POST → POST_ADMIN_DEACTIVATED, ADMIN_RESTORE_POST → POST_RESTORED, ADMIN_DEACTIVATE_COMMENT → COMMENT_ADMIN_DEACTIVATED, ADMIN_RESTORE_COMMENT → COMMENT_RESTORED
+- `training/service/impl/TrainingPlanServiceImpl.java` — 2 个重命名：DEACTIVATE → TRAINING_ADMIN_DEACTIVATED, RESTORE → TRAINING_RESTORED
+- `problem/service/impl/ProblemCommandServiceImpl.java` — 1 个重命名 + 1 个新增：FORCE_DEACTIVATE_PROBLEM → PROBLEM_ADMIN_DEACTIVATED，新增 PROBLEM_RESTORED 审计日志
+- `oj/service/impl/OjAccountServiceImpl.java` — VERIFY_OJ_ACCOUNT 拆分为 OJ_ACCOUNT_VERIFIED（status=1）和 OJ_ACCOUNT_REJECTED（status=2）
+
+**测试辅助（1 个）：**
+- `testutil/MybatisPlusTestHelper.java` — 注册 AuditLog 实体
+
+**测试修正（2 个）：**
+- `OjAccountServiceImplTest.java` — 2 个断言修正（VERIFY_OJ_ACCOUNT → OJ_ACCOUNT_VERIFIED / OJ_ACCOUNT_REJECTED）
+- `TrainingPlanServiceImplTest.java` — 2 个断言修正（DEACTIVATE → TRAINING_ADMIN_DEACTIVATED, RESTORE → TRAINING_RESTORED）
+
+**前端文件（3 个）：**
+- `types/audit-log.ts` — 重写为 AuditLogResponse/AuditLogListResponse（匹配后端 record）
+- `api/audit-logs.ts` — 完整参数接口（page/size/actorKeyword/actionType/targetType/targetId/startTime/endTime）
+- `views/AdminAuditLogsView.vue` — 完整重写：URL 查询参数同步、requestId 防过期响应、actionType/targetType 下拉筛选、actorKeyword 搜索、时间范围选择、状态变更列（before → after）、中文化操作标签、空状态
+
+**测试（1 个）：**
+- `frontend/src/__tests__/audit-logs.test.ts` — 7 个前端测试（渲染标题、空状态、日志条目展示、actorKeyword 搜索、actionType 过滤、targetType 过滤、错误状态）
+
+### 核心设计
+
+**actionType 标准化：** 14 种操作类型按 `<资源>_<动作>` 格式命名，统一维护在 AuditLogConstants 中，附带白名单 Sets 用于接口层校验。避免字符串硬编码和拼写错误。
+
+**批量 Actor 加载：** 查询分页只返回 operator_id，收集唯一 ID → appUserMapper.selectBatchIds → Map<Long, AppUser> → 填充 actorUsername/actorNickname。一次查询，避免 N+1。
+
+**actorKeyword 内存过滤：** SQL 端无法直接 JOIN app_user 做 LIKE（MyBatis-Plus LambdaQueryWrapper 跨表不方便），改为 SQL 查 audit_log 行 → 批量加载 actor → 内存 Stream.filter。对审计日志表的规模可接受。
+
+**白名单校验：** actionType 和 targetType 在 Service 层通过 AuditLogConstants 的 Sets 校验，非法值返回 400，防止 SQL 注入和无效枚举。
+
+**稳定排序：** 同时使用 create_time DESC 和 id DESC，确保同一毫秒内的多条日志顺序固定、分页不重复/不遗漏。
+
+### 自动化验证
+
+- 后端：502 tests passed（新增 25 audit-log 测试 + 477 现有）
+- 前端：188 tests passed（新增 7 audit-logs + 181 现有）
+- 前端 type-check：pass
+- 前端 lint：pass
+- 前端 build：pass
+
+### Chromium 最终验收
+
+- 环境：MySQL 8.0（Flyway V14）、Spring Boot、Vite、真实 Chromium
+- 真实业务日志：用户停用/恢复、授予/撤销管理员、帖子停用/恢复、评论停用/恢复、训练计划停用/恢复、题目停用/恢复、OJ 审核均通过
+- 页面：列表、操作人、actionType、targetType、targetId、beforeState、afterState、reason、分页、多条件筛选均通过
+- 权限：普通用户直接访问管理员页面跳转 `/403`，直接调用接口返回 403
+- 敏感信息：页面和响应均不包含 passwordHash、Cookie、Session、CSRF Token
+- 修复：认证初始化完成后再安装路由，防止普通用户刷新管理员路由时被提前放行
+- 同时修复 `oj.ts` 响应类型与 `oj.test.ts` 用户状态字段，恢复 type-check/build 全绿
+
+### 提交
+
+`feat: complete admin audit log workflow`
+

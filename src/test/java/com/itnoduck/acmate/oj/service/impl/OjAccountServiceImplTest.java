@@ -193,7 +193,7 @@ class OjAccountServiceImplTest {
         service.verify(ACCOUNT_ID, 1, adminUser);
         assertEquals(1, acc.getVerifyStatus());
         verify(accountMapper).updateById(acc);
-        verify(auditLogService).log(eq(ADMIN_ID), eq("VERIFY_OJ_ACCOUNT"), eq("OJ_ACCOUNT"), eq(ACCOUNT_ID),
+        verify(auditLogService).log(eq(ADMIN_ID), eq("OJ_ACCOUNT_VERIFIED"), eq("OJ_ACCOUNT"), eq(ACCOUNT_ID),
                 eq("approved"), eq("0"), eq("1"));
     }
 
@@ -204,7 +204,7 @@ class OjAccountServiceImplTest {
         when(accountMapper.selectById(ACCOUNT_ID)).thenReturn(acc);
         service.verify(ACCOUNT_ID, 2, adminUser);
         assertEquals(2, acc.getVerifyStatus());
-        verify(auditLogService).log(eq(ADMIN_ID), eq("VERIFY_OJ_ACCOUNT"), eq("OJ_ACCOUNT"), eq(ACCOUNT_ID),
+        verify(auditLogService).log(eq(ADMIN_ID), eq("OJ_ACCOUNT_REJECTED"), eq("OJ_ACCOUNT"), eq(ACCOUNT_ID),
                 eq("rejected"), eq("0"), eq("2"));
     }
 

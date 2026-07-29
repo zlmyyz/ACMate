@@ -1943,3 +1943,101 @@ GET 请求不需要 CSRF Token。
 ```json
 {"entries": [], "total": 0, "page": 1, "size": 20}
 ```
+
+---
+
+## 操作日志 API
+
+### GET /api/admin/audit-logs
+
+管理员分页查询操作日志。
+
+#### 认证
+
+需要管理员（ROLE_ADMIN）角色。
+
+#### CSRF
+
+GET 请求不需要 CSRF Token。
+
+#### 查询参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| page | int | 1 | 页码，最小 1，超出钳位 |
+| size | int | 20 | 每页数量，1-100，超出钳位 |
+| actionType | string | — | 操作类型筛选。可选值：USER_DEACTIVATED, USER_RESTORED, ADMIN_GRANTED, ADMIN_REVOKED, POST_ADMIN_DEACTIVATED, POST_RESTORED, COMMENT_ADMIN_DEACTIVATED, COMMENT_RESTORED, TRAINING_ADMIN_DEACTIVATED, TRAINING_RESTORED, PROBLEM_ADMIN_DEACTIVATED, PROBLEM_RESTORED, OJ_ACCOUNT_VERIFIED, OJ_ACCOUNT_REJECTED |
+| targetType | string | — | 目标类型筛选。可选值：USER, POST, COMMENT, TRAINING_PLAN, PROBLEM, OJ_ACCOUNT |
+| targetId | long | — | 目标资源 ID 精确匹配 |
+| actorKeyword | string | — | 操作者关键词，匹配 username 或 nickname（模糊搜索） |
+| startTime | string | — | 开始时间（含），ISO 8601 格式，如 `2026-07-01T00:00:00` |
+| endTime | string | — | 结束时间（含），ISO 8601 格式，如 `2026-07-29T23:59:59` |
+
+#### 成功响应
+
+**200 OK**
+
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "actionType": "USER_DEACTIVATED",
+      "actorUserId": 1,
+      "actorUsername": "admin",
+      "actorNickname": "Admin",
+      "targetType": "USER",
+      "targetId": 2,
+      "beforeState": "ACTIVE",
+      "afterState": "DEACTIVATED",
+      "reason": "违规行为",
+      "createTime": "2026-07-29T12:00:00"
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "size": 20
+}
+```
+
+#### 错误响应
+
+**400 Bad Request** — actionType 或 targetType 无效
+
+**401 Unauthorized** — 未登录
+
+**403 Forbidden** — 非管理员
+
+#### 过滤规则
+
+- actionType/targetType 白名单校验，无效值返回 400
+- actorKeyword 匹配操作者的 username 或 nickname（SQL LIKE + 内存过滤）
+- startTime/endTime 过滤 create_time 范围
+- targetId 精确匹配 resource_id
+- 按 create_time DESC, id DESC 稳定排序
+
+#### 实现说明
+
+- 操作者信息（username、nickname）通过 selectBatchIds 批量加载，避免 N+1
+- actorKeyword 在批量加载后内存过滤（SQL 端只过滤 audit_log 行）
+- 响应不包含 passwordHash、email 等敏感字段
+- 所有高风险操作写日志时使用 AuditLogConstants 中的标准化 actionType
+
+#### 已集成的写日志操作
+
+| 操作 | actionType | 模块 |
+|------|-----------|------|
+| 管理员停用用户 | USER_DEACTIVATED | AdminUserService |
+| 管理员恢复用户 | USER_RESTORED | AdminUserService |
+| 授予管理员 | ADMIN_GRANTED | AdminUserService |
+| 撤销管理员 | ADMIN_REVOKED | AdminUserService |
+| 管理员停用帖子 | POST_ADMIN_DEACTIVATED | AdminContentService |
+| 管理员恢复帖子 | POST_RESTORED | AdminContentService |
+| 管理员停用评论 | COMMENT_ADMIN_DEACTIVATED | AdminContentService |
+| 管理员恢复评论 | COMMENT_RESTORED | AdminContentService |
+| 管理员停用训练计划 | TRAINING_ADMIN_DEACTIVATED | TrainingPlanService |
+| 管理员恢复训练计划 | TRAINING_RESTORED | TrainingPlanService |
+| 管理员强制停用题目 | PROBLEM_ADMIN_DEACTIVATED | ProblemCommandService |
+| 管理员恢复题目 | PROBLEM_RESTORED | ProblemCommandService |
+| OJ 账号审核通过 | OJ_ACCOUNT_VERIFIED | OjAccountService |
+| OJ 账号审核拒绝 | OJ_ACCOUNT_REJECTED | OjAccountService |

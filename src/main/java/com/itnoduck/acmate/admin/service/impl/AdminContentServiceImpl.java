@@ -75,7 +75,7 @@ public class AdminContentServiceImpl implements AdminContentService {
         p.setDeactivatedBy(user.getId());
         p.setDeactivationTime(LocalDateTime.now());
         postMapper.updateById(p);
-        auditLogService.log(user.getId(), "ADMIN_DEACTIVATE_POST", "POST", id, reason, "active", "deactivated");
+        auditLogService.log(user.getId(), "POST_ADMIN_DEACTIVATED", "POST", id, reason, "active", "deactivated");
         eventPublisher.publishEvent(new NotificationEvent(
                 Set.of(p.getAuthorUserId()), user.getId(), "POST_ADMIN_DEACTIVATED",
                 "POST", id, Map.of("postTitle", p.getTitle(), "reason", reason)));
@@ -93,7 +93,7 @@ public class AdminContentServiceImpl implements AdminContentService {
         p.setDeactivatedBy(null);
         p.setDeactivationTime(null);
         postMapper.updateById(p);
-        auditLogService.log(user.getId(), "ADMIN_RESTORE_POST", "POST", id, null, "deactivated", "active");
+        auditLogService.log(user.getId(), "POST_RESTORED", "POST", id, null, "deactivated", "active");
         eventPublisher.publishEvent(new NotificationEvent(
                 Set.of(p.getAuthorUserId()), user.getId(), "POST_RESTORED",
                 "POST", id, Map.of("postTitle", p.getTitle())));
@@ -136,7 +136,7 @@ public class AdminContentServiceImpl implements AdminContentService {
         c.setDeactivatedBy(user.getId());
         c.setDeactivationTime(LocalDateTime.now());
         commentMapper.updateById(c);
-        auditLogService.log(user.getId(), "ADMIN_DEACTIVATE_COMMENT", "COMMENT", id, reason, "active", "deactivated");
+        auditLogService.log(user.getId(), "COMMENT_ADMIN_DEACTIVATED", "COMMENT", id, reason, "active", "deactivated");
         eventPublisher.publishEvent(new NotificationEvent(
                 Set.of(c.getUserId()), user.getId(), "COMMENT_ADMIN_DEACTIVATED",
                 "COMMENT", id, Map.of("postId", c.getPostId(), "reason", reason)));
@@ -154,7 +154,7 @@ public class AdminContentServiceImpl implements AdminContentService {
         c.setDeactivatedBy(null);
         c.setDeactivationTime(null);
         commentMapper.updateById(c);
-        auditLogService.log(user.getId(), "ADMIN_RESTORE_COMMENT", "COMMENT", id, null, "deactivated", "active");
+        auditLogService.log(user.getId(), "COMMENT_RESTORED", "COMMENT", id, null, "deactivated", "active");
         eventPublisher.publishEvent(new NotificationEvent(
                 Set.of(c.getUserId()), user.getId(), "COMMENT_RESTORED",
                 "COMMENT", id, Map.of("postId", c.getPostId())));

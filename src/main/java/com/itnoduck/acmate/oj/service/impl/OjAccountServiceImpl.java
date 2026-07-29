@@ -134,8 +134,8 @@ public class OjAccountServiceImpl implements OjAccountService {
         String before = String.valueOf(acc.getVerifyStatus());
         acc.setVerifyStatus(status);
         accountMapper.updateById(acc);
-        String label = status == 1 ? "approved" : "rejected";
-        auditLogService.log(user.getId(), "VERIFY_OJ_ACCOUNT", "OJ_ACCOUNT", id, label, before, String.valueOf(status));
+        String actionType = status == 1 ? "OJ_ACCOUNT_VERIFIED" : "OJ_ACCOUNT_REJECTED";
+        auditLogService.log(user.getId(), actionType, "OJ_ACCOUNT", id, status == 1 ? "approved" : "rejected", before, String.valueOf(status));
     }
 
     @Override
