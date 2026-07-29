@@ -37,7 +37,7 @@
 ## 阶段 5：用户题目完成状态和排行榜
 
 - [x] 用户题目状态记录
-- [x] 可信排行榜（并列排序、分页、lastAcceptedTime）— 真实 Codeforces 数据与浏览器人工验收待进行
+- [x] 可信排行榜（并列排序、分页、lastAcceptedTime）— 真实 Codeforces 数据与浏览器人工验收已通过（352 AC，ALL/30D/7D/并列排序/分页去重全部验证）
 
 ## 阶段 6：Codeforces 账号绑定与增量同步
 
@@ -56,7 +56,7 @@
 - [x] 站内通知系统（11 种事件 + 轮询 + Pinia store + unreadOnly）
 - [x] 管理员用户管理（列表/筛选/停用/恢复/管理员授予撤销/Session失效/审计日志）
 - [x] 操作日志系统（标准化 14 种 actionType + 7 种 targetType + 白名单校验 + 完整过滤 + 批量 actor 加载）
-- [x] 单元测试（后端 502 pass, 前端 188 pass）
+- [x] 单元测试（后端 518 pass, 前端 191 pass）
 - [ ] 集成测试
 - [ ] 接口文档
 - [ ] 部署文档

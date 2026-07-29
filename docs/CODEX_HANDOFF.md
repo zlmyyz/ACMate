@@ -12,21 +12,21 @@
 
 ### HEAD commit
 ```
-1acd7b4 feat: complete admin audit log workflow
+09f9b7b fix: resolve first_ac.submission_id and Map.of NPE bugs from acceptance testing
 ```
 
 ### 最近 10 个 commit（从新到旧）
 ```
+09f9b7b fix: resolve first_ac.submission_id and Map.of NPE bugs from acceptance testing
+2727fef fix: run Codeforces sync hourly
+1028987 feat: finalize Codeforces sync and trusted leaderboard
+dfdae18 docs: record admin audit log verification
 1acd7b4 feat: complete admin audit log workflow
 f3ae145 docs: update devlog with admin user management entry
 6a15e6e feat: complete admin user management workflow
 f76bbf1 docs: mark trusted leaderboard verification pending
 730622f fix: switch leaderboard queries to oj_first_ac with disabled-user filter
 2adc50d fix: finalize Codeforces sync reliability and verification
-be8175d feat: implement Codeforces submission sync with idempotent AC tracking
-c6831da feat: add problem selection to training plans
-85f5914 docs: synchronize verified workflows and training gaps
-977eb9a fix: complete browser-verified core workflows
 ```
 
 ### 工作区状态（本轮变更后）
@@ -93,21 +93,21 @@ c6831da feat: add problem selection to training plans
 
 | 项目 | 状态 |
 |------|------|
-| 功能 | CF handle 绑定/解绑/审核、cursor 分页增量同步、DB 级 first-AC 原子约束（oj_first_ac UNIQUE KEY）、幂等、同步任务日志、**服务端 1h 冷却**、**每日定时同步** |
+| 功能 | CF handle 绑定/解绑/审核、cursor 分页增量同步、DB 级 first-AC 原子约束（oj_first_ac UNIQUE KEY）、幂等、同步任务日志、服务端 1h 冷却、每小时整点 @Scheduled 定时同步 |
 | 后端测试 | 43（OjAccountServiceImplTest） |
 | 前端测试 | ~11（oj.test.ts + 部分 phases567） |
-| 浏览器验收 | 已验收（绑定/解绑/审核/同步按钮/结果展示/冷却提示）—— 但**真实 CF API 端到端验收待进行** |
-| 待办 | 冷却期结束前返回 COOLDOWN SyncResult（含剩余秒数）；@EnableScheduling + @Scheduled(cron="0 0 * * * *") 每小时整点，支持 enabled/cron/zone 配置覆盖 |
+| 浏览器验收 | **已通过** — 真实 CF API（tourist 500 条提交/352 AC）、冷却提示、第二次同步幂等、上游失败处理（404/502/429）、同步任务日志全部验证 |
+| 待办 | 牛客同步未实现（低优先级） |
 
 ### 2.6 可信排行榜
 
 | 项目 | 状态 |
 |------|------|
-| 功能 | 总榜/7d/30d 分页、数据源为 oj_first_ac + VERIFIED 账号、禁用用户 SQL 层排除、未映射本地题目的 AC 计入、page/size 分页、isMe 标记、**并列排序（solved_count DESC → last_accepted_time ASC → user_id ASC）** |
+| 功能 | 总榜/7d/30d 分页、数据源为 oj_first_ac + VERIFIED 账号、禁用用户 SQL 层排除、未映射本地题目的 AC 计入、page/size 分页、isMe 标记、并列排序（solved_count DESC → last_accepted_time ASC → user_id ASC） |
 | 后端测试 | 12（LeaderboardServiceImplTest 7个 + 含在 OjAccountServiceImplTest 中） |
 | 前端测试 | ~7（phases567.test.ts 含 lastAcceptedTime 列） |
-| 浏览器验收 | 待进行（依赖 CF 真实同步验收后才有真实数据填充） |
-| 待办 | 依赖 CF 真实同步才能填充数据做真实验证 |
+| 浏览器验收 | **已通过** — ALL=352、30D=8、7D=0、并列排序稳定、分页 total 正确、昵称头像、用户跳转全部验证 |
+| 待办 | 无功能待办 |
 
 ### 2.7 管理员用户管理
 
@@ -116,8 +116,8 @@ c6831da feat: add problem selection to training plans
 | 功能 | 用户列表（keyword/status/admin 筛选）、停用（原因必填 + 最后管理员保护 + 自操作保护 + Session 失效 + 审计日志）、恢复、授予管理员、撤销管理员（最后管理员保护 + 自操作保护 + Session 失效） |
 | 后端测试 | 49（AdminUserServiceImplTest:31 + AdminUserControllerTest:18） |
 | 前端测试 | 8（phases567.test.ts AdminUsersView 部分） |
-| 浏览器验收 | 核心停用/恢复/授权/撤权流程已通过真实 Chromium 验收 |
-| 待办 | 被停用用户与角色变更后的旧 Session 失效、其他用户 Session 不受影响仍待专项验收 |
+| 浏览器验收 | **已通过** — 停用→Session 失效、恢复、授予管理员→旧 Session 失效、撤销管理员→旧 Session 失效、audit_log 全链路 Chromium 验证 |
+| 待办 | 无功能待办 |
 
 ### 2.8 操作日志（审计日志）
 
@@ -135,12 +135,9 @@ c6831da feat: add problem selection to training plans
 
 | # | 事项 | 关键文件 | 优先级 |
 |---|------|----------|--------|
-| 1 | 排行榜真实数据验证 | 无代码修改，纯验收 | 中 |
-| 2 | 管理员用户 Session/角色旧 Session 专项验收 | 无代码修改，纯验收 | 中 |
-| 4 | CF 定时同步未启用（@Scheduled） | 需在配置类加 @EnableScheduling + cron 表达式 | 低 |
-| 5 | 同步冷却期服务端未强制 | `OjAccountController` 或 `ServiceImpl` 加时间检查 | 低 |
-| 7 | 训练计划成员进度详情页 | 后端计划中，尚未实现 | 未来 |
-| 8 | 训练计划赛时统计快照 | 后端计划中，尚未实现 | 未来 |
+| 1 | 牛客平台支持 | 新增 OJ 平台枚举和对应的 API 客户端 | 低 |
+| 2 | 训练计划成员进度详情页 | 后端计划中，尚未实现 | 未来 |
+| 3 | 训练计划赛时统计快照 | 后端计划中，尚未实现 | 未来 |
 
 ---
 
@@ -206,10 +203,11 @@ V14__add_first_ac_constraint.sql
 ## 6. 下一步推荐任务
 
 ### 高优先级
-1. **CF 真实 API + 真实排行榜数据验收** — 用真实 CF 账号端到端验证同步（冷却/定时/手动）、排行榜数据填充（并列排序/分页/去重）
+- 无（发布前阻塞项已全部验证通过）
 
 ### 中优先级
-2. **管理员用户 Session 专项验收** — 验证停用及角色变化后的旧 Session 失效
+1. **训练计划成员进度详情页** — 后端计划中，尚未实现
+2. **训练计划赛时统计快照** — 后端计划中，尚未实现
 
 ### 低优先级
 3. **牛客平台支持** — 新增 OJ 平台枚举和对应的 API 客户端
