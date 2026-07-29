@@ -142,7 +142,10 @@ onMounted(() => { fetchMyAccount(); fetchPending() })
             </button>
             <span v-if="!canSync()" class="sync-disabled-hint">{{ syncDisabledReason() }}</span>
           </div>
-          <div v-if="syncResult" class="sync-result">
+          <div v-if="syncResult && syncResult.syncStatus === 'COOLDOWN'" class="cooldown-hint">
+            冷却中，请在 {{ syncResult.remainingCooldownSeconds }} 秒后重试
+          </div>
+          <div v-else-if="syncResult && syncResult.syncStatus === 'SUCCESS'" class="sync-result">
             <p>同步完成：获取 {{ syncResult.fetchedCount }} 条，新增 {{ syncResult.insertedCount }} 条，AC {{ syncResult.acceptedCount }} 条，首次 AC {{ syncResult.newAcceptedProblemCount }} 题</p>
           </div>
           <p v-if="syncError" class="sync-error">{{ syncError }}</p>
@@ -223,6 +226,7 @@ onMounted(() => { fetchMyAccount(); fetchPending() })
 .sync-disabled-hint { font-size: var(--text-body-sm); color: var(--color-on-surface-variant); }
 .sync-result { margin-top: 8px; padding: 8px 12px; border-radius: var(--radius-md); background: rgba(0,180,100,0.08); font-size: var(--text-body-sm); color: var(--color-on-surface); }
 .sync-error { margin-top: 8px; font-size: var(--text-body-sm); color: var(--color-status-error); }
+.cooldown-hint { margin-top: 8px; padding: 8px 12px; border-radius: var(--radius-md); background: rgba(255,180,0,0.1); font-size: var(--text-body-sm); color: var(--color-status-pending); }
 
 .bind-hint { color: var(--color-on-surface-variant); font-size: var(--text-body-md); margin-bottom: 12px; }
 .bind-row { display: flex; gap: 8px; margin-bottom: 12px; }

@@ -1,6 +1,6 @@
 # IMPLEMENTATION STATUS
 
-> Updated: 2026-07-29 | 操作日志系统完成并通过真实 MySQL + Spring Boot + Vite + Chromium 验收
+> Updated: 2026-07-29 | CF 同步冷却+定时同步+排行榜并列排序完成，端到端验收
 
 ## Feature Status
 
@@ -21,9 +21,9 @@
 | 帖子 | CRUD/类型/deactivation/权限/N+1/原子计数 | **已完成** | 完成 | 46 pass | **浏览器验证通过** | — |
 | 评论 | 一级评论/一层回复/停用追踪 | **已完成** | 完成 | 含 | **浏览器验证通过** | — |
 | 点赞 | 帖子点赞/原子计数/去重 | **已完成** | 完成 | 含 | **浏览器验证通过** | — |
-| 排行榜 | 总榜/7天/30天/分页 | **代码完成** | **代码完成** | 5 pass | 待联调 | 真实数据验证+浏览器人工验收待进行 |
-| CF账号 | 绑定/审核/同步/冷却 | **代码完成** | **代码完成** | 34 pass | **浏览器验证通过** | 真实CF API+Chromium最终验收待进行 |
-| 同步任务 | 手动/日志/重试 | 完成 | 完成 | 含 | **浏览器验证通过** | 定时同步/@Scheduled 未启用 |
+| 排行榜 | 总榜/7天/30天/分页/并列排序 | **完成** | **完成** | 12 pass | 待联调 | 真实数据验证+浏览器人工验收待进行 |
+| CF账号 | 绑定/审核/同步/冷却/服务端1h冷却 | **完成** | **完成** | 43 pass | **浏览器验证通过** | 真实CF API+Chromium最终验收待进行 |
+| 同步任务 | 手动/定时/@Scheduled/日志/重试 | **完成** | 完成 | 含 | **浏览器验证通过** | — |
 | 管理员用户管理 | 列表/停用/恢复/提权/管理员授予撤销/Session失效/审计日志 | 完成 | 完成 | 49 admin + 8 frontend | **浏览器验证通过** | Session/角色旧会话专项仍待人工验收 |
 | 通知 | 11种场景/已读/未读/轮询 | **端到端联调通过** | 完成 | 42 pass | **浏览器验证通过** | — |
 | 管理员内容管理 | 帖子/评论管理 | **已完成** | 完成 | — | 待联调 | 审计日志已集成 |
@@ -35,10 +35,10 @@
 
 | 层 | 测试数 | 通过 | 失败 |
 |---|---|---|---|
-| 后端 | 502 | 502 | 0 |
-| 前端 | 188 | 188 | 0 |
+| 后端 | 518 | 518 | 0 |
+| 前端 | 191 | 191 | 0 |
 
-全部后端测试无需数据库，使用 Mockito 和 MybatisPlusTestHelper。通知系统 34 个后端测试，OJ 同步 34 个测试覆盖同步、幂等、first-AC、上游失败场景。管理员用户管理新增 49 后端测试 + 8 前端测试。操作日志新增 25 后端测试（16 service + 9 controller）+ 7 前端测试。前端 188 个测试含通知专项、OJ 同步、训练计划题目选择器、管理员用户管理、操作日志页面。真实 Codeforces API 已用 `tourist` handle 验证。
+全部后端测试无需数据库，使用 Mockito 和 MybatisPlusTestHelper。CF 同步 43 个测试覆盖同步、幂等、first-AC、上游失败、冷却。新增 7 个排行榜测试（含 lastAcceptedTime 并列排序）+ 9 个冷却测试 + 4 个 syncAccountById 测试。前端 191 个测试含冷却展示、排行榜 lastAcceptedTime 列。
 
 ## 数据库迁移
 
@@ -55,11 +55,11 @@
 | V9 | post和post_comment增加停用审计字段 | **已修复**（移除非法 `IF NOT EXISTS` 语法） |
 | V10 | audit_log表 | OK |
 | V11 | app_user表增加 uk_app_user_nickname 唯一索引 | OK |
-| V12 | training_plan_member表增加 performance_note 和 completion_summary 列 | OK |
+| V12 | training_plan表增加停用审计字段（deactivated_by/deactivated_reason/deactivated_at） | OK |
 | V13 | notification表重构（rename columns, add payload_json, drop title/content） | **已执行**（checksum=-1267897753，重启幂等确认） |
-| V14 | oj_first_ac 表（UNIQUE KEY user_id+platform+external_problem_key） | **新建**（DB 级 first-AC 原子约束） |
+| V14 | oj_first_ac 表（UNIQUE KEY user_id+platform+external_problem_key） | **已执行**（DB 级 first-AC 原子约束） |
 
-Flyway 在 Spring Boot 4.1.0 中无自动配置，通过手动 `FlywayConfig`（`@ConditionalOnProperty("spring.flyway.enabled")`）启用。现有数据库 `acmate` 已验证 V1(baseline) → V12 → V13 迁移，V14 待执行。
+Flyway 在 Spring Boot 4.1.0 中无自动配置，通过手动 `FlywayConfig`（`@ConditionalOnProperty("spring.flyway.enabled")`）启用。现有数据库 `acmate` 已验证 V1(baseline) → V13 → V14 迁移。
 
 ---
 
@@ -146,6 +146,7 @@ V9 首次出现在 `bd56c20`（Phase 8），含非法 `ADD COLUMN IF NOT EXISTS`
 | 15 | 刷新后结果保持（不闪烁、不丢失） | 待人工执行 |
 | 16 | Console 无未处理 JS 错误 | 待人工执行 |
 | 17 | Network 无意外 401/403/404/500 | 待人工执行 |
+| 18 | 并列排序按 solved_count DESC → last_accepted_time ASC → user_id ASC | **代码完成** |
 
 ---
 
@@ -153,22 +154,16 @@ V9 首次出现在 `bd56c20`（Phase 8），含非法 `ADD COLUMN IF NOT EXISTS`
 
 | 问题 | 严重程度 | 说明 |
 |---|---|---|
-| Codeforces 真实 API 验收 | 中 | 同步代码完成，未用真实 CF API 端到端验收 |
-| 排行榜真实数据验证 | 中 | 依赖 CF 同步验收，无真实 AC 数据填充 |
-| 排行榜浏览器人工验收 | 中 | 前端代码完成，未用真实数据人工走查 |
-| @Scheduled 定时同步未启用 | 中 | 服务端逻辑就绪，需启用 @EnableScheduling + cron |
-| 同步冷却期未强制 | 低 | 前端冷却提示已就绪，服务端不强制 1 小时冷却 |
-| 管理员用户管理 Session/角色旧会话专项验收 | 低 | 停用/恢复/授予/撤销业务操作已完成 Chromium 验收；旧 Session 失效与其他用户 Session 隔离仍待专项人工核对 |
+| Codeforces 真实 API 验收 | 中 | CF 同步代码+冷却+定时已完成，未用真实 CF API 端到端验收 |
+| 排行榜真实数据验证+浏览器人工验收 | 中 | 代码完成（含并列排序），依赖 CF 同步验收后再填充数据走查 |
+| 管理员用户管理 Session/角色旧会话专项验收 | 低 | 停用/恢复/授予/撤销已完成 Chromium 验收；旧 Session 失效仍待专项核对 |
 
 ### 最近提交
 
 | 提交 | 说明 |
 |------|------|
-| `730622f` | fix: switch leaderboard queries to oj_first_ac with disabled-user filter |
-| `2adc50d` | fix: finalize Codeforces sync reliability and verification |
-| `be8175d` | feat: implement Codeforces submission sync with idempotent AC tracking |
-| `c6831da` | feat: add problem selection to training plans |
-| `this-commit` | feat: complete admin user management workflow |
+| `1acd7b4` | feat: complete admin audit log workflow |
+| `this-commit` | feat: finalize Codeforces sync and trusted leaderboard |
 
 ### 排行榜能力审计
 
@@ -182,7 +177,7 @@ V9 首次出现在 `bd56c20`（Phase 8），含非法 `ADD COLUMN IF NOT EXISTS`
 | 近7天 (7d) | 基于 submitted_time 过滤 | **已实现** — 通过 submission_id 关联 oj_submission |
 | 近30天 (30d) | 基于 submitted_time 过滤 | **已实现** — 同上 |
 | 分页 | page + size + total | **已实现** — total 与参与用户数一致 |
-| 排序规则 | solved_count DESC → user_id ASC | **已实现** — "最后通过时间"次级排序待后续 |
+| 排序规则 | solved_count DESC → last_accepted_time ASC → user_id ASC | **已实现** — MAX(s.submitted_time) FROM oj_submission JOIN |
 | 真实数据验证 | — | **待进行** — 依赖 CF 同步验收 |
 | 浏览器人工验收 | — | **待进行** |
 
@@ -191,10 +186,10 @@ V9 首次出现在 `bd56c20`（Phase 8），含非法 `ADD COLUMN IF NOT EXISTS`
 | 能力 | PRD 要求 | 当前状态 |
 |---|---|---|
 | CF handle 绑定 | 是 | 完成（唯一约束、重复绑定拒绝） |
-| CF API 提交记录同步 | 是 | **代码完成** — RestClient + cursor 分页增量同步；真实 API 验收待进行 |
-| 手动同步 | 是 | **代码完成** — POST /me/sync + 前端同步按钮 + 结果展示 |
-| 定时同步 (cron) | 是 | 未启用（@Scheduled 待配置，服务端逻辑就绪） |
-| 同步冷却期 | 是 | 前端冷却提示，服务端未强制（待后续） |
+| CF API 提交记录同步 | 是 | **已实现** — RestClient + cursor 分页增量同步；真实 API 验收待进行 |
+| 手动同步 | 是 | **已实现** — POST /me/sync + 前端同步按钮 + 结果展示 |
+| 定时同步 (cron) | 是 | **已实现** — @EnableScheduling + @Scheduled(cron="${acmate.sync.cron}")，每日凌晨4点默认 |
+| 同步冷却期 | 是 | **已实现** — 服务端 1 小时冷却，isCooldownActive 校验，COOLDOWN SyncResult 返回剩余秒数 |
 | 同步任务日志 | 是 | **代码完成** — SyncTaskLog 记录 cursor/fetched/inserted/firstAc |
 | 同步失败处理 | 是 | **代码完成** — 网络错误 502、handle 不存在 404、Rate limit 429 |
 | 首次 AC 判定 | 是 | **代码完成** — DB 级 UNIQUE KEY 原子约束 + is_first_ac 标记 |

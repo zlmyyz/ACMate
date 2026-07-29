@@ -10,6 +10,8 @@ public class SyncResult {
     private int newAcceptedProblemCount;
     private String lastSyncTime;
     private String syncStatus;
+    private long remainingCooldownSeconds;
+    private String nextAllowedSyncTime;
 
     public Long getAccountId() { return accountId; }
     public void setAccountId(Long v) { accountId = v; }
@@ -27,4 +29,8 @@ public class SyncResult {
     public void setLastSyncTime(String v) { lastSyncTime = v; }
     public String getSyncStatus() { return syncStatus; }
     public void setSyncStatus(String v) { syncStatus = v; }
+    public long getRemainingCooldownSeconds() { return remainingCooldownSeconds; }
+    public void setRemainingCooldownSeconds(long v) { remainingCooldownSeconds = v; }
+    public String getNextAllowedSyncTime() { return nextAllowedSyncTime; }
+    public void setNextAllowedSyncTime(String v) { nextAllowedSyncTime = v; }
 }

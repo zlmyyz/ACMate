@@ -23,10 +23,12 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,6 +36,9 @@ public class OjAccountServiceImpl implements OjAccountService {
 
     private static final Logger log = LoggerFactory.getLogger(OjAccountServiceImpl.class);
     private static final int CF_FETCH_COUNT = 500;
+    private static final long SYNC_COOLDOWN_SECONDS = 3600;
+
+    final Set<Long> syncingAccounts = ConcurrentHashMap.newKeySet();
 
     private final OjAccountMapper accountMapper;
     private final OjSubmissionMapper submissionMapper;
@@ -148,33 +153,80 @@ public class OjAccountServiceImpl implements OjAccountService {
         if (acc.getVerifyStatus() == null || acc.getVerifyStatus() != 1)
             throw new BusinessException(409, "Codeforces 账号未通过审核，审核通过后才能同步");
 
+        // Cooldown check (only for manual sync)
+        if (isCooldownActive(acc)) {
+            long elapsed = Duration.between(acc.getLastSyncTime(), LocalDateTime.now()).getSeconds();
+            long remaining = SYNC_COOLDOWN_SECONDS - elapsed;
+            SyncResult cr = new SyncResult();
+            cr.setSyncStatus("COOLDOWN");
+            cr.setRemainingCooldownSeconds(Math.max(0, remaining));
+            cr.setNextAllowedSyncTime(acc.getLastSyncTime().plusSeconds(SYNC_COOLDOWN_SECONDS).toString());
+            return cr;
+        }
+
+        // Concurrent request protection
+        if (!syncingAccounts.add(acc.getId())) {
+            throw new BusinessException(429, "该账号正在同步中，请稍后再试");
+        }
+        try {
+            return doSync(acc, "MANUAL");
+        } finally {
+            syncingAccounts.remove(acc.getId());
+        }
+    }
+
+    @Override
+    public SyncResult syncAccountById(Long accountId, String triggerType) {
+        var acc = accountMapper.selectById(accountId);
+        if (acc == null) throw new BusinessException(404, "账号不存在");
+        if (!"CODEFORCES".equals(acc.getPlatform())) throw new BusinessException(400, "仅支持 Codeforces 平台同步");
+        if (acc.getVerifyStatus() == null || acc.getVerifyStatus() != 1)
+            throw new BusinessException(409, "账号未审核通过");
+        if (acc.getSyncEnabled() == null || acc.getSyncEnabled() != 1)
+            throw new BusinessException(409, "账号同步未启用");
+
+        if (!syncingAccounts.add(acc.getId())) {
+            throw new BusinessException(429, "该账号正在同步中，请稍后再试");
+        }
+        try {
+            return doSync(acc, triggerType);
+        } finally {
+            syncingAccounts.remove(acc.getId());
+        }
+    }
+
+    private boolean isCooldownActive(OjAccount acc) {
+        if (acc.getLastSyncSuccess() == null || acc.getLastSyncSuccess() != 1) return false;
+        if (acc.getLastSyncTime() == null) return false;
+        return Duration.between(acc.getLastSyncTime(), LocalDateTime.now()).getSeconds() < SYNC_COOLDOWN_SECONDS;
+    }
+
+    private SyncResult doSync(OjAccount acc, String triggerType) {
         String handle = acc.getExternalUserId();
 
-        // Step 2: get sync cursor (max remote_submission_id already stored)
+        // Step 1: get sync cursor
         Long maxExistingSubId = getMaxRemoteSubmissionId(acc.getId());
 
-        // Step 3: fetch from CF API (no DB transaction during external call)
+        // Step 2: fetch from CF API
         List<CodeforcesSubmissionDto> fetched;
         try {
             fetched = cfClient.fetchSubmissions(handle, 1, CF_FETCH_COUNT);
         } catch (BusinessException e) {
-            recordFailedSync(acc, e.getMessage());
+            recordFailedSync(acc, e.getMessage(), triggerType);
             throw e;
         } catch (Exception e) {
-            log.warn("Unexpected sync error for userId={}: {}", user.getId(), e.getMessage());
-            recordFailedSync(acc, "同步异常，请稍后重试");
+            log.warn("Unexpected sync error for accountId={} handle={}: {}", acc.getId(), handle, e.getMessage());
+            recordFailedSync(acc, "同步异常，请稍后重试", triggerType);
             throw new BusinessException(500, "同步异常，请稍后重试");
         }
 
-        // Step 4: normalize, filter new, and save in short transaction
+        // Step 3: normalize, filter new, and save
         List<CodeforcesSubmissionDto> newSubs = fetched.stream()
                 .filter(s -> s.getId() != null && s.getId() > 0)
                 .filter(s -> maxExistingSubId == null || s.getId() > maxExistingSubId)
                 .collect(Collectors.toList());
 
-        int acceptedCount = 0;
-        int insertedCount = 0;
-        int newAcProblemCount = 0;
+        int acceptedCount = 0, insertedCount = 0, newAcProblemCount = 0;
         Long maxNewSubId = maxExistingSubId;
 
         if (!newSubs.isEmpty()) {
@@ -185,14 +237,14 @@ public class OjAccountServiceImpl implements OjAccountService {
             maxNewSubId = result.maxSubId;
         }
 
-        // Step 5: update account sync state
+        // Step 4: update account sync state
         updateAccountSyncState(acc, maxNewSubId != null ? String.valueOf(maxNewSubId) : null);
 
-        // Step 6: write sync task log
+        // Step 5: write sync task log
         SyncTaskLog taskLog = new SyncTaskLog();
         taskLog.setOjAccountId(acc.getId());
         taskLog.setPlatform("CODEFORCES");
-        taskLog.setTriggerType("MANUAL");
+        taskLog.setTriggerType(triggerType);
         taskLog.setTaskStatus("SUCCESS");
         taskLog.setCursorBefore(maxExistingSubId != null ? String.valueOf(maxExistingSubId) : null);
         taskLog.setCursorAfter(maxNewSubId != null ? String.valueOf(maxNewSubId) : null);
@@ -321,7 +373,7 @@ public class OjAccountServiceImpl implements OjAccountService {
         accountMapper.updateById(acc);
     }
 
-    private void recordFailedSync(OjAccount acc, String errorMsg) {
+    private void recordFailedSync(OjAccount acc, String errorMsg, String triggerType) {
         try {
             acc.setLastSyncTime(LocalDateTime.now());
             acc.setLastSyncSuccess(0);
@@ -330,7 +382,7 @@ public class OjAccountServiceImpl implements OjAccountService {
             SyncTaskLog taskLog = new SyncTaskLog();
             taskLog.setOjAccountId(acc.getId());
             taskLog.setPlatform("CODEFORCES");
-            taskLog.setTriggerType("MANUAL");
+            taskLog.setTriggerType(triggerType);
             taskLog.setTaskStatus("FAILED");
             taskLog.setCursorBefore(acc.getLastSyncCursor());
             taskLog.setErrorMessage(errorMsg != null && errorMsg.length() > 1000

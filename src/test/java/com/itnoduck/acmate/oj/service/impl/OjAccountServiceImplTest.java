@@ -586,4 +586,114 @@ class OjAccountServiceImplTest {
         // is_first_ac should NOT be set
         verify(submissionMapper, never()).updateById(ArgumentMatchers.<OjSubmission>any());
     }
+
+    // ---- cooldown tests ----
+
+    @Test
+    void sync_cooldownActive_returnsCooldownStatus() {
+        OjAccount acc = verifiedAccount();
+        acc.setLastSyncTime(LocalDateTime.now().minusMinutes(30));
+        when(accountMapper.selectOne(any())).thenReturn(acc);
+
+        var result = service.syncMyAccount(normalUser);
+        assertEquals("COOLDOWN", result.getSyncStatus());
+        assertTrue(result.getRemainingCooldownSeconds() > 0);
+        assertNotNull(result.getNextAllowedSyncTime());
+        verify(cfClient, never()).fetchSubmissions(anyString(), anyInt(), anyInt());
+    }
+
+    @Test
+    void sync_cooldownExpired_proceedsNormally() {
+        OjAccount acc = verifiedAccount();
+        acc.setLastSyncTime(LocalDateTime.now().minusMinutes(90));
+        when(accountMapper.selectOne(any())).thenReturn(acc);
+        when(submissionMapper.selectOne(any())).thenReturn(null);
+        when(cfClient.fetchSubmissions("test_handle", 1, 500)).thenReturn(Collections.emptyList());
+
+        var result = service.syncMyAccount(normalUser);
+        assertEquals("SUCCESS", result.getSyncStatus());
+        verify(cfClient).fetchSubmissions("test_handle", 1, 500);
+    }
+
+    @Test
+    void sync_failedSync_noCooldown() {
+        OjAccount acc = verifiedAccount();
+        acc.setLastSyncTime(LocalDateTime.now().minusMinutes(30));
+        acc.setLastSyncSuccess(0);
+        when(accountMapper.selectOne(any())).thenReturn(acc);
+        when(submissionMapper.selectOne(any())).thenReturn(null);
+        when(cfClient.fetchSubmissions("test_handle", 1, 500)).thenReturn(Collections.emptyList());
+
+        var result = service.syncMyAccount(normalUser);
+        assertEquals("SUCCESS", result.getSyncStatus());
+    }
+
+    @Test
+    void sync_noPreviousSync_noCooldown() {
+        OjAccount acc = verifiedAccount();
+        acc.setLastSyncTime(null);
+        acc.setLastSyncSuccess(null);
+        when(accountMapper.selectOne(any())).thenReturn(acc);
+        when(submissionMapper.selectOne(any())).thenReturn(null);
+        when(cfClient.fetchSubmissions("test_handle", 1, 500)).thenReturn(Collections.emptyList());
+
+        var result = service.syncMyAccount(normalUser);
+        assertEquals("SUCCESS", result.getSyncStatus());
+    }
+
+    @Test
+    void sync_concurrentRequest_throws429() {
+        OjAccount acc = verifiedAccount();
+        acc.setLastSyncTime(null);
+        when(accountMapper.selectOne(any())).thenReturn(acc);
+        // Pre-mark account as syncing
+        service.syncingAccounts.add(ACCOUNT_ID);
+
+        var e = assertThrows(BusinessException.class, () -> service.syncMyAccount(normalUser));
+        assertEquals(429, e.getCode());
+        service.syncingAccounts.remove(ACCOUNT_ID);
+    }
+
+    // ---- syncAccountById tests ----
+
+    @Test
+    void syncById_accountNotFound_throws404() {
+        when(accountMapper.selectById(999L)).thenReturn(null);
+        var e = assertThrows(BusinessException.class, () -> service.syncAccountById(999L, "MANUAL"));
+        assertEquals(404, e.getCode());
+    }
+
+    @Test
+    void syncById_notVerified_throws409() {
+        OjAccount acc = verifiedAccount();
+        acc.setVerifyStatus(0);
+        when(accountMapper.selectById(ACCOUNT_ID)).thenReturn(acc);
+        var e = assertThrows(BusinessException.class, () -> service.syncAccountById(ACCOUNT_ID, "SCHEDULED"));
+        assertEquals(409, e.getCode());
+    }
+
+    @Test
+    void syncById_notEnabled_throws409() {
+        OjAccount acc = verifiedAccount();
+        acc.setSyncEnabled(0);
+        when(accountMapper.selectById(ACCOUNT_ID)).thenReturn(acc);
+        var e = assertThrows(BusinessException.class, () -> service.syncAccountById(ACCOUNT_ID, "SCHEDULED"));
+        assertEquals(409, e.getCode());
+    }
+
+    @Test
+    void syncById_scheduledTrigger_succeeds() {
+        OjAccount acc = verifiedAccount();
+        acc.setLastSyncTime(null);
+        when(accountMapper.selectById(ACCOUNT_ID)).thenReturn(acc);
+        when(submissionMapper.selectOne(any())).thenReturn(null);
+        when(cfClient.fetchSubmissions("test_handle", 1, 500)).thenReturn(Collections.emptyList());
+
+        var result = service.syncAccountById(ACCOUNT_ID, "SCHEDULED");
+        assertEquals("SUCCESS", result.getSyncStatus());
+        // Verify SyncTaskLog was written with SCHEDULED trigger
+        var captor = ArgumentCaptor.forClass(SyncTaskLog.class);
+        verify(taskLogMapper).insert(captor.capture());
+        assertEquals("SCHEDULED", captor.getValue().getTriggerType());
+    }
 }

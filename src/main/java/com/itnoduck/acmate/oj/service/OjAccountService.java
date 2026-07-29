@@ -14,4 +14,5 @@ public interface OjAccountService {
     List<Map<String, Object>> getPendingAccounts(AuthenticatedUser user);
     void verify(Long id, int status, AuthenticatedUser user);
     SyncResult syncMyAccount(AuthenticatedUser user);
+    SyncResult syncAccountById(Long accountId, String triggerType);
 }

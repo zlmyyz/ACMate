@@ -5,6 +5,7 @@ export interface LeaderboardEntry {
   nickname: string
   avatarUrl: string | null
   solvedCount: number
+  lastAcceptedTime: string | null
   isMe: boolean
 }
 

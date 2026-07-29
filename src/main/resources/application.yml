@@ -34,3 +34,8 @@ mybatis-plus:
   global-config:
     db-config:
       id-type: auto
+
+acmate:
+  sync:
+    cron: "0 0 4 * * *"
+    timezone: "Asia/Shanghai"

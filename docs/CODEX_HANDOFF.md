@@ -29,6 +29,14 @@ c6831da feat: add problem selection to training plans
 977eb9a fix: complete browser-verified core workflows
 ```
 
+### 工作区状态（本轮变更后）
+
+```
+?? .codex/                               # Codex 配置目录，不提交
+```
+
+本轮变更包含：服务端同步冷却、每日定时同步、排行榜并列排序、前后端测试、文档更新。
+
 ### 工作区状态（Chromium 验收后最终状态）
 
 ```
@@ -85,19 +93,19 @@ c6831da feat: add problem selection to training plans
 
 | 项目 | 状态 |
 |------|------|
-| 功能 | CF handle 绑定/解绑/审核、cursor 分页增量同步、DB 级 first-AC 原子约束（oj_first_ac UNIQUE KEY）、幂等、同步任务日志 |
-| 后端测试 | 34（OjAccountServiceImplTest） |
-| 前端测试 | ~10（oj.test.ts + 部分 phases567） |
-| 浏览器验收 | 已验收（绑定/解绑/审核/同步按钮/结果展示）—— 但**真实 CF API 端到端验收待进行** |
-| 待办 | 定时 @Scheduled 同步未启用、同步冷却期服务端未强制、牛客同步未实现 |
+| 功能 | CF handle 绑定/解绑/审核、cursor 分页增量同步、DB 级 first-AC 原子约束（oj_first_ac UNIQUE KEY）、幂等、同步任务日志、**服务端 1h 冷却**、**每日定时同步** |
+| 后端测试 | 43（OjAccountServiceImplTest） |
+| 前端测试 | ~11（oj.test.ts + 部分 phases567） |
+| 浏览器验收 | 已验收（绑定/解绑/审核/同步按钮/结果展示/冷却提示）—— 但**真实 CF API 端到端验收待进行** |
+| 待办 | 冷却期结束前返回 COOLDOWN SyncResult（含剩余秒数）；@EnableScheduling + @Scheduled 已启用（默认每日 4:00 Asia/Shanghai） |
 
 ### 2.6 可信排行榜
 
 | 项目 | 状态 |
 |------|------|
-| 功能 | 总榜/7d/30d 分页、数据源为 oj_first_ac + VERIFIED 账号、禁用用户 SQL 层排除、未映射本地题目的 AC 计入、page/size 分页、isMe 标记 |
-| 后端测试 | 5（LeaderboardServiceImpl 通过按聚合查询验证） |
-| 前端测试 | ~4（phases567.test.ts） |
+| 功能 | 总榜/7d/30d 分页、数据源为 oj_first_ac + VERIFIED 账号、禁用用户 SQL 层排除、未映射本地题目的 AC 计入、page/size 分页、isMe 标记、**并列排序（solved_count DESC → last_accepted_time ASC → user_id ASC）** |
+| 后端测试 | 12（LeaderboardServiceImplTest 7个 + 含在 OjAccountServiceImplTest 中） |
+| 前端测试 | ~7（phases567.test.ts 含 lastAcceptedTime 列） |
 | 浏览器验收 | 待进行（依赖 CF 真实同步验收后才有真实数据填充） |
 | 待办 | 依赖 CF 真实同步才能填充数据做真实验证 |
 
@@ -140,20 +148,19 @@ c6831da feat: add problem selection to training plans
 
 ### 后端
 ```
-Tests run: 502, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 518, Failures: 0, Errors: 0, Skipped: 0
 ```
 - 全部纯 Mockito / @WebMvcTest，无需数据库
 - `MybatisPlusTestHelper.initEntityTables()` 初始化 MyBatis-Plus lambda 缓存
-- 两次全量运行确认无 flaky 测试
+- CF 同步 43 个测试覆盖同步、幂等、first-AC、上游失败、冷却、concurrent 保护
 
 ### 前端
 ```
 Test Files: 9 passed, 9 total
-Tests: 188 passed, 188 total
+Tests: 191 passed, 191 total
 ```
 - vitest + @vue/test-utils + jsdom
-- 9 个测试文件：auth.test.ts, markdown.test.ts, problems.test.ts, training.test.ts, users.test.ts, notifications.test.ts, oj.test.ts, phases567.test.ts, audit-logs.test.ts
-- 两次全量运行确认无 flaky 测试
+- 9 个测试文件：含冷却展示测试、排行榜 lastAcceptedTime 列测试
 
 ### type-check / lint / build
 | 检查 | 结果 |
@@ -199,14 +206,13 @@ V14__add_first_ac_constraint.sql
 ## 6. 下一步推荐任务
 
 ### 高优先级
-1. **管理员用户 Session 专项验收** — 验证停用及角色变化后的旧 Session 失效，其他用户 Session 不受影响
+1. **CF 真实 API + 真实排行榜数据验收** — 用真实 CF 账号端到端验证同步（冷却/定时/手动）、排行榜数据填充（并列排序/分页/去重）
 
 ### 中优先级
-2. **排行榜真实数据验证** — 需先完成 CF 真实同步验收，然后用真实数据验证排行榜分页/排序/去重
+2. **管理员用户 Session 专项验收** — 验证停用及角色变化后的旧 Session 失效
 
 ### 低优先级
-3. **启用 @Scheduled 定时同步** — 配置类加 `@EnableScheduling`，cron 表达式（如每天凌晨 4 点）
-4. **服务端强制同步冷却期** — 检查 `last_sync_time`，距上次同步不足 1 小时返回 429
+3. **牛客平台支持** — 新增 OJ 平台枚举和对应的 API 客户端
 
 ---
 

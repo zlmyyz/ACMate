@@ -30,4 +30,6 @@ export interface SyncResult {
   newAcceptedProblemCount: number
   lastSyncTime: string | null
   syncStatus: string
+  remainingCooldownSeconds?: number
+  nextAllowedSyncTime?: string | null
 }

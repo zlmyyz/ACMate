@@ -82,8 +82,8 @@ describe('LeaderboardView', () => {
 
   it('should render leaderboard entries', async () => {
     mockGetLeaderboard.mockResolvedValue({ entries: [
-      { rank: 1, userId: 1, username: 'alice', nickname: 'Alice', avatarUrl: null, solvedCount: 42, isMe: false },
-      { rank: 2, userId: 2, username: 'bob', nickname: 'Bob', avatarUrl: null, solvedCount: 30, isMe: true },
+      { rank: 1, userId: 1, username: 'alice', nickname: 'Alice', avatarUrl: null, solvedCount: 42, lastAcceptedTime: '2025-06-01T12:00:00', isMe: false },
+      { rank: 2, userId: 2, username: 'bob', nickname: 'Bob', avatarUrl: null, solvedCount: 30, lastAcceptedTime: '2025-06-02T12:00:00', isMe: true },
     ], total: 2, page: 1, size: 20 })
 
     const router = createRouter({
@@ -132,6 +132,35 @@ describe('LeaderboardView', () => {
     expect(wrapper.text()).toContain('总榜')
     expect(wrapper.text()).toContain('近7天')
     expect(wrapper.text()).toContain('近30天')
+  })
+
+  it('should display lastAcceptedTime column', async () => {
+    mockGetLeaderboard.mockResolvedValue({ entries: [
+      { rank: 1, userId: 1, username: 'alice', nickname: 'Alice', avatarUrl: null, solvedCount: 42, lastAcceptedTime: '2025-06-01T12:00:00', isMe: false },
+    ], total: 1, page: 1, size: 20 })
+
+    const { default: LeaderboardView } = await import('@/views/LeaderboardView.vue')
+    const wrapper = mount(LeaderboardView, {
+      global: { plugins: [emptyRouter()], stubs: { RouterLink: routerLinkStub } },
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('最后 AC')
+    expect(wrapper.text()).toContain('2025/6/1')
+  })
+
+  it('should show dash when lastAcceptedTime is null', async () => {
+    mockGetLeaderboard.mockResolvedValue({ entries: [
+      { rank: 1, userId: 1, username: 'alice', nickname: 'Alice', avatarUrl: null, solvedCount: 5, lastAcceptedTime: null, isMe: false },
+    ], total: 1, page: 1, size: 20 })
+
+    const { default: LeaderboardView } = await import('@/views/LeaderboardView.vue')
+    const wrapper = mount(LeaderboardView, {
+      global: { plugins: [emptyRouter()], stubs: { RouterLink: routerLinkStub } },
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('-')
   })
 })
 

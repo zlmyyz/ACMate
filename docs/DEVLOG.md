@@ -2019,3 +2019,58 @@ type-check + lint + build 全部通过
 
 `feat: complete admin audit log workflow`
 
+
+## 2026-07-29（八轮）：CF 同步最终收口 + 排行榜并列排序
+
+### 本次目标
+
+完成 CF 同步冷却、每日定时同步、排行榜并列排序、45+ 后端/前端测试、真实 CF API 一端到端验收。
+
+### 功能变更
+
+1. **服务端同步冷却**：`OjAccountServiceImpl` 新增 `isCooldownActive()` 检查 `lastSyncSuccess=1` 且距上次同步不足 1 小时时，返回 SyncResult(syncStatus="COOLDOWN", remainingCooldownSeconds)
+2. **并发请求保护**：`syncingAccounts` ConcurrentHashMap 防止同一账号并发同步
+3. **每日定时同步**：`SchedulingConfig`(@EnableScheduling) + `SyncScheduledTask`(@Scheduled cron) 默认每日 4:00 Asia/Shanghai，扫描 verify_status=1 AND sync_enabled=1 的账号逐个同步，单账号错误隔离
+4. **同步任务日志**：SyncTaskLog.triggerType 支持 "SCHEDULED"（原硬编码 "MANUAL"）
+5. **排行榜并列排序**：所有排行榜查询 `ORDER BY solved_count DESC, last_accepted_time ASC, f.user_id ASC`，使用 `MAX(s.submitted_time)` 作为最后 AC 时间
+6. **排行榜响应**：新增 `lastAcceptedTime` 字段
+
+### 新增/修改文件
+
+| 文件 | 操作 |
+|------|------|
+| `OjAccountServiceImpl.java` | 修改：冷却 + 并发保护 + doSync 提取 + syncAccountById |
+| `SyncResult.java` | 修改：增加 remainingCooldownSeconds, nextAllowedSyncTime |
+| `OjAccountService.java` | 修改：增加 syncAccountById |
+| `SchedulingConfig.java` | **新建**：@EnableScheduling |
+| `SyncScheduledTask.java` | **新建**：每日定时同步 |
+| `application.yml` | 修改：增加 acmate.sync.cron/timezone |
+| `OjSubmissionMapper.java` | 修改：全部查询增加 last_accepted_time，排序规则增加时间维度 |
+| `LeaderboardServiceImpl.java` | 修改：返回 lastAcceptedTime |
+| `LeaderboardServiceImplTest.java` | **新建**：7 个排行榜测试 |
+| `OjAccountServiceImplTest.java` | 修改：+9 冷却测试 + 4 syncAccountById 测试 |
+| `leaderboard.ts` | 修改：LeaderboardEntry 增加 lastAcceptedTime |
+| `oj.ts` | 修改：SyncResult 增加 remainingCooldownSeconds |
+| `LeaderboardView.vue` | 修改：增加「最后 AC」列 |
+| `OJAccountView.vue` | 修改：冷却提示 |
+| `oj.test.ts` | 修改：+1 冷却展示测试 |
+| `phases567.test.ts` | 修改：+2 排行榜 lastAcceptedTime 测试 |
+| `IMPLEMENTATION_STATUS.md` | 修改：状态更新、V12 描述修正 |
+| `CODEX_HANDOFF.md` | 修改：状态更新 |
+| `ROADMAP.md` | 修改：阶段 5/6 标记完成 |
+| `DEVLOG.md` | 修改：本条目 |
+
+### 自动化验证
+
+- 后端：518 tests passed（+9 cooldown + 4 syncById + 7 leaderboard）
+- 前端：191 tests passed（+1 cooldown + 2 leaderboard lastAcceptedTime）
+- 前端 type-check：pass
+- 前端 lint：pass
+- 前端 build：pass
+
+### 待进行
+
+- CF 真实 API 端到端验收（含冷却/定时/排行榜同步数据）
+- 排行榜浏览器人工验收（并列排序/分页/去重）
+- 管理员用户旧 Session 专项验收
+

@@ -139,4 +139,22 @@ describe('OJAccountView sync button', () => {
     await flushPromises()
     expect(wrapper.text()).toContain('同步失败，请稍后重试')
   })
+
+  it('displays cooldown hint when syncStatus is COOLDOWN', async () => {
+    mockGetMyAccount.mockResolvedValue({
+      hasAccount: true, platform: 'CODEFORCES', externalUserId: 'handle',
+      verifyStatus: 1, syncEnabled: 1, lastSyncTime: null, lastSyncSuccess: null,
+    })
+    mockSyncAccount.mockResolvedValue({
+      accountId: 1, handle: 'handle', fetchedCount: 0, insertedCount: 0, acceptedCount: 0,
+      newAcceptedProblemCount: 0, lastSyncTime: '2025-01-01T12:00:00', syncStatus: 'COOLDOWN',
+      remainingCooldownSeconds: 1800, nextAllowedSyncTime: '2025-01-01T13:00:00',
+    })
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('.sync-btn').trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).toContain('冷却中')
+    expect(wrapper.text()).toContain('1800')
+  })
 })

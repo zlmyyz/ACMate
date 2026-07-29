@@ -87,6 +87,7 @@ watch(period, (v) => router.replace({ query: { period: v, page: String(page.valu
             <span class="col-rank">排名</span>
             <span class="col-user">用户</span>
             <span class="col-count">AC 题数</span>
+            <span class="col-time">最后 AC</span>
           </div>
           <div
             v-for="entry in entries" :key="entry.userId"
@@ -105,6 +106,7 @@ watch(period, (v) => router.replace({ query: { period: v, page: String(page.valu
               </RouterLink>
             </span>
             <span class="col-count">{{ entry.solvedCount }}</span>
+            <span class="col-time">{{ entry.lastAcceptedTime ? new Date(entry.lastAcceptedTime).toLocaleDateString('zh-CN') : '-' }}</span>
           </div>
         </div>
         <PaginationBar
@@ -145,6 +147,7 @@ watch(period, (v) => router.replace({ query: { period: v, page: String(page.valu
 .col-rank { width: 60px; flex-shrink: 0; text-align: center; }
 .col-user { flex: 1; min-width: 0; }
 .col-count { width: 100px; flex-shrink: 0; text-align: center; font-weight: 600; color: var(--color-on-surface); }
+.col-time { width: 110px; flex-shrink: 0; text-align: center; font-size: var(--text-body-sm); color: var(--color-on-surface-variant); }
 
 .rank-num { font-size: var(--text-body-md); color: var(--color-on-surface-variant); }
 .rank-badge {

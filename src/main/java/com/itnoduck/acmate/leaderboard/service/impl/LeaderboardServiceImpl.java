@@ -74,6 +74,7 @@ public class LeaderboardServiceImpl implements LeaderboardService {
             item.put("nickname", u.getNickname());
             item.put("avatarUrl", u.getAvatarUrl());
             item.put("solvedCount", ((Number) row.get("solved_count")).intValue());
+            item.put("lastAcceptedTime", row.get("last_accepted_time") != null ? row.get("last_accepted_time").toString() : null);
             item.put("isMe", u.getId().equals(currentUserId));
             result.add(item);
         }
