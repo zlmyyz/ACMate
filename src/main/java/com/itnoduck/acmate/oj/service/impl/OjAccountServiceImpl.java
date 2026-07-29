@@ -66,17 +66,17 @@ public class OjAccountServiceImpl implements OjAccountService {
         var acc = accountMapper.selectOne(new LambdaQueryWrapper<OjAccount>()
                 .eq(OjAccount::getUserId, user.getId()));
         if (acc == null) return Map.of("hasAccount", false);
-        return Map.of(
-            "hasAccount", true,
-            "id", acc.getId(),
-            "platform", acc.getPlatform(),
-            "externalUserId", acc.getExternalUserId(),
-            "displayName", acc.getDisplayName(),
-            "verifyStatus", acc.getVerifyStatus(),
-            "syncEnabled", acc.getSyncEnabled(),
-            "lastSyncTime", acc.getLastSyncTime() != null ? acc.getLastSyncTime().toString() : null,
-            "lastSyncSuccess", acc.getLastSyncSuccess()
-        );
+        var result = new java.util.LinkedHashMap<String, Object>();
+        result.put("hasAccount", true);
+        result.put("id", acc.getId());
+        result.put("platform", acc.getPlatform());
+        result.put("externalUserId", acc.getExternalUserId());
+        result.put("displayName", acc.getDisplayName());
+        result.put("verifyStatus", acc.getVerifyStatus());
+        result.put("syncEnabled", acc.getSyncEnabled());
+        result.put("lastSyncTime", acc.getLastSyncTime() != null ? acc.getLastSyncTime().toString() : null);
+        result.put("lastSyncSuccess", acc.getLastSyncSuccess());
+        return result;
     }
 
     @Override
@@ -332,7 +332,7 @@ public class OjAccountServiceImpl implements OjAccountService {
                 ac.setUserId(account.getUserId());
                 ac.setPlatform("CODEFORCES");
                 ac.setExternalProblemKey(problemKey);
-                ac.setSubmissionId(subId);
+                ac.setSubmissionId(sub.getId());
                 try {
                     firstAcMapper.insert(ac);
                     firstAc = true;

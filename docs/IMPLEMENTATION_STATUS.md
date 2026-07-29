@@ -1,6 +1,6 @@
 # IMPLEMENTATION STATUS
 
-> Updated: 2026-07-29 | CF 同步冷却+定时同步+排行榜并列排序完成，端到端验收
+> Updated: 2026-07-29 | 人工验收完成：CF同步+排行榜+管理员Session。修复 first_ac.submission_id 存储远程ID导致排行榜无数据的bug
 
 ## Feature Status
 
@@ -21,10 +21,10 @@
 | 帖子 | CRUD/类型/deactivation/权限/N+1/原子计数 | **已完成** | 完成 | 46 pass | **浏览器验证通过** | — |
 | 评论 | 一级评论/一层回复/停用追踪 | **已完成** | 完成 | 含 | **浏览器验证通过** | — |
 | 点赞 | 帖子点赞/原子计数/去重 | **已完成** | 完成 | 含 | **浏览器验证通过** | — |
-| 排行榜 | 总榜/7天/30天/分页/并列排序 | **完成** | **完成** | 12 pass | 待联调 | 真实数据验证+浏览器人工验收待进行 |
-| CF账号 | 绑定/审核/同步/冷却/服务端1h冷却 | **完成** | **完成** | 43 pass | **浏览器验证通过** | 真实CF API+Chromium最终验收待进行 |
+| 排行榜 | 总榜/7天/30天/分页/并列排序 | **完成** | **完成** | 12 pass | **浏览器验证通过（真实CF数据352AC）** | — |
+| CF账号 | 绑定/审核/同步/冷却/服务端1h冷却 | **完成** | **完成** | 43 pass | **浏览器验证通过（真实CF API tourist同步成功）** | — |
 | 同步任务 | 手动/定时/@Scheduled/日志/重试 | **完成** | 完成 | 含 | **浏览器验证通过** | — |
-| 管理员用户管理 | 列表/停用/恢复/提权/管理员授予撤销/Session失效/审计日志 | 完成 | 完成 | 49 admin + 8 frontend | **浏览器验证通过** | Session/角色旧会话专项仍待人工验收 |
+| 管理员用户管理 | 列表/停用/恢复/提权/管理员授予撤销/Session失效/审计日志 | 完成 | 完成 | 49 admin + 8 frontend | **浏览器验证通过（停用→Session失效/恢复/提权/撤销全链路）** | — |
 | 通知 | 11种场景/已读/未读/轮询 | **端到端联调通过** | 完成 | 42 pass | **浏览器验证通过** | — |
 | 管理员内容管理 | 帖子/评论管理 | **已完成** | 完成 | — | 待联调 | 审计日志已集成 |
 | 操作日志 | 管理员审计 | **已完成** | **已完成** | 25 (16 service + 9 controller) + 7 frontend | **Chromium 验收通过（14/14 actionTypes 真实 API 验证）** | 14 种标准化 actionType 已覆盖全部高风险操作 |
@@ -39,6 +39,13 @@
 | 前端 | 191 | 191 | 0 |
 
 全部后端测试无需数据库，使用 Mockito 和 MybatisPlusTestHelper。CF 同步 43 个测试覆盖同步、幂等、first-AC、上游失败、冷却。新增 7 个排行榜测试（含 lastAcceptedTime 并列排序）+ 9 个冷却测试 + 4 个 syncAccountById 测试。前端 191 个测试含冷却展示、排行榜 lastAcceptedTime 列。
+
+## 验收问题修复
+
+| 问题 | 现象 | 原因 | 修复 |
+|---|---|---|---|
+| first_ac.submission_id 指向错误 | 排行榜 leaderboard 返回 total=1 但 entries 为空 | sync 代码 `ac.setSubmissionId(subId)` 使用了 CF 远程 submission ID 而非本地 `oj_submission.id`，导致 JOIN `f.submission_id = s.id` 找不到匹配行 | 改为 `ac.setSubmissionId(sub.getId())`，使用 MyBatisPlus 自增 ID |
+| getMyAccount NPE | 绑定 CF 后页面崩溃，500 error | `Map.of()` 不支持 null value，而新绑定的账号 `lastSyncSuccess` 为 null | 改为 `LinkedHashMap` |
 
 ## 数据库迁移
 

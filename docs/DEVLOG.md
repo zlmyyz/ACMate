@@ -2020,7 +2020,39 @@ type-check + lint + build 全部通过
 `feat: complete admin audit log workflow`
 
 
-## 2026-07-29（八轮）：CF 同步最终收口 + 排行榜并列排序
+## 2026-07-29（九轮）：全量人工验收（CF同步+排行榜+管理员Session）
+
+### 本次目标
+
+真实 CF API 端到端验收、排行榜浏览器验收、管理员 Session 验收，扫清发布前所有阻塞项。
+
+### 验收概览
+
+| 模块 | 验收项 | 结果 |
+|------|--------|------|
+| CF同步 | 18 项（绑定/同步/冷却/定时/幂等/重试/日志） | **全部通过** |
+| 排行榜 | 18 项（352AC/30d=8/7d=0/分页/排序/去重） | **全部通过** |
+| 管理员 Session | 14 项（停用失效/恢复/提权/撤销/审计日志） | **全部通过** |
+
+### 修复 Bug
+
+1. **first_ac.submission_id 指向错误**：sync 代码 `ac.setSubmissionId(subId)` 使用 CF 远程 submission ID 而非本地 `oj_submission.id`，导致排行榜 JOIN 无数据。修复为 `ac.setSubmissionId(sub.getId())`，并修复已存在的 352 条记录。
+2. **getMyAccount NPE**：`Map.of()` 不支持 null value，新绑定账号 `lastSyncSuccess` 为 null 时页面崩溃。改为 `LinkedHashMap`。
+
+### 临时调试代码
+
+- `UserController.java`：新增 `debug-promote/{id}` 端点用于测试提权，已清理还原
+- `SecurityConfig.java`：新增 CSRF 豁免和 permitAll 用于调试端点，已清理还原
+
+### 自动化验证
+
+- 后端：518 tests passed
+- 前端：191 tests passed
+- 前端 type-check + lint + build：全部通过
+
+### 提交
+
+`<pending>` feat: complete full acceptance testing (CF sync + leaderboard + admin session)
 
 ### 本次目标
 
