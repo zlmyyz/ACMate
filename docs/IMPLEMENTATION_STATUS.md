@@ -188,7 +188,7 @@ V9 首次出现在 `bd56c20`（Phase 8），含非法 `ADD COLUMN IF NOT EXISTS`
 | CF handle 绑定 | 是 | 完成（唯一约束、重复绑定拒绝） |
 | CF API 提交记录同步 | 是 | **已实现** — RestClient + cursor 分页增量同步；真实 API 验收待进行 |
 | 手动同步 | 是 | **已实现** — POST /me/sync + 前端同步按钮 + 结果展示 |
-| 定时同步 (cron) | 是 | **已实现** — @EnableScheduling + @Scheduled(cron="${acmate.sync.cron}")，每日凌晨4点默认 |
+| 定时同步 (cron) | 是 | **已实现** — @Scheduled(cron="${acmate.codeforces.scheduling.cron:0 0 * * * *}")，每小时整点默认；@ConditionalOnProperty 可关闭 |
 | 同步冷却期 | 是 | **已实现** — 服务端 1 小时冷却，isCooldownActive 校验，COOLDOWN SyncResult 返回剩余秒数 |
 | 同步任务日志 | 是 | **代码完成** — SyncTaskLog 记录 cursor/fetched/inserted/firstAc |
 | 同步失败处理 | 是 | **代码完成** — 网络错误 502、handle 不存在 404、Rate limit 429 |

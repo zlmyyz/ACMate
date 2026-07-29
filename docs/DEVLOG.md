@@ -2024,13 +2024,13 @@ type-check + lint + build 全部通过
 
 ### 本次目标
 
-完成 CF 同步冷却、每日定时同步、排行榜并列排序、45+ 后端/前端测试、真实 CF API 一端到端验收。
+完成 CF 同步冷却、每小时定时同步、排行榜并列排序、45+ 后端/前端测试、真实 CF API 一端到端验收。
 
 ### 功能变更
 
 1. **服务端同步冷却**：`OjAccountServiceImpl` 新增 `isCooldownActive()` 检查 `lastSyncSuccess=1` 且距上次同步不足 1 小时时，返回 SyncResult(syncStatus="COOLDOWN", remainingCooldownSeconds)
 2. **并发请求保护**：`syncingAccounts` ConcurrentHashMap 防止同一账号并发同步
-3. **每日定时同步**：`SchedulingConfig`(@EnableScheduling) + `SyncScheduledTask`(@Scheduled cron) 默认每日 4:00 Asia/Shanghai，扫描 verify_status=1 AND sync_enabled=1 的账号逐个同步，单账号错误隔离
+3. **每小时定时同步**：`SchedulingConfig`(@EnableScheduling) + `SyncScheduledTask`(@Scheduled cron="0 0 * * * *") 每小时整点，支持 enabled/cron/zone 配置覆盖，@ConditionalOnProperty 可控关闭，扫描 verify_status=1 AND sync_enabled=1 的账号逐个同步，单账号错误隔离
 4. **同步任务日志**：SyncTaskLog.triggerType 支持 "SCHEDULED"（原硬编码 "MANUAL"）
 5. **排行榜并列排序**：所有排行榜查询 `ORDER BY solved_count DESC, last_accepted_time ASC, f.user_id ASC`，使用 `MAX(s.submitted_time)` 作为最后 AC 时间
 6. **排行榜响应**：新增 `lastAcceptedTime` 字段
@@ -2043,8 +2043,8 @@ type-check + lint + build 全部通过
 | `SyncResult.java` | 修改：增加 remainingCooldownSeconds, nextAllowedSyncTime |
 | `OjAccountService.java` | 修改：增加 syncAccountById |
 | `SchedulingConfig.java` | **新建**：@EnableScheduling |
-| `SyncScheduledTask.java` | **新建**：每日定时同步 |
-| `application.yml` | 修改：增加 acmate.sync.cron/timezone |
+| `SyncScheduledTask.java` | **新建**：每小时整点定时同步 |
+| `application.yml` | 修改：增加 acmate.codeforces.scheduling enabled/cron/zone |
 | `OjSubmissionMapper.java` | 修改：全部查询增加 last_accepted_time，排序规则增加时间维度 |
 | `LeaderboardServiceImpl.java` | 修改：返回 lastAcceptedTime |
 | `LeaderboardServiceImplTest.java` | **新建**：7 个排行榜测试 |

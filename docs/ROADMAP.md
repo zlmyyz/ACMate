@@ -43,7 +43,7 @@
 
 - [x] Codeforces 账号绑定
 - [x] 牛客账号绑定（仅记录）
-- [x] Codeforces 提交增量同步（cursor 分页 + first-AC 原子约束 + 幂等 + 服务端 1h 冷却 + 每日定时 @Scheduled）
+- [x] Codeforces 提交增量同步（cursor 分页 + first-AC 原子约束 + 幂等 + 服务端 1h 冷却 + 每小时整点 @Scheduled）
 - [x] 同步任务日志
 
 ## 阶段 7：Redis 排行榜优化

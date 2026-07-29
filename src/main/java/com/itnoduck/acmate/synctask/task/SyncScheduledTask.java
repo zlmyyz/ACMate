@@ -6,13 +6,14 @@ import com.itnoduck.acmate.oj.mapper.OjAccountMapper;
 import com.itnoduck.acmate.oj.service.OjAccountService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Component
+@ConditionalOnProperty(prefix = "acmate.codeforces.scheduling", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class SyncScheduledTask {
 
     private static final Logger log = LoggerFactory.getLogger(SyncScheduledTask.class);
@@ -26,7 +27,7 @@ public class SyncScheduledTask {
         this.ojAccountService = ojAccountService;
     }
 
-    @Scheduled(cron = "${acmate.sync.cron:0 0 4 * * *}", zone = "${acmate.sync.timezone:Asia/Shanghai}")
+    @Scheduled(cron = "${acmate.codeforces.scheduling.cron:0 0 * * * *}", zone = "${acmate.codeforces.scheduling.zone:Asia/Shanghai}")
     public void syncAllVerifiedAccounts() {
         if (!running.compareAndSet(false, true)) {
             log.warn("Scheduled sync already running, skipping this execution");

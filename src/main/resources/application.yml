@@ -36,6 +36,8 @@ mybatis-plus:
       id-type: auto
 
 acmate:
-  sync:
-    cron: "0 0 4 * * *"
-    timezone: "Asia/Shanghai"
+  codeforces:
+    scheduling:
+      enabled: true
+      cron: "0 0 * * * *"
+      zone: "Asia/Shanghai"

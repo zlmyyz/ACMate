@@ -97,7 +97,7 @@ c6831da feat: add problem selection to training plans
 | 后端测试 | 43（OjAccountServiceImplTest） |
 | 前端测试 | ~11（oj.test.ts + 部分 phases567） |
 | 浏览器验收 | 已验收（绑定/解绑/审核/同步按钮/结果展示/冷却提示）—— 但**真实 CF API 端到端验收待进行** |
-| 待办 | 冷却期结束前返回 COOLDOWN SyncResult（含剩余秒数）；@EnableScheduling + @Scheduled 已启用（默认每日 4:00 Asia/Shanghai） |
+| 待办 | 冷却期结束前返回 COOLDOWN SyncResult（含剩余秒数）；@EnableScheduling + @Scheduled(cron="0 0 * * * *") 每小时整点，支持 enabled/cron/zone 配置覆盖 |
 
 ### 2.6 可信排行榜
 
