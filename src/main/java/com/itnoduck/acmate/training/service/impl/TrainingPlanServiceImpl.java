@@ -484,11 +484,12 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
                 .eq(TrainingPlanMember::getUserId, userId));
         if (existing != null) {
             if (existing.getStatus() != null && existing.getStatus() == 0) {
-                // restore removed member
-                existing.setStatus(1);
-                existing.setRemoveTime(null);
-                existing.setRemovedBy(null);
-                memberMapper.updateById(existing);
+                // restore removed member - use UpdateWrapper to clear null fields
+                memberMapper.update(null, new LambdaUpdateWrapper<TrainingPlanMember>()
+                        .eq(TrainingPlanMember::getId, existing.getId())
+                        .set(TrainingPlanMember::getStatus, 1)
+                        .set(TrainingPlanMember::getRemoveTime, null)
+                        .set(TrainingPlanMember::getRemovedBy, null));
             }
             return;
         }

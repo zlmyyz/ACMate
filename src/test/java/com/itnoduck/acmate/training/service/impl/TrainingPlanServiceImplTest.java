@@ -877,14 +877,12 @@ class TrainingPlanServiceImplTest {
         TrainingPlanMember removed = new TrainingPlanMember();
         removed.setId(1L); removed.setPlanId(PLAN_ID); removed.setUserId(OTHER_USER_ID);
         removed.setJoinTime(LocalDateTime.now()); removed.setStatus(0);
+        removed.setRemoveTime(LocalDateTime.now()); removed.setRemovedBy(1L);
         when(memberMapper.selectOne(any())).thenReturn(removed);
 
         service.joinPlan(PLAN_ID, OTHER_USER_ID);
 
-        assertEquals(1, removed.getStatus().intValue());
-        assertNull(removed.getRemoveTime());
-        assertNull(removed.getRemovedBy());
-        verify(memberMapper).updateById(removed);
+        verify(memberMapper).update(isNull(), any(LambdaUpdateWrapper.class));
     }
 
     @Test

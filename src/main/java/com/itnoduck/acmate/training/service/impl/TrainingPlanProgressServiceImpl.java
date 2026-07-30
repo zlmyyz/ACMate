@@ -132,8 +132,9 @@ public class TrainingPlanProgressServiceImpl implements TrainingPlanProgressServ
                     .eq(TrainingPlanMember::getPlanId, planId)
                     .eq(TrainingPlanMember::getUserId, targetUserId));
             boolean viewerIsCreator = plan.getCreatorUserId().equals(currentUserId);
-            // viewer must be a member or creator to see others' progress
-            boolean viewerCanSee = viewerIsCreator || (viewerMember != null && (viewerMember.getStatus() == null || viewerMember.getStatus() == 1));
+            boolean viewerIsAdmin = isAdminUser(currentUserId);
+            // viewer must be a member or creator or admin to see others' progress
+            boolean viewerCanSee = viewerIsCreator || viewerIsAdmin || (viewerMember != null && (viewerMember.getStatus() == null || viewerMember.getStatus() == 1));
             if (!viewerCanSee) throw new BusinessException(404, "训练计划不存在");
             if (targetMember == null || (targetMember.getStatus() != null && targetMember.getStatus() == 0))
                 throw new BusinessException(404, "该成员不在计划中");
