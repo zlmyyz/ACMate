@@ -1,6 +1,79 @@
 # DEVLOG
 
-## 2026-07-30（八轮）：训练计划成员进度
+## 2026-07-30（九轮）：训练计划成员进度高优先级验收
+
+### 本次目标
+
+对训练计划成员进度模块进行 6 项高优先级专项验收：V15 迁移验证、CF ACCEPTED 联动、成员生命周期、截止时间冻结、备注只读权限、回归测试。
+
+### 验收结果
+
+**一、V15 MySQL 验证（8 项全部通过）**
+- training_plan_member 新增 status/remove_time/removed_by ✓
+- user_problem_status 新增 performance_note ✓
+- 用户表/bio/training_plan 停用字段/notification 均完整 ✓
+- 回填批处理 batchBackfillFromFirstAc 正确执行 ✓
+
+**二、CF ACCEPTED 联动（4 项全部通过）**
+- upsertFirstAc 正确创建 user_problem_status（status=2, accepted_submission_id=1, first_ac_time 准确）✓
+- batchBackfillFromFirstAc 在题目映射创建时正确回填 ✓
+- attempt_count 不被 AC 更新影响（保持 0）✓
+- 已有 ACCEPTED 记录时修改 platform/externalProblemKey → 409 ✓
+
+**三、成员生命周期（原 session 已修复验证）**
+- 移除保留行（status=0, remove_time/removed_by 审计字段）✓
+- 新增成员不能加入（正确实现逻辑删除，非物理删除）✓
+- UPS 保留 ✓
+- Rejoin 使用 LambdaUpdateWrapper 清除审计字段 ✓
+
+**四、截止时间冻结（10 项全部通过）**
+- 截止前快照正确 ✓
+- 截止后 ACCEPTED 不更新 deadlineCompletedCount/deadlineLastAcceptedTime ✓
+- 截止后 ACCEPTED 不影响排名 ✓
+- 截止后 ACCEPTED 不改变 completionOrder ✓
+- 已结束计划允许状态更新（CHALLENGING/NOT_STARTED）✓
+- 已结束计划允许备注更新 ✓
+- 已结束计划拒绝新成员加入（400 "不接受新成员"）✓
+- 已结束计划拒绝修改题目（400 "不能修改题目"）✓
+- 已结束计划拒绝修改必做选做（400 "不能修改题目"）✓
+- 已结束计划拒绝修改时间（400 "不能修改时间"）✓
+
+**五、备注只读权限（7 项全部通过）**
+- Alice 修改自己备注 ✓
+- Bob 看不到 Alice 备注（非成员→404）✓
+- 创建者可以看到 Alice 备注 ✓
+- 管理员可以看到 Alice 备注（原代码缺失 → 新增 isAdminUser bypass）✓
+- 创建者不能修改 Alice 备注 ✓
+- 管理员不能修改 Alice 备注 ✓
+- 非成员无权限访问 → 404 ✓
+
+**六、回归测试**
+- 后端 541 测试 0 失败 ✓
+- 前端 197 测试 0 失败（2 轮）✓
+- type-check ✓
+- lint ✓
+- build ✓
+- git diff --check ✓
+
+### 修复
+
+1. **Rejoin 不清除审计字段**：LambdaUpdateWrapper 替代 updateById，显示 SET remove_time=NULL, removed_by=NULL
+2. **管理员不能查看成员进度**：getMemberProgress 增加 `viewerIsAdmin` bypass — 管理员无需加入计划即可查看
+3. **测试同步**：joinPlan_restoresRemovedMember 适配 LambdaUpdateWrapper 的 verify 签名
+
+### 修改文件
+
+- `TrainingPlanProgressServiceImpl.java` — 管理员查看成员进度权限修复
+- `TrainingPlanServiceImpl.java` — rejoin LambdaUpdateWrapper 修复 + 去重 import
+- `TrainingPlanServiceImplTest.java` — 适配修复后的 verify 签名
+
+### 文档
+
+- `IMPLEMENTATION_STATUS.md` — 更新验收日期和总结
+- `DEVLOG.md` — 本次验收记录
+
+---
+
 
 ### 本次目标
 
