@@ -9,6 +9,7 @@ import com.itnoduck.acmate.common.exception.BusinessException;
 import com.itnoduck.acmate.notification.event.NotificationEvent;
 import com.itnoduck.acmate.training.dto.*;
 import com.itnoduck.acmate.training.entity.TrainingPlan;
+import com.itnoduck.acmate.user.dto.PublicPlanSummaryResponse;
 import com.itnoduck.acmate.training.entity.TrainingPlanMember;
 import com.itnoduck.acmate.training.entity.TrainingPlanProblem;
 import com.itnoduck.acmate.training.entity.UserProblemStatus;
@@ -532,6 +533,65 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
         eventPublisher.publishEvent(new NotificationEvent(
                 Set.of(memberUserId), operatorUserId, "TRAINING_MEMBER_REMOVED",
                 "TRAINING_PLAN", planId, memberPayload));
+    }
+
+    @Override
+    public List<PublicPlanSummaryResponse> listPublicPlansByUserId(Long userId, int page, int size) {
+        page = Math.max(1, page);
+        size = Math.max(1, Math.min(size, 100));
+
+        List<TrainingPlanMember> memberships = memberMapper.selectList(
+                new LambdaQueryWrapper<TrainingPlanMember>()
+                        .eq(TrainingPlanMember::getUserId, userId)
+                        .eq(TrainingPlanMember::getStatus, 1));
+        if (memberships.isEmpty()) return List.of();
+        Set<Long> planIds = memberships.stream().map(TrainingPlanMember::getPlanId).collect(Collectors.toSet());
+
+        LambdaQueryWrapper<TrainingPlan> qw = new LambdaQueryWrapper<TrainingPlan>()
+                .in(TrainingPlan::getId, planIds)
+                .eq(TrainingPlan::getPlanType, "PUBLIC")
+                .eq(TrainingPlan::getIsActive, 1)
+                .orderByDesc(TrainingPlan::getCreateTime)
+                .orderByDesc(TrainingPlan::getId);
+
+        List<TrainingPlan> plans = planMapper.selectList(qw);
+        int offset = (page - 1) * size;
+        List<TrainingPlan> pagePlans = plans.stream().skip(offset).limit(size).toList();
+
+        if (pagePlans.isEmpty()) return List.of();
+
+        Set<Long> resultPlanIds = pagePlans.stream().map(TrainingPlan::getId).collect(Collectors.toSet());
+        Map<Long, Integer> problemCounts = batchCountProblems(resultPlanIds);
+        Map<Long, Integer> memberCounts = batchCountMembers(resultPlanIds);
+
+        return pagePlans.stream().map(p -> {
+            PublicPlanSummaryResponse r = new PublicPlanSummaryResponse();
+            r.setId(p.getId());
+            r.setTitle(p.getTitle());
+            r.setStartTime(p.getStartTime());
+            r.setEndTime(p.getEndTime());
+            r.setTimeStatus(computeTimeStatus(p));
+            r.setProblemCount(problemCounts.getOrDefault(p.getId(), 0));
+            r.setMemberCount(memberCounts.getOrDefault(p.getId(), 0));
+            r.setCreateTime(p.getCreateTime());
+            return r;
+        }).collect(Collectors.toList());
+    }
+
+    @Override
+    public int countPublicPlansByUserId(Long userId) {
+        List<TrainingPlanMember> memberships = memberMapper.selectList(
+                new LambdaQueryWrapper<TrainingPlanMember>()
+                        .eq(TrainingPlanMember::getUserId, userId)
+                        .eq(TrainingPlanMember::getStatus, 1));
+        if (memberships.isEmpty()) return 0;
+        Set<Long> planIds = memberships.stream().map(TrainingPlanMember::getPlanId).collect(Collectors.toSet());
+
+        Long cnt = planMapper.selectCount(new LambdaQueryWrapper<TrainingPlan>()
+                .in(TrainingPlan::getId, planIds)
+                .eq(TrainingPlan::getPlanType, "PUBLIC")
+                .eq(TrainingPlan::getIsActive, 1));
+        return cnt != null ? cnt.intValue() : 0;
     }
 
     // ---------- helpers ----------

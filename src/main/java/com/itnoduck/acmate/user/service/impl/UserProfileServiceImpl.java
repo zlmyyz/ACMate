@@ -4,10 +4,15 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.itnoduck.acmate.common.exception.BusinessException;
+import com.itnoduck.acmate.oj.entity.OjAccount;
+import com.itnoduck.acmate.oj.mapper.FirstAcMapper;
+import com.itnoduck.acmate.oj.mapper.OjAccountMapper;
+import com.itnoduck.acmate.oj.mapper.OjSubmissionMapper;
 import com.itnoduck.acmate.problem.entity.Problem;
 import com.itnoduck.acmate.problem.mapper.ProblemMapper;
+import com.itnoduck.acmate.user.dto.OjStatsResponse;
+import com.itnoduck.acmate.user.dto.PublicUserProfileResponse;
 import com.itnoduck.acmate.user.dto.UpdateProfileRequest;
-import com.itnoduck.acmate.user.dto.UserProfileResponse;
 import com.itnoduck.acmate.user.entity.AppUser;
 import com.itnoduck.acmate.user.mapper.AppUserMapper;
 import com.itnoduck.acmate.user.service.UserProfileService;
@@ -21,6 +26,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -28,37 +35,77 @@ public class UserProfileServiceImpl implements UserProfileService {
 
     private final AppUserMapper appUserMapper;
     private final ProblemMapper problemMapper;
+    private final OjAccountMapper ojAccountMapper;
+    private final OjSubmissionMapper ojSubmissionMapper;
     private final Path uploadDir;
 
     public UserProfileServiceImpl(AppUserMapper appUserMapper,
                                   ProblemMapper problemMapper,
+                                  OjAccountMapper ojAccountMapper,
+                                  OjSubmissionMapper ojSubmissionMapper,
                                   @Value("${acmate.upload-dir:./uploads}") String uploadPath) {
         this.appUserMapper = appUserMapper;
         this.problemMapper = problemMapper;
+        this.ojAccountMapper = ojAccountMapper;
+        this.ojSubmissionMapper = ojSubmissionMapper;
         this.uploadDir = Paths.get(uploadPath).toAbsolutePath().normalize();
     }
 
     @Override
-    public UserProfileResponse getProfile(long userId) {
+    public PublicUserProfileResponse getProfile(long userId) {
         AppUser user = appUserMapper.selectById(userId);
-        if (user == null || user.getStatus() == 0) {
+        if (user == null) {
             throw new BusinessException(404, "用户不存在");
         }
+
+        boolean isDisabled = user.getStatus() != null && user.getStatus() == 0;
 
         long problemCount = problemMapper.selectCount(
                 new LambdaQueryWrapper<Problem>()
                         .eq(Problem::getCreatorUserId, userId)
                         .eq(Problem::getStatus, 1));
 
-        return new UserProfileResponse(
-                user.getId(),
-                user.getUsername(),
-                user.getNickname(),
-                user.getAvatarUrl(),
-                user.getBio(),
-                user.getIsAdmin() != null && user.getIsAdmin() == 1,
-                problemCount,
-                user.getCreateTime());
+        PublicUserProfileResponse r = new PublicUserProfileResponse();
+        r.setId(user.getId());
+        r.setUsername(user.getUsername());
+        r.setNickname(user.getNickname());
+        r.setAvatarUrl(user.getAvatarUrl());
+        r.setBio(user.getBio());
+        r.setAdmin(user.getIsAdmin() != null && user.getIsAdmin() == 1);
+        r.setAccountStatus(isDisabled ? "DISABLED" : "ACTIVE");
+        r.setCreatedProblemCount(problemCount);
+        r.setCreateTime(user.getCreateTime());
+
+        // Codeforces account: only VERIFIED accounts are shown on public profile
+        OjAccount cfAccount = ojAccountMapper.selectOne(new LambdaQueryWrapper<OjAccount>()
+                .eq(OjAccount::getUserId, userId)
+                .eq(OjAccount::getPlatform, "CODEFORCES")
+                .eq(OjAccount::getVerifyStatus, 1));
+        if (cfAccount != null) {
+            r.setCodeforcesHandle(cfAccount.getExternalUserId());
+        }
+
+        // OJ stats: from oj_first_ac, same data source as leaderboard
+        LocalDateTime now = LocalDateTime.now();
+        Map<String, Object> stats = ojSubmissionMapper.getUserOjStats(userId,
+                now.minusDays(30), now.minusDays(7));
+        if (stats != null && stats.get("solved_count") != null) {
+            OjStatsResponse ojStats = new OjStatsResponse();
+            ojStats.setSolvedCount(((Number) stats.get("solved_count")).intValue());
+            ojStats.setSolvedCount30d(stats.get("solved_30d") != null
+                    ? ((Number) stats.get("solved_30d")).intValue() : 0);
+            ojStats.setSolvedCount7d(stats.get("solved_7d") != null
+                    ? ((Number) stats.get("solved_7d")).intValue() : 0);
+            if (stats.get("last_accepted_time") != null) {
+                ojStats.setLastAcceptedTime((LocalDateTime) stats.get("last_accepted_time"));
+            }
+            r.setOjStats(ojStats);
+        } else {
+            OjStatsResponse empty = new OjStatsResponse();
+            r.setOjStats(empty);
+        }
+
+        return r;
     }
 
     @Override

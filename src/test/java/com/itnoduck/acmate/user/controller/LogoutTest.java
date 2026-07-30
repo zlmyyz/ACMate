@@ -6,6 +6,8 @@ import com.itnoduck.acmate.config.SecurityConfig;
 import com.itnoduck.acmate.security.DatabaseUserDetailsService;
 import com.itnoduck.acmate.user.entity.AppUser;
 import com.itnoduck.acmate.user.mapper.AppUserMapper;
+import com.itnoduck.acmate.problem.service.ProblemQueryService;
+import com.itnoduck.acmate.training.service.TrainingPlanService;
 import com.itnoduck.acmate.user.service.UserProfileService;
 import com.itnoduck.acmate.user.service.UserRegistrationService;
 import com.itnoduck.acmate.user.service.impl.UserAuthenticationServiceImpl;
@@ -52,6 +54,12 @@ class LogoutTest {
 
     @MockitoBean
     private UserProfileService userProfileService;
+
+    @MockitoBean
+    private ProblemQueryService problemQueryService;
+
+    @MockitoBean
+    private TrainingPlanService trainingPlanService;
 
     private static final String RAW_PASSWORD = "password123";
     private static String PASSWORD_HASH;

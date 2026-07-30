@@ -45,6 +45,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/users/me").authenticated()
+                // 用户公开主页允许未登录访问
+                .requestMatchers(HttpMethod.GET, "/api/users/**").permitAll()
                 // 管理员接口
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 // 题目查询和创建属于所有登录用户的基础权限；资源所有权由 creatorUserId 记录

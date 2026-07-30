@@ -1,6 +1,7 @@
 package com.itnoduck.acmate.training.service;
 
 import com.itnoduck.acmate.training.dto.*;
+import com.itnoduck.acmate.user.dto.PublicPlanSummaryResponse;
 
 import java.util.List;
 
@@ -17,4 +18,6 @@ public interface TrainingPlanService {
     void updateProblems(Long planId, UpdateProblemsRequest request, Long userId);
     void joinPlan(Long planId, Long userId);
     void removeMember(Long planId, Long memberUserId, Long operatorUserId);
+    List<PublicPlanSummaryResponse> listPublicPlansByUserId(Long userId, int page, int size);
+    int countPublicPlansByUserId(Long userId);
 }

@@ -67,4 +67,17 @@ public interface OjSubmissionMapper extends BaseMapper<OjSubmission> {
         "WHERE f.user_id = #{userId} " +
         "GROUP BY f.user_id")
     Map<String, Object> getUserSolvedCountAll(@Param("userId") Long userId);
+
+    @Select("SELECT " +
+        "COUNT(*) AS solved_count, " +
+        "COUNT(CASE WHEN s.submitted_time >= #{cutoff30d} THEN 1 END) AS solved_30d, " +
+        "COUNT(CASE WHEN s.submitted_time >= #{cutoff7d} THEN 1 END) AS solved_7d, " +
+        "MAX(s.submitted_time) AS last_accepted_time " +
+        "FROM oj_first_ac f " +
+        "INNER JOIN oj_submission s ON f.submission_id = s.id " +
+        "INNER JOIN oj_account a ON f.user_id = a.user_id AND a.platform = 'CODEFORCES' AND a.verify_status = 1 " +
+        "WHERE f.user_id = #{userId}")
+    Map<String, Object> getUserOjStats(@Param("userId") Long userId,
+                                       @Param("cutoff30d") java.time.LocalDateTime cutoff30d,
+                                       @Param("cutoff7d") java.time.LocalDateTime cutoff7d);
 }

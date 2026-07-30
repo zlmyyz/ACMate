@@ -3,14 +3,24 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
 
-const { mockGetUserProfile, mockUpdateProfile, mockUploadAvatar } = vi.hoisted(() => ({
+const {
+  mockGetUserProfile,
+  mockGetUserProblems,
+  mockGetUserTrainingPlans,
+  mockUpdateProfile,
+  mockUploadAvatar,
+} = vi.hoisted(() => ({
   mockGetUserProfile: vi.fn(),
+  mockGetUserProblems: vi.fn(),
+  mockGetUserTrainingPlans: vi.fn(),
   mockUpdateProfile: vi.fn(),
   mockUploadAvatar: vi.fn(),
 }))
 
 vi.mock('@/api/users', () => ({
   getUserProfile: mockGetUserProfile,
+  getUserProblems: mockGetUserProblems,
+  getUserTrainingPlans: mockGetUserTrainingPlans,
   updateProfile: mockUpdateProfile,
   uploadAvatar: mockUploadAvatar,
 }))
@@ -29,6 +39,31 @@ function emptyRouter() {
   return createRouter({ history: createWebHistory(), routes: [] })
 }
 
+function defaultProfile(overrides = {}) {
+  return {
+    id: 1,
+    username: 'testuser',
+    nickname: 'Test User',
+    avatarUrl: null,
+    bio: 'A bio',
+    admin: false,
+    accountStatus: 'ACTIVE',
+    createdProblemCount: 5,
+    codeforcesHandle: null,
+    ojStats: null,
+    createTime: '2024-01-15T00:00:00',
+    ...overrides,
+  }
+}
+
+function defaultPlans() {
+  return { plans: [], total: 0, page: 1, size: 20 }
+}
+
+function defaultProblems() {
+  return { records: [], total: 0, pages: 1, page: 1, size: 20 }
+}
+
 describe('User Profile API', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -39,6 +74,20 @@ describe('User Profile API', () => {
     mockGetUserProfile.mockResolvedValueOnce({ id: 1 })
     await getUserProfile(1)
     expect(mockGetUserProfile).toHaveBeenCalledWith(1)
+  })
+
+  it('should call getUserProblems with id, page, size', async () => {
+    const { getUserProblems } = await import('@/api/users')
+    mockGetUserProblems.mockResolvedValueOnce({ records: [], total: 0, pages: 1, page: 1, size: 20 })
+    await getUserProblems(1, 1, 20)
+    expect(mockGetUserProblems).toHaveBeenCalledWith(1, 1, 20)
+  })
+
+  it('should call getUserTrainingPlans with id, page, size', async () => {
+    const { getUserTrainingPlans } = await import('@/api/users')
+    mockGetUserTrainingPlans.mockResolvedValueOnce({ plans: [], total: 0, page: 1, size: 20 })
+    await getUserTrainingPlans(1, 2, 10)
+    expect(mockGetUserTrainingPlans).toHaveBeenCalledWith(1, 2, 10)
   })
 
   it('should call updateProfile with nickname', async () => {
@@ -152,6 +201,8 @@ describe('UserProfileView', () => {
       routes: [
         { path: '/users/:id', name: 'user-profile', component: { template: '<div />' } },
         { path: '/problems', name: 'problems', component: { template: '<div />' } },
+        { path: '/problems/:id', name: 'problem-detail', component: { template: '<div />' } },
+        { path: '/training-plans/:id', name: 'plan-detail', component: { template: '<div />' } },
         { path: '/settings/profile', name: 'profile-edit', component: { template: '<div />' } },
       ],
     })
@@ -164,12 +215,24 @@ describe('UserProfileView', () => {
     })
   }
 
+  function setupProfile(overrides = {}) {
+    mockGetUserProfile.mockResolvedValueOnce(defaultProfile(overrides))
+  }
+
+  function setupProblems(data = {}) {
+    mockGetUserProblems.mockResolvedValueOnce({ ...defaultProblems(), ...data })
+  }
+
+  function setupPlans(data = {}) {
+    mockGetUserTrainingPlans.mockResolvedValueOnce({ ...defaultPlans(), ...data })
+  }
+
+  // --- Basic profile ---
+
   it('should render user profile after load', async () => {
-    mockGetUserProfile.mockResolvedValueOnce({
-      id: 1, username: 'testuser', nickname: 'Test User',
-      avatarUrl: null, bio: 'A bio', admin: false,
-      problemCount: 5, createTime: '2024-01-15T00:00:00',
-    })
+    setupProfile()
+    setupProblems()
+    setupPlans()
 
     const wrapper = await mountProfile('/users/1')
     await flushPromises()
@@ -181,11 +244,9 @@ describe('UserProfileView', () => {
   })
 
   it('should show admin badge for admin user', async () => {
-    mockGetUserProfile.mockResolvedValueOnce({
-      id: 2, username: 'admin', nickname: 'Admin',
-      avatarUrl: null, bio: null, admin: true,
-      problemCount: 10, createTime: '2024-01-01T00:00:00',
-    })
+    setupProfile({ admin: true })
+    setupProblems()
+    setupPlans()
 
     const wrapper = await mountProfile('/users/2')
     await flushPromises()
@@ -201,11 +262,9 @@ describe('UserProfileView', () => {
     const { useAuthStore } = await import('@/stores/auth')
     await useAuthStore().init()
 
-    mockGetUserProfile.mockResolvedValueOnce({
-      id: 1, username: 'me', nickname: 'Me',
-      avatarUrl: null, bio: null, admin: false,
-      problemCount: 0, createTime: '2024-01-01T00:00:00',
-    })
+    setupProfile()
+    setupProblems()
+    setupPlans()
 
     const wrapper = await mountProfile('/users/1')
     await flushPromises()
@@ -220,5 +279,157 @@ describe('UserProfileView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('用户不存在')
+  })
+
+  // --- Disabled banner ---
+
+  it('should show disabled banner for disabled user', async () => {
+    setupProfile({ accountStatus: 'DISABLED' })
+    setupProblems()
+    setupPlans()
+
+    const wrapper = await mountProfile('/users/1')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('账号已停用')
+  })
+
+  it('should not show disabled banner for active user', async () => {
+    setupProfile({ accountStatus: 'ACTIVE' })
+    setupProblems()
+    setupPlans()
+
+    const wrapper = await mountProfile('/users/1')
+    await flushPromises()
+
+    expect(wrapper.text()).not.toContain('账号已停用')
+  })
+
+  // --- Codeforces handle ---
+
+  it('should show Codeforces handle when present', async () => {
+    setupProfile({ codeforcesHandle: 'tourist' })
+    setupProblems()
+    setupPlans()
+
+    const wrapper = await mountProfile('/users/1')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('tourist')
+    expect(wrapper.text()).toContain('Codeforces')
+  })
+
+  it('should not show Codeforces section when handle is null', async () => {
+    setupProfile({ codeforcesHandle: null })
+    setupProblems()
+    setupPlans()
+
+    const wrapper = await mountProfile('/users/1')
+    await flushPromises()
+
+    expect(wrapper.text()).not.toContain('Codeforces')
+  })
+
+  // --- OJ Stats ---
+
+  it('should show OJ stats when present', async () => {
+    setupProfile({
+      ojStats: {
+        solvedCount: 100,
+        solvedCount30d: 20,
+        solvedCount7d: 5,
+        lastAcceptedTime: '2024-06-01T12:00:00',
+      },
+    })
+    setupProblems()
+    setupPlans()
+
+    const wrapper = await mountProfile('/users/1')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('刷题统计')
+    expect(wrapper.text()).toContain('100')
+    expect(wrapper.text()).toContain('20')
+    expect(wrapper.text()).toContain('5')
+    expect(wrapper.text()).toContain('总通过')
+    expect(wrapper.text()).toContain('30天通过')
+    expect(wrapper.text()).toContain('7天通过')
+  })
+
+  it('should not show OJ stats section when null', async () => {
+    setupProfile({ ojStats: null })
+    setupProblems()
+    setupPlans()
+
+    const wrapper = await mountProfile('/users/1')
+    await flushPromises()
+
+    expect(wrapper.text()).not.toContain('刷题统计')
+  })
+
+  // --- Public problems ---
+
+  it('should show problem list', async () => {
+    setupProfile()
+    setupProblems({
+      records: [
+        { id: 1, title: 'Problem A', platform: 'CODEFORCES', difficulty: '800', tags: null, creatorUserId: 1, creatorUsername: 'test', creatorNickname: 'Test', createTime: '2024-01-01T00:00:00' },
+        { id: 2, title: 'Problem B', platform: 'ATCODER', difficulty: '1200', tags: null, creatorUserId: 1, creatorUsername: 'test', creatorNickname: 'Test', createTime: '2024-02-01T00:00:00' },
+      ],
+      total: 2,
+    })
+    setupPlans()
+
+    const wrapper = await mountProfile('/users/1')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('公开题目')
+    expect(wrapper.text()).toContain('Problem A')
+    expect(wrapper.text()).toContain('Problem B')
+  })
+
+  it('should show empty hint when no problems', async () => {
+    setupProfile()
+    setupProblems({ records: [], total: 0 })
+    setupPlans()
+
+    const wrapper = await mountProfile('/users/1')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('暂无公开题目')
+  })
+
+  // --- Public plans ---
+
+  it('should show training plan list', async () => {
+    setupProfile()
+    setupProblems()
+    setupPlans({
+      plans: [
+        { id: 1, title: 'Plan X', timeStatus: 'ONGOING', startTime: '2024-01-01T00:00:00', endTime: null, problemCount: 10, memberCount: 5, createTime: '2024-01-01T00:00:00' },
+        { id: 2, title: 'Plan Y', timeStatus: 'ENDED', startTime: '2024-01-01T00:00:00', endTime: '2024-06-01T00:00:00', problemCount: 20, memberCount: 8, createTime: '2024-02-01T00:00:00' },
+      ],
+      total: 2,
+    })
+
+    const wrapper = await mountProfile('/users/1')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('公开训练计划')
+    expect(wrapper.text()).toContain('Plan X')
+    expect(wrapper.text()).toContain('Plan Y')
+    expect(wrapper.text()).toContain('进行中')
+    expect(wrapper.text()).toContain('已结束')
+  })
+
+  it('should show empty hint when no plans', async () => {
+    setupProfile()
+    setupProblems()
+    setupPlans({ plans: [], total: 0 })
+
+    const wrapper = await mountProfile('/users/1')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('暂无公开训练计划')
   })
 })
