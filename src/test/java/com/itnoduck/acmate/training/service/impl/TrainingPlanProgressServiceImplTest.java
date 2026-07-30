@@ -110,6 +110,18 @@ class TrainingPlanProgressServiceImplTest {
     }
 
     @Test
+    void updateStatus_acceptedRejected_returns400() {
+        when(planMapper.selectById(PLAN_ID)).thenReturn(activePlan());
+        when(memberMapper.selectOne(any())).thenReturn(activeMember());
+        when(planProblemMapper.selectCount(any())).thenReturn(1L);
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.updateStatus(PLAN_ID, PROBLEM_ID, "ACCEPTED", USER_ID));
+        assertEquals(400, ex.getCode());
+        assertTrue(ex.getMessage().contains("不可手动设置"));
+    }
+
+    @Test
     void updateStatus_noRow_doesNotInsertForNotStarted() {
         when(planMapper.selectById(PLAN_ID)).thenReturn(activePlan());
         when(memberMapper.selectOne(any())).thenReturn(activeMember());

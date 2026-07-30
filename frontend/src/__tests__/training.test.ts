@@ -282,6 +282,17 @@ describe('TrainingPlanDetailView', () => {
     expect(wrapper.text()).toContain('挑战中')
   })
 
+  it('should show reset button when status is CHALLENGING', async () => {
+    mockGetPlanDetail.mockResolvedValueOnce(makePlanDetail({
+      joined: true,
+      problems: [{ id: 1, problemId: 1, problemTitle: 'P1', platform: 'CUSTOM', difficulty: null, problemActive: true, sortOrder: 0, required: true, myStatus: 'CHALLENGING', performanceNote: null }],
+      members: [{ userId: 1, username: 'admin', nickname: 'Admin', avatarUrl: null, joinTime: '2024-01-01T00:00:00', creator: false, completedCount: 0, totalCount: 1, requiredCompletedCount: 0, requiredTotal: 1, lastAcceptedTime: null, rank: 1, completionOrder: null }],
+    }))
+    const wrapper = await mountDetail('/training-plans/1')
+    await flushPromises()
+    expect(wrapper.text()).toContain('取消挑战')
+  })
+
   it('should show ACCEPTED status badge for solved problems', async () => {
     mockGetPlanDetail.mockResolvedValueOnce(makePlanDetail({
       joined: true,

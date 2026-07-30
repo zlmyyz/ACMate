@@ -1434,17 +1434,25 @@ GET 请求不需要 CSRF Token。
 
 #### 请求字段
 
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| status | string | 是 | 题目状态：NOT_STARTED / CHALLENGING / ACCEPTED |
+| 字段 | 类型 | 必填 | 校验规则 | 说明 |
+|------|------|------|----------|------|
+| status | string | 是 | `^(NOT_STARTED\|CHALLENGING)$` | 题目状态，ACCEPTED 不可手动设置 |
+
+#### 状态机
+
+| 当前状态 | 允许操作 | 说明 |
+|----------|----------|------|
+| NOT_STARTED | → CHALLENGING | 用户手动标记挑战 |
+| CHALLENGING | → NOT_STARTED | 用户手动取消挑战 |
+| NOT_STARTED / CHALLENGING | → ACCEPTED | 仅可信 OJ 同步自动设置 |
+| ACCEPTED | 不可修改 | 永久锁定 |
 
 #### 业务规则
 
 - 仅激活中的计划可操作，已停用计划返回 400
 - 仅计划成员可操作，非成员返回 403
 - 题目必须属于该计划，否则返回 404
-- ACCEPTED 状态不可手动设置（保留给系统自动同步）
-- CHALLENGING → NOT_STARTED 可降级
+- ACCEPTED 作为请求值直接返回 400 校验失败
 - 同状态重复提交幂等（不触发更新）
 
 #### 成功响应

@@ -1,6 +1,6 @@
 # IMPLEMENTATION STATUS
 
-> Updated: 2026-07-30 | 训练计划成员进度模块完成：题目状态/备注/成员进度详情/排名计分题/截止时间语义/权限/回填
+> Updated: 2026-07-30 | 训练计划成员进度模块完成+产品语义修正：手动接口拒绝 ACCEPTED、空备注归一化、备注权限过滤 | 后端 541 测试 0 失败 前端 197 测试 0 失败
 
 ## Feature Status
 
@@ -35,10 +35,10 @@
 
 | 层 | 测试数 | 通过 | 失败 |
 |---|---|---|---|
-| 后端 | 540 | 540 | 0 |
-| 前端 | 196 | 196 | 0 |
+| 后端 | 541 | 541 | 0 |
+| 前端 | 197 | 197 | 0 |
 
-全部后端测试无需数据库，使用 Mockito 和 MybatisPlusTestHelper。CF 同步 43 个测试覆盖同步、幂等、first-AC、上游失败、冷却。新增 7 个排行榜测试（含 lastAcceptedTime 并列排序）+ 9 个冷却测试 + 4 个 syncAccountById 测试。训练计划进度模块：23 个 TrainingPlanServiceImpl 测试 + 12 个 TrainingPlanProgressServiceImplTest 测试 + 5 个前端测试覆盖进度展示、状态切换、备注编辑。前端 196 个测试含冷却展示、排行榜 lastAcceptedTime 列、训练进度。
+全部后端测试无需数据库，使用 Mockito 和 MybatisPlusTestHelper。CF 同步 43 个测试覆盖同步、幂等、first-AC、上游失败、冷却。新增 7 个排行榜测试（含 lastAcceptedTime 并列排序）+ 9 个冷却测试 + 4 个 syncAccountById 测试。训练计划进度模块：26 个 TrainingPlanServiceImpl 测试 + 13 个 TrainingPlanProgressServiceImplTest 测试 + 6 个前端测试覆盖进度展示、状态切换、备注编辑、ACCEPTED 拒绝、取消挑战按钮。前端 197 个测试含冷却展示、排行榜 lastAcceptedTime 列、训练进度。
 
 ## 验收问题修复
 

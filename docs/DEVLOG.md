@@ -65,6 +65,14 @@
 - **NOT_STARTED 不插入空行**：updateStatus 增加 `&& ps.getCode() != 0` 守卫
 - **同状态幂等**：updateStatusAtomic 增加 `AND status != #{newStatus}`
 - **排名使用计分题**：toDetailResponse 从 total completedCount 改为 required-only scoring
+- **手动接口拒绝 ACCEPTED**：`@Pattern(regexp = "^(NOT_STARTED|CHALLENGING)$")` + Service 层双重守卫
+- **空备注归一化为 null**：updateNote 增加 strip + isEmpty → null（原空字符串会存入 DB）
+- **备注权限过滤**：非本人/创建者/管理员查看成员进度时 performanceNote 为 null
+
+### 最终状态
+
+- 功能提交 `1fb765e feat: complete training plan member progress`
+- 核验修正后提交流程完成，MySQL 未运行无法执行 Chromium 验收
 
 ### 测试统计
 

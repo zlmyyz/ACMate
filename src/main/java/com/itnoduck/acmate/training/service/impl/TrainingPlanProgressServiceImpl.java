@@ -69,6 +69,8 @@ public class TrainingPlanProgressServiceImpl implements TrainingPlanProgressServ
             throw new BusinessException(404, "该题目不在计划中");
 
         ProblemStatus ps = ProblemStatus.fromString(status);
+        if (ps == ProblemStatus.ACCEPTED)
+            throw new BusinessException(400, "ACCEPTED 不可手动设置");
         int rows = upsMapper.updateStatusAtomic(userId, problemId, ps.getCode());
         if (rows == 0 && ps.getCode() != 0) {
             // no row yet and status is not NOT_STARTED — insert
@@ -103,8 +105,11 @@ public class TrainingPlanProgressServiceImpl implements TrainingPlanProgressServ
         if (problemExists == 0)
             throw new BusinessException(404, "该题目不在计划中");
 
-        if (note != null && note.length() > 500)
-            throw new BusinessException(400, "备注不能超过500字");
+        if (note != null) {
+            note = note.strip();
+            if (note.isEmpty()) note = null;
+            else if (note.length() > 500) throw new BusinessException(400, "备注不能超过500字");
+        }
 
         upsMapper.upsertNote(userId, problemId, note);
     }
@@ -156,6 +161,9 @@ public class TrainingPlanProgressServiceImpl implements TrainingPlanProgressServ
         int completed = 0;
         int total = tpps.size();
         LocalDateTime lastAccepted = null;
+        boolean canSeeNote = currentUserId.equals(targetUserId)
+            || plan.getCreatorUserId().equals(currentUserId)
+            || isAdminUser(currentUserId);
         List<MemberProgressResponse.ProblemProgressItem> items = new ArrayList<>();
         for (TrainingPlanProblem tpp : tpps) {
             UserProblemStatus s = statusMap.get(tpp.getProblemId());
@@ -178,7 +186,7 @@ public class TrainingPlanProgressServiceImpl implements TrainingPlanProgressServ
             item.setSortOrder(tpp.getSortOrder());
             item.setRequired(tpp.getRequiredFlag() == 1);
             item.setMyStatus(myStatus);
-            item.setPerformanceNote(s != null ? s.getPerformanceNote() : null);
+            item.setPerformanceNote(canSeeNote && s != null ? s.getPerformanceNote() : null);
             items.add(item);
         }
 
@@ -194,5 +202,10 @@ public class TrainingPlanProgressServiceImpl implements TrainingPlanProgressServ
         resp.setLastAcceptedTime(lastAccepted);
         resp.setProblems(items);
         return resp;
+    }
+
+    private boolean isAdminUser(Long userId) {
+        AppUser u = userMapper.selectById(userId);
+        return u != null && u.getIsAdmin() != null && u.getIsAdmin() == 1;
     }
 }

@@ -290,9 +290,9 @@ onMounted(fetchDetail)
               >挑战中</button>
               <button
                 v-if="p.myStatus === 'CHALLENGING' && settingStatusProblemId !== p.problemId"
-                class="status-btn accepted-btn"
-                @click="handleStatusChange(p.problemId, 'ACCEPTED')"
-              >已通过</button>
+                class="status-btn reset-btn"
+                @click="handleStatusChange(p.problemId, 'NOT_STARTED')"
+              >取消挑战</button>
               <span v-if="settingStatusProblemId === p.problemId" class="status-updating">更新中...</span>
             </div>
             <div v-if="plan.joined" class="note-area">
@@ -522,6 +522,7 @@ onMounted(fetchDetail)
 .status-btn:hover { opacity: 0.9; }
 .challenging-btn { background: rgba(243,161,60,0.15); color: var(--color-status-pending); }
 .accepted-btn { background: rgba(52,168,83,0.15); color: var(--color-status-success); }
+.reset-btn { background: rgba(234,134,45,0.15); color: #ea862d; }
 .status-updating { font-size: var(--text-label-sm); color: var(--color-on-surface-variant); }
 
 .note-area { width: 100%; margin-top: 4px; }
