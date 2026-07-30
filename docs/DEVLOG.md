@@ -2189,3 +2189,62 @@ type-check + lint + build 全部通过
 - 排行榜浏览器人工验收（并列排序/分页/去重）
 - 管理员用户旧 Session 专项验收
 
+
+---
+
+## 2026-07-30（十轮）：训练计划成员进度 — 产品语义修正与 Chromium 真实环境最终验收
+
+### 本次目标
+
+完成训练计划成员进度模块的产品语义修正和真实环境验收：
+1. 手动状态接口拒绝 ACCEPTED（仅允许 NOT_STARTED/CHALLENGING）
+2. 空备注归一化（empty strip → null）
+3. 备注权限过滤（仅本人/创建者/管理员可见）
+4. Docker MySQL + Spring Boot + Vite + Chromium 验收
+
+### 代码修改
+
+**后端（3 个文件）：**
+- `training/dto/UpdateStatusRequest.java` — @Pattern 正则限制仅 NOT_STARTED|CHALLENGING
+- `training/service/impl/TrainingPlanProgressServiceImpl.java` — Service 层 ACCEPTED 防御性拒绝 + 空备注归一化 + 备注权限过滤
+- `training/service/impl/TrainingPlanServiceImpl.java` — 进度计算重写：deadline/current 字段分离、completionOrder、hasRequired 逻辑
+
+**前端（1 个文件）：**
+- `views/TrainingPlanDetailView.vue` — CHALLENGING 按钮改为发送 NOT_STARTED（"取消挑战"）
+
+**测试（3 个文件）：**
+- `TrainingPlanProgressServiceImplTest.java` — 新增 ACCEPTED 拒绝测试
+- `TrainingPlanServiceImplTest.java` — 新增 3 个排名测试
+- `training.test.ts` — 新增取消挑战按钮测试
+
+### Chromium 真实环境验收结果
+
+| # | 验收项 | 结果 |
+|---|--------|------|
+| 1 | 创建 PUBLIC 训练计划（含起止日期） | 通过 |
+| 2 | 搜索并添加 3 道题目（2 必做 + 1 选做） | 通过 |
+| 3 | 加入计划作为成员 | 通过 |
+| 4 | NOT_STARTED ↔ CHALLENGING 状态切换 | 通过 |
+| 5 | ACCEPTED 手动设置被 DTO 层拒绝 | 通过 |
+| 6 | 备注添加与显示 | 通过 |
+| 7 | 空备注归一化 | 通过 |
+| 8 | 备注权限过滤（Alice 看不到 Creator 的备注） | 通过 |
+| 9 | 必做/选做标签显示正确 | 通过 |
+| 10 | 进度摘要：必做 0/2，选做 0/1，总计 0/3 | 通过 |
+| 11 | 成员列表显示正确 | 通过 |
+| 12 | 成员移除与重新加入 | 通过 |
+| 13 | 计划停用与恢复 | 通过 |
+| 14 | Alice 视图：无编辑/移除按钮，仅见自己进度 | 通过 |
+| 15 | 后端 541 测试 0 失败 | 通过 |
+| 16 | 前端 197 测试 0 失败 | 通过 |
+
+### 自动化验证
+
+```
+后端 Tests run: 541, Failures: 0, Errors: 0, Skipped: 0
+前端 Tests run: 197, Failures: 0
+```
+
+### 提交
+
+`<pending>` — 训练计划成员进度模块产品语义修正 + Chromium 真实环境验收
