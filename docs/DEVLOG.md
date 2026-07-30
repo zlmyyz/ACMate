@@ -1,5 +1,80 @@
 # DEVLOG
 
+## 2026-07-30（八轮）：训练计划成员进度
+
+### 本次目标
+
+实现训练计划成员进度完整模块：题目状态/备注/成员进度详情/排名/计分题/截止时间语义/必做选做/成员生命周期/题目回填/核验修复。
+
+### 新增文件
+
+**后端：**
+- `training/dto/UpdateStatusRequest.java` — 状态更新 DTO（@NotBlank）
+- `training/dto/UpdateNoteRequest.java` — 备注更新 DTO
+- `training/dto/ProgressSummaryResponse.java` — 必做/选做完成和总数
+- `training/dto/MemberProgressResponse.java` — 成员进度详情，含每题目状态
+- `training/service/TrainingPlanProgressService.java` — 进度服务接口
+- `training/service/impl/TrainingPlanProgressServiceImpl.java` — 实现：验证->原子状态更新->备注
+- `training/controller/TrainingPlanProgressController.java` — 3 个端点：状态/备注/详情
+
+**测试：**
+- `training/service/impl/TrainingPlanProgressServiceImplTest.java` — 12 个测试（完整验证+原子更新+备注边界）
+
+**数据库：**
+- `db/migration/V15__add_member_lifecycle_and_progress.sql` — 成员生命周期字段 + 备注列 + 回填
+
+### 修改文件
+
+**后端 Service（3 个）：**
+- `training/service/impl/TrainingPlanServiceImpl.java` — 完整重写 toDetailResponse：计分题排名、deadline/current 时间字段分离、completionOrder、权限/生命周期/回填集成
+- `oj/service/impl/OjAccountServiceImpl.java` — CF同步成功后调用 upsertFirstAc，桥接外部 AC → 训练进度
+- `problem/service/impl/ProblemCommandServiceImpl.java` — 创建/编辑题目触发 batchBackfillFromFirstAc
+
+**后端 DTO（3 个）：**
+- `PlanDetailResponse.java` — 添加 myProgress（必做/选做分离）
+- `PlanMemberResponse.java` — 添加 deadline/current 时间字段、rank、completionOrder、deadlineCompletedCount
+- `PlanProblemResponse.java` — 添加 myStatus、performanceNote
+
+**后端 Entity（1 个）：**
+- `TrainingPlanMember.java` — 添加 status、removeTime、removedBy
+
+**测试（3 个）：**
+- `TrainingPlanServiceImplTest.java` — 新增 12 个测试 + 3 个排名语义测试 = 62 总
+- `ProblemCommandServiceImplTest.java` — 新增 upsMapper mock
+- `MybatisPlusTestHelper.java` — 注册 UserProblemStatusMapper
+
+**前端（3 个）：**
+- `types/training.ts` — 新增 ProblemStatusType、ProgressSummary、PlanMember 字段、UpdateStatusRequest、UpdateNoteRequest、MemberProgress
+- `api/training.ts` — 新增 updateProblemStatus、updateProblemNote、getMemberProgress
+- `TrainingPlanDetailView.vue` — 进度卡片、状态切换按钮、备注编辑
+
+**测试（1 个）：**
+- `training.test.ts` — 新增 5 个进度展示测试
+
+### 关键设计
+
+1. **三态状态**：NOT_STARTED(0) / CHALLENGING(1) / ACCEPTED(2)，ACCEPTED 由系统同步保护
+2. **原子更新**：`UPDATE ... WHERE status != 2 AND status != #{newStatus}`，避免覆盖 ACCEPTED
+3. **计分题排名**：required_flag=1 为计分题，排名按 deadlineCompletedCount DESC → deadlineLastAcceptedTime ASC → userId ASC
+4. **时间字段分离**：currentLastAcceptedTime/deadlineLastAcceptedTime（赛后 AC 不更新 deadline 字段）
+5. **成员生命周期**：移除是逻辑删除（status=0），加入时恢复
+6. **题目回填**：CF 同步自动更新 upsert；题目创建触发 batchBackfillFromFirstAc
+
+### 核验修复
+
+- **NOT_STARTED 不插入空行**：updateStatus 增加 `&& ps.getCode() != 0` 守卫
+- **同状态幂等**：updateStatusAtomic 增加 `AND status != #{newStatus}`
+- **排名使用计分题**：toDetailResponse 从 total completedCount 改为 required-only scoring
+
+### 测试统计
+
+| 层 | 测试数 | 通过 | 失败 |
+|---|---|---|---|
+| 后端 | 540 | 540 | 0 |
+| 前端 | 196 | 196 | 0 |
+
+---
+
 ## 2026-07-29（七轮）：管理员用户管理
 
 ### 本次目标

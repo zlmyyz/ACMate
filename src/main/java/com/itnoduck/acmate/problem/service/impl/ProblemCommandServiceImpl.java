@@ -11,6 +11,7 @@ import com.itnoduck.acmate.problem.dto.UpdateProblemRequest;
 import com.itnoduck.acmate.problem.entity.Problem;
 import com.itnoduck.acmate.problem.mapper.ProblemMapper;
 import com.itnoduck.acmate.problem.service.ProblemCommandService;
+import com.itnoduck.acmate.training.mapper.UserProblemStatusMapper;
 import com.itnoduck.acmate.user.entity.AppUser;
 import com.itnoduck.acmate.user.mapper.AppUserMapper;
 import org.springframework.dao.DuplicateKeyException;
@@ -33,12 +34,15 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
     private final ProblemMapper problemMapper;
     private final AuditLogService auditLogService;
     private final AppUserMapper appUserMapper;
+    private final UserProblemStatusMapper upsMapper;
 
     public ProblemCommandServiceImpl(ProblemMapper problemMapper, AuditLogService auditLogService,
-                                      AppUserMapper appUserMapper) {
+                                      AppUserMapper appUserMapper,
+                                      UserProblemStatusMapper upsMapper) {
         this.problemMapper = problemMapper;
         this.auditLogService = auditLogService;
         this.appUserMapper = appUserMapper;
+        this.upsMapper = upsMapper;
     }
 
     @Override
@@ -87,6 +91,14 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
             throw new RuntimeException("创建题目失败：ID 未回填");
         }
 
+        // backfill existing first AC records
+        if ("CODEFORCES".equals(problem.getPlatform()) && problem.getExternalProblemKey() != null) {
+            try {
+                upsMapper.batchBackfillFromFirstAc(problem.getPlatform(), problem.getExternalProblemKey(), problem.getId());
+            } catch (Exception ignored) {
+            }
+        }
+
         return toDetailResponse(problem);
     }
 
@@ -119,6 +131,22 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
 
         if (!"CUSTOM".equals(request.getPlatform()) && request.getExternalProblemKey() == null) {
             throw new BusinessException(400, "非自定义平台必须提供外部题目标识");
+        }
+
+        // Check if changing platform or externalProblemKey with existing ACCEPTED records
+        boolean platformChanged = !Objects.equals(existing.getPlatform(), request.getPlatform());
+        boolean keyChanged = !Objects.equals(existing.getExternalProblemKey(), request.getExternalProblemKey());
+        if (platformChanged || keyChanged) {
+            long acceptedCount = 0;
+            if (existing.getId() != null) {
+                var qw = new LambdaQueryWrapper<com.itnoduck.acmate.training.entity.UserProblemStatus>()
+                        .eq(com.itnoduck.acmate.training.entity.UserProblemStatus::getProblemId, existing.getId())
+                        .eq(com.itnoduck.acmate.training.entity.UserProblemStatus::getStatus, 2);
+                acceptedCount = upsMapper.selectCount(qw);
+            }
+            if (acceptedCount > 0) {
+                throw new BusinessException(409, "已有用户通过该题目，不能修改平台或题目标识");
+            }
         }
 
         if (request.getExternalProblemKey() != null) {
@@ -162,6 +190,15 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
         if (updated == null) {
             throw new BusinessException(404, "题目不存在");
         }
+
+        // backfill existing first AC records (in case problem mapping changed)
+        if ("CODEFORCES".equals(updated.getPlatform()) && updated.getExternalProblemKey() != null) {
+            try {
+                upsMapper.batchBackfillFromFirstAc(updated.getPlatform(), updated.getExternalProblemKey(), updated.getId());
+            } catch (Exception ignored) {
+            }
+        }
+
         return toDetailResponse(updated);
     }
 

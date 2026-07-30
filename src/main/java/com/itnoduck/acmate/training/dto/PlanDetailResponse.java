@@ -29,6 +29,7 @@ public class PlanDetailResponse {
     private boolean canRestore;
     private List<PlanProblemResponse> problems;
     private List<PlanMemberResponse> members;
+    private ProgressSummaryResponse myProgress;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 
@@ -103,6 +104,9 @@ public class PlanDetailResponse {
 
     public List<PlanMemberResponse> getMembers() { return members; }
     public void setMembers(List<PlanMemberResponse> members) { this.members = members; }
+
+    public ProgressSummaryResponse getMyProgress() { return myProgress; }
+    public void setMyProgress(ProgressSummaryResponse v) { myProgress = v; }
 
     public LocalDateTime getCreateTime() { return createTime; }
     public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }

@@ -10,6 +10,8 @@ public class PlanProblemResponse {
     private boolean problemActive;
     private int sortOrder;
     private boolean required;
+    private String myStatus;
+    private String performanceNote;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -34,4 +36,10 @@ public class PlanProblemResponse {
 
     public boolean isRequired() { return required; }
     public void setRequired(boolean required) { this.required = required; }
+
+    public String getMyStatus() { return myStatus; }
+    public void setMyStatus(String myStatus) { this.myStatus = myStatus; }
+
+    public String getPerformanceNote() { return performanceNote; }
+    public void setPerformanceNote(String performanceNote) { this.performanceNote = performanceNote; }
 }

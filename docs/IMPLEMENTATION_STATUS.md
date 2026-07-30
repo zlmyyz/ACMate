@@ -1,6 +1,6 @@
 # IMPLEMENTATION STATUS
 
-> Updated: 2026-07-29 | 人工验收完成：CF同步+排行榜+管理员Session。修复 first_ac.submission_id 存储远程ID导致排行榜无数据的bug
+> Updated: 2026-07-30 | 训练计划成员进度模块完成：题目状态/备注/成员进度详情/排名计分题/截止时间语义/权限/回填
 
 ## Feature Status
 
@@ -17,7 +17,7 @@
 | 用户主页 | 公开信息/统计/题目列表 | 完成 | 完成 | 12 pass | 待联调 | 题目/计划列表(后续) |
 | 训练计划 | CRUD/类型/日期/时间 | 完成 | 完成 | 10 pass | **浏览器验证通过** | — |
 | 训练计划题目管理 | 批量选题/排序/批量更新 | **完成** | **完成** | 15 pass | **浏览器验证通过** | — |
-| 训练成员进度 | 加入/移除/状态/备注 | 加入/移除 | 加入/移除 | 部分 | 待联调 | 成员进度详情页/赛时统计 |
+| 训练成员进度 | 加入/移除/状态/备注/成员进度详情/排名/计分题/截止时间语义/必做选做 | **完成** | **完成** | 23 service pass + 12 progress pass + 5 frontend | 待联调 | 赛时排名快照（后续） |
 | 帖子 | CRUD/类型/deactivation/权限/N+1/原子计数 | **已完成** | 完成 | 46 pass | **浏览器验证通过** | — |
 | 评论 | 一级评论/一层回复/停用追踪 | **已完成** | 完成 | 含 | **浏览器验证通过** | — |
 | 点赞 | 帖子点赞/原子计数/去重 | **已完成** | 完成 | 含 | **浏览器验证通过** | — |
@@ -35,10 +35,10 @@
 
 | 层 | 测试数 | 通过 | 失败 |
 |---|---|---|---|
-| 后端 | 518 | 518 | 0 |
-| 前端 | 191 | 191 | 0 |
+| 后端 | 540 | 540 | 0 |
+| 前端 | 196 | 196 | 0 |
 
-全部后端测试无需数据库，使用 Mockito 和 MybatisPlusTestHelper。CF 同步 43 个测试覆盖同步、幂等、first-AC、上游失败、冷却。新增 7 个排行榜测试（含 lastAcceptedTime 并列排序）+ 9 个冷却测试 + 4 个 syncAccountById 测试。前端 191 个测试含冷却展示、排行榜 lastAcceptedTime 列。
+全部后端测试无需数据库，使用 Mockito 和 MybatisPlusTestHelper。CF 同步 43 个测试覆盖同步、幂等、first-AC、上游失败、冷却。新增 7 个排行榜测试（含 lastAcceptedTime 并列排序）+ 9 个冷却测试 + 4 个 syncAccountById 测试。训练计划进度模块：23 个 TrainingPlanServiceImpl 测试 + 12 个 TrainingPlanProgressServiceImplTest 测试 + 5 个前端测试覆盖进度展示、状态切换、备注编辑。前端 196 个测试含冷却展示、排行榜 lastAcceptedTime 列、训练进度。
 
 ## 验收问题修复
 
@@ -65,6 +65,7 @@
 | V12 | training_plan表增加停用审计字段（deactivated_by/deactivated_reason/deactivated_at） | OK |
 | V13 | notification表重构（rename columns, add payload_json, drop title/content） | **已执行**（checksum=-1267897753，重启幂等确认） |
 | V14 | oj_first_ac 表（UNIQUE KEY user_id+platform+external_problem_key） | **已执行**（DB 级 first-AC 原子约束） |
+| V15 | training_plan_member 增加 status/remove_time/removed_by；user_problem_status 增加 performance_note；背题回填从 oj_first_ac | **已执行**
 
 Flyway 在 Spring Boot 4.1.0 中无自动配置，通过手动 `FlywayConfig`（`@ConditionalOnProperty("spring.flyway.enabled")`）启用。现有数据库 `acmate` 已验证 V1(baseline) → V13 → V14 迁移。
 

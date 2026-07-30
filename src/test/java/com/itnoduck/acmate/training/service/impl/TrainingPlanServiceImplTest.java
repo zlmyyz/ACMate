@@ -16,6 +16,8 @@ import com.itnoduck.acmate.problem.mapper.ProblemMapper;
 import com.itnoduck.acmate.user.entity.AppUser;
 import com.itnoduck.acmate.user.mapper.AppUserMapper;
 import com.itnoduck.acmate.notification.event.NotificationEvent;
+import com.itnoduck.acmate.training.entity.UserProblemStatus;
+import com.itnoduck.acmate.training.mapper.UserProblemStatusMapper;
 import com.itnoduck.acmate.testutil.MybatisPlusTestHelper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,6 +46,7 @@ class TrainingPlanServiceImplTest {
     @Mock private ProblemMapper problemMapper;
     @Mock private AuditLogService auditLogService;
     @Mock private org.springframework.context.ApplicationEventPublisher eventPublisher;
+    @Mock private UserProblemStatusMapper upsMapper;
     @InjectMocks private TrainingPlanServiceImpl service;
 
     private static final Long CREATOR_ID = 1L;
@@ -280,7 +283,7 @@ class TrainingPlanServiceImplTest {
     void creatorCanRemoveOrdinaryMember() {
         TrainingPlan plan = createPlanInDb("PUBLIC", CREATOR_ID, 1);
         when(planMapper.selectById(PLAN_ID)).thenReturn(plan);
-        when(memberMapper.delete(any())).thenReturn(1);
+        when(memberMapper.update(any(), any())).thenReturn(1);
 
         assertDoesNotThrow(() -> service.removeMember(PLAN_ID, OTHER_USER_ID, CREATOR_ID));
     }
@@ -299,7 +302,7 @@ class TrainingPlanServiceImplTest {
     void removeMember_notInPlan_returns404() {
         TrainingPlan plan = createPlanInDb("PUBLIC", CREATOR_ID, 1);
         when(planMapper.selectById(PLAN_ID)).thenReturn(plan);
-        when(memberMapper.delete(any())).thenReturn(0);
+        when(memberMapper.update(any(), any())).thenReturn(0);
 
         BusinessException ex = assertThrows(BusinessException.class,
                 () -> service.removeMember(PLAN_ID, 999L, CREATOR_ID));
@@ -489,7 +492,7 @@ class TrainingPlanServiceImplTest {
 
         TrainingPlanMember member = new TrainingPlanMember();
         member.setId(1L); member.setPlanId(PLAN_ID); member.setUserId(OTHER_USER_ID);
-        member.setJoinTime(LocalDateTime.now());
+        member.setJoinTime(LocalDateTime.now()); member.setStatus(1);
         when(memberMapper.selectList(any())).thenReturn(List.of(member));
 
         assertDoesNotThrow(() -> service.getPlanDetail(PLAN_ID, OTHER_USER_ID));
@@ -796,6 +799,109 @@ class TrainingPlanServiceImplTest {
         assertEquals(409, ex.getCode());
     }
 
+    // ======================== ENDED PLAN BLOCKING ========================
+
+    @Test
+    void endedPlan_blocksAddProblem() {
+        TrainingPlan plan = createPlanInDb("PUBLIC", CREATOR_ID, 1);
+        plan.setStartTime(LocalDateTime.now().minusDays(10));
+        plan.setEndTime(LocalDateTime.now().minusDays(1));
+        when(planMapper.selectById(PLAN_ID)).thenReturn(plan);
+
+        AddProblemRequest req = new AddProblemRequest();
+        req.setProblemId(1L);
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.addProblem(PLAN_ID, req, CREATOR_ID));
+        assertEquals(400, ex.getCode());
+        assertTrue(ex.getMessage().contains("结束"));
+    }
+
+    @Test
+    void endedPlan_blocksRemoveProblem() {
+        TrainingPlan plan = createPlanInDb("PUBLIC", CREATOR_ID, 1);
+        plan.setStartTime(LocalDateTime.now().minusDays(10));
+        plan.setEndTime(LocalDateTime.now().minusDays(1));
+        when(planMapper.selectById(PLAN_ID)).thenReturn(plan);
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.removeProblem(PLAN_ID, 1L, CREATOR_ID));
+        assertEquals(400, ex.getCode());
+    }
+
+    @Test
+    void endedPlan_blocksUpdateProblems() {
+        TrainingPlan plan = createPlanInDb("PUBLIC", CREATOR_ID, 1);
+        plan.setStartTime(LocalDateTime.now().minusDays(10));
+        plan.setEndTime(LocalDateTime.now().minusDays(1));
+        when(planMapper.selectById(PLAN_ID)).thenReturn(plan);
+
+        UpdateProblemsRequest req = new UpdateProblemsRequest();
+        req.setProblems(List.of());
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.updateProblems(PLAN_ID, req, CREATOR_ID));
+        assertEquals(400, ex.getCode());
+    }
+
+    @Test
+    void endedPlan_blocksScheduleChange() {
+        TrainingPlan plan = createPlanInDb("PUBLIC", CREATOR_ID, 1);
+        plan.setStartTime(LocalDateTime.now().minusDays(10));
+        plan.setEndTime(LocalDateTime.now().minusDays(1));
+        when(planMapper.selectById(PLAN_ID)).thenReturn(plan);
+
+        UpdatePlanRequest req = new UpdatePlanRequest();
+        req.setStartTime(LocalDateTime.now().plusDays(1));
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.updatePlan(PLAN_ID, req, CREATOR_ID));
+        assertEquals(400, ex.getCode());
+    }
+
+    // ======================== MEMBER LIFECYCLE ========================
+
+    @Test
+    void removeMember_logicalDelete_updatesStatus() {
+        TrainingPlan plan = createPlanInDb("PUBLIC", CREATOR_ID, 1);
+        when(planMapper.selectById(PLAN_ID)).thenReturn(plan);
+        when(memberMapper.update(any(), any())).thenReturn(1);
+
+        service.removeMember(PLAN_ID, OTHER_USER_ID, CREATOR_ID);
+
+        verify(memberMapper).update(any(), any());
+    }
+
+    @Test
+    void joinPlan_restoresRemovedMember() {
+        TrainingPlan plan = createPlanInDb("PUBLIC", CREATOR_ID, 1);
+        when(planMapper.selectById(PLAN_ID)).thenReturn(plan);
+
+        TrainingPlanMember removed = new TrainingPlanMember();
+        removed.setId(1L); removed.setPlanId(PLAN_ID); removed.setUserId(OTHER_USER_ID);
+        removed.setJoinTime(LocalDateTime.now()); removed.setStatus(0);
+        when(memberMapper.selectOne(any())).thenReturn(removed);
+
+        service.joinPlan(PLAN_ID, OTHER_USER_ID);
+
+        assertEquals(1, removed.getStatus().intValue());
+        assertNull(removed.getRemoveTime());
+        assertNull(removed.getRemovedBy());
+        verify(memberMapper).updateById(removed);
+    }
+
+    @Test
+    void viewDeactivatedPlan_removedMember_returns404() {
+        TrainingPlan plan = createPlanInDb("PERSONAL", CREATOR_ID, 0);
+        when(planMapper.selectById(PLAN_ID)).thenReturn(plan);
+
+        TrainingPlanMember removedMember = new TrainingPlanMember();
+        removedMember.setId(1L); removedMember.setPlanId(PLAN_ID); removedMember.setUserId(OTHER_USER_ID);
+        removedMember.setJoinTime(LocalDateTime.now()); removedMember.setStatus(0);
+        when(memberMapper.selectOne(any())).thenReturn(removedMember);
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.getPlanDetail(PLAN_ID, OTHER_USER_ID));
+        assertEquals(404, ex.getCode());
+    }
+
     @Test
     void updateProblems_emptyList_clearsAllProblems() {
         TrainingPlan plan = createPlanInDb("PUBLIC", CREATOR_ID, 1);
@@ -814,5 +920,161 @@ class TrainingPlanServiceImplTest {
 
         verify(planProblemMapper).delete(any());
         verify(eventPublisher).publishEvent(any(NotificationEvent.class));
+    }
+
+    // ======================== RANKING SEMANTICS ========================
+
+    private TrainingPlanMember makeMember(Long userId, int status) {
+        TrainingPlanMember m = new TrainingPlanMember();
+        m.setId(userId); m.setPlanId(PLAN_ID); m.setUserId(userId);
+        m.setJoinTime(LocalDateTime.now()); m.setStatus(status);
+        return m;
+    }
+
+    private TrainingPlanProblem makeTpp(long problemId, int sortOrder, int requiredFlag) {
+        TrainingPlanProblem tpp = new TrainingPlanProblem();
+        tpp.setId(sortOrder + 1L); tpp.setPlanId(PLAN_ID); tpp.setProblemId(problemId);
+        tpp.setSortOrder(sortOrder); tpp.setRequiredFlag(requiredFlag);
+        return tpp;
+    }
+
+    private Problem makeProb(long id) {
+        Problem p = new Problem();
+        p.setId(id); p.setTitle("P" + id); p.setPlatform("CF"); p.setStatus(1);
+        return p;
+    }
+
+    private UserProblemStatus makeUps(Long userId, Long problemId, int status, LocalDateTime firstAc) {
+        UserProblemStatus s = new UserProblemStatus();
+        s.setUserId(userId); s.setProblemId(problemId); s.setStatus(status);
+        s.setFirstAcTime(firstAc);
+        return s;
+    }
+
+    @Test
+    void ranking_usesRequiredCompletedCount_notAllCompleted() {
+        TrainingPlan plan = createPlanInDb("PUBLIC", CREATOR_ID, 1);
+        plan.setStartTime(LocalDateTime.now().minusDays(10));
+        plan.setEndTime(LocalDateTime.now().plusDays(10));
+        when(planMapper.selectById(PLAN_ID)).thenReturn(plan);
+
+        TrainingPlanMember m1 = makeMember(CREATOR_ID, 1);
+        TrainingPlanMember m2 = makeMember(OTHER_USER_ID, 1);
+        when(memberMapper.selectList(any())).thenReturn(List.of(m1, m2));
+
+        TrainingPlanProblem tpp1 = makeTpp(10L, 0, 1);
+        TrainingPlanProblem tpp2 = makeTpp(20L, 1, 0);
+        when(planProblemMapper.selectList(any())).thenReturn(List.of(tpp1, tpp2));
+
+        when(problemMapper.selectBatchIds(any())).thenReturn(List.of(makeProb(10L), makeProb(20L)));
+
+        // Creator: both accepted. Other: only required accepted.
+        UserProblemStatus s1 = makeUps(CREATOR_ID, 10L, 2, LocalDateTime.now().minusDays(1));
+        UserProblemStatus s2 = makeUps(CREATOR_ID, 20L, 2, LocalDateTime.now().minusHours(1));
+        UserProblemStatus s3 = makeUps(OTHER_USER_ID, 10L, 2, LocalDateTime.now().minusDays(2));
+        when(upsMapper.selectList(any())).thenReturn(List.of(s1, s2, s3));
+
+        when(userMapper.selectById(CREATOR_ID)).thenReturn(normalUser(CREATOR_ID));
+        when(userMapper.selectBatchIds(any())).thenReturn(List.of(normalUser(CREATOR_ID), normalUser(OTHER_USER_ID)));
+
+        PlanDetailResponse result = service.getPlanDetail(PLAN_ID, CREATOR_ID);
+        List<PlanMemberResponse> members = result.getMembers();
+
+        PlanMemberResponse creatorM = members.stream().filter(m -> m.getUserId().equals(CREATOR_ID)).findFirst().get();
+        PlanMemberResponse otherM = members.stream().filter(m -> m.getUserId().equals(OTHER_USER_ID)).findFirst().get();
+
+        assertEquals(2, creatorM.getCompletedCount());
+        assertEquals(1, creatorM.getRequiredCompletedCount());
+        assertEquals(1, otherM.getRequiredCompletedCount());
+        // same deadlineCompletedCount (1), other has earlier deadlineLastAcceptedTime → ranks higher
+        assertEquals(1, otherM.getRank().intValue());
+        assertEquals(2, creatorM.getRank().intValue());
+    }
+
+    @Test
+    void ranking_noRequiredProblems_allTreatedAsScoring() {
+        TrainingPlan plan = createPlanInDb("PUBLIC", CREATOR_ID, 1);
+        plan.setStartTime(LocalDateTime.now().minusDays(10));
+        plan.setEndTime(LocalDateTime.now().plusDays(10));
+        when(planMapper.selectById(PLAN_ID)).thenReturn(plan);
+
+        TrainingPlanMember m1 = makeMember(CREATOR_ID, 1);
+        TrainingPlanMember m2 = makeMember(OTHER_USER_ID, 1);
+        when(memberMapper.selectList(any())).thenReturn(List.of(m1, m2));
+
+        TrainingPlanProblem tpp1 = makeTpp(10L, 0, 0);
+        TrainingPlanProblem tpp2 = makeTpp(20L, 1, 0);
+        when(planProblemMapper.selectList(any())).thenReturn(List.of(tpp1, tpp2));
+
+        when(problemMapper.selectBatchIds(any())).thenReturn(List.of(makeProb(10L), makeProb(20L)));
+
+        // Creator: both solved. Other: only one solved.
+        UserProblemStatus s1 = makeUps(CREATOR_ID, 10L, 2, LocalDateTime.now().minusDays(2));
+        UserProblemStatus s2 = makeUps(CREATOR_ID, 20L, 2, LocalDateTime.now().minusDays(1));
+        UserProblemStatus s3 = makeUps(OTHER_USER_ID, 10L, 2, LocalDateTime.now().minusDays(3));
+        when(upsMapper.selectList(any())).thenReturn(List.of(s1, s2, s3));
+
+        when(userMapper.selectById(CREATOR_ID)).thenReturn(normalUser(CREATOR_ID));
+        when(userMapper.selectBatchIds(any())).thenReturn(List.of(normalUser(CREATOR_ID), normalUser(OTHER_USER_ID)));
+
+        PlanDetailResponse result = service.getPlanDetail(PLAN_ID, CREATOR_ID);
+        List<PlanMemberResponse> members = result.getMembers();
+
+        PlanMemberResponse creatorM = members.stream().filter(m -> m.getUserId().equals(CREATOR_ID)).findFirst().get();
+        PlanMemberResponse otherM = members.stream().filter(m -> m.getUserId().equals(OTHER_USER_ID)).findFirst().get();
+
+        // No required flag → all problems are scoring
+        assertEquals(2, creatorM.getRequiredTotal());
+        assertEquals(2, creatorM.getRequiredCompletedCount());
+        assertEquals(2, creatorM.getDeadlineCompletedCount());
+        assertEquals(1, otherM.getRequiredCompletedCount());
+        // Creator has more required completed → ranks higher
+        assertEquals(1, creatorM.getRank().intValue());
+        assertEquals(2, otherM.getRank().intValue());
+    }
+
+    @Test
+    void completionOrder_onlyForPreDeadlineCompleters() {
+        TrainingPlan plan = createPlanInDb("PUBLIC", CREATOR_ID, 1);
+        LocalDateTime deadline = LocalDateTime.now().plusDays(5);
+        plan.setStartTime(LocalDateTime.now().minusDays(10));
+        plan.setEndTime(deadline);
+        when(planMapper.selectById(PLAN_ID)).thenReturn(plan);
+
+        TrainingPlanMember m1 = makeMember(CREATOR_ID, 1);
+        TrainingPlanMember m2 = makeMember(OTHER_USER_ID, 1);
+        when(memberMapper.selectList(any())).thenReturn(List.of(m1, m2));
+
+        TrainingPlanProblem tpp1 = makeTpp(10L, 0, 1);
+        TrainingPlanProblem tpp2 = makeTpp(20L, 1, 1);
+        when(planProblemMapper.selectList(any())).thenReturn(List.of(tpp1, tpp2));
+
+        when(problemMapper.selectBatchIds(any())).thenReturn(List.of(makeProb(10L), makeProb(20L)));
+
+        // Creator: both solved before deadline. Other: one before, one after.
+        UserProblemStatus s1 = makeUps(CREATOR_ID, 10L, 2, deadline.minusDays(3));
+        UserProblemStatus s2 = makeUps(CREATOR_ID, 20L, 2, deadline.minusDays(1));
+        UserProblemStatus s3 = makeUps(OTHER_USER_ID, 10L, 2, deadline.minusDays(2));
+        UserProblemStatus s4 = makeUps(OTHER_USER_ID, 20L, 2, deadline.plusDays(1));
+        when(upsMapper.selectList(any())).thenReturn(List.of(s1, s2, s3, s4));
+
+        when(userMapper.selectById(CREATOR_ID)).thenReturn(normalUser(CREATOR_ID));
+        when(userMapper.selectBatchIds(any())).thenReturn(List.of(normalUser(CREATOR_ID), normalUser(OTHER_USER_ID)));
+
+        PlanDetailResponse result = service.getPlanDetail(PLAN_ID, CREATOR_ID);
+        List<PlanMemberResponse> members = result.getMembers();
+
+        PlanMemberResponse creatorM = members.stream().filter(m -> m.getUserId().equals(CREATOR_ID)).findFirst().get();
+        PlanMemberResponse otherM = members.stream().filter(m -> m.getUserId().equals(OTHER_USER_ID)).findFirst().get();
+
+        // Creator: both before deadline → completionOrder set
+        assertNotNull(creatorM.getDeadlineCompletedAt());
+        assertEquals(1, creatorM.getCompletionOrder().intValue());
+        // Other: one after deadline → no deadlineCompletedAt, no completionOrder
+        assertNull(otherM.getDeadlineCompletedAt());
+        assertNull(otherM.getCompletionOrder());
+        // Creator has 2 deadline completed, other has 1 → creator ranks higher
+        assertEquals(2, creatorM.getDeadlineCompletedCount());
+        assertEquals(1, otherM.getDeadlineCompletedCount());
     }
 }

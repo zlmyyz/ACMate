@@ -1206,18 +1206,36 @@ GET 请求不需要 CSRF Token。
       "difficulty": "800",
       "sortOrder": 0,
       "active": true,
-      "myStatus": "ACCEPTED"
+      "required": true,
+      "myStatus": "ACCEPTED",
+      "performanceNote": "需要复习"
     }
   ],
   "members": [
     {
       "userId": 2,
       "nickname": "Bob",
-      "progress": {"completed": 3, "total": 10},
-      "joinedAt": "2026-07-05T10:00:00"
+      "completedCount": 3,
+      "totalCount": 10,
+      "requiredCompletedCount": 2,
+      "requiredTotal": 5,
+      "currentLastAcceptedTime": "2026-07-28T14:30:00",
+      "deadlineLastAcceptedTime": "2026-07-28T14:30:00",
+      "currentCompletedAt": null,
+      "deadlineCompletedAt": null,
+      "deadlineCompletedCount": 2,
+      "rank": 1,
+      "completionOrder": null,
+      "joinTime": "2026-07-05T10:00:00",
+      "creator": false
     }
   ],
-  "myProgress": {"completed": 5, "total": 10},
+  "myProgress": {
+    "requiredCompletedCount": 2,
+    "requiredTotal": 5,
+    "optionalCompletedCount": 1,
+    "optionalTotal": 5
+  },
   "createTime": "2026-07-01T00:00:00",
   "updateTime": "2026-07-15T12:00:00"
 }
@@ -1402,6 +1420,133 @@ GET 请求不需要 CSRF Token。
 
 ---
 
+### PUT /api/training-plans/{planId}/problems/{problemId}/status
+
+更新成员在训练计划中的题目完成状态。
+
+#### 认证
+
+需要登录后携带 JSESSIONID Cookie。
+
+#### CSRF
+
+需要携带有效 CSRF Token。
+
+#### 请求字段
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| status | string | 是 | 题目状态：NOT_STARTED / CHALLENGING / ACCEPTED |
+
+#### 业务规则
+
+- 仅激活中的计划可操作，已停用计划返回 400
+- 仅计划成员可操作，非成员返回 403
+- 题目必须属于该计划，否则返回 404
+- ACCEPTED 状态不可手动设置（保留给系统自动同步）
+- CHALLENGING → NOT_STARTED 可降级
+- 同状态重复提交幂等（不触发更新）
+
+#### 成功响应
+
+**204 No Content**
+
+#### 错误响应
+
+**400 Bad Request** — 计划已停用或状态值无效
+
+**401 Unauthorized** — 未登录
+
+**403 Forbidden** — 非计划成员
+
+**404 Not Found** — 计划或题目不存在
+
+---
+
+### PUT /api/training-plans/{planId}/problems/{problemId}/note
+
+更新成员在训练计划题目上的备注。
+
+#### 认证
+
+需要登录后携带 JSESSIONID Cookie。
+
+#### CSRF
+
+需要携带有效 CSRF Token。
+
+#### 请求字段
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| note | string | 否 | 备注内容，最长 500 字符 |
+
+#### 成功响应
+
+**204 No Content**
+
+#### 错误响应
+
+**400 Bad Request** — 备注超过 500 字符
+
+**401 Unauthorized** — 未登录
+
+**403 Forbidden** — 非计划成员
+
+**404 Not Found** — 计划或题目不存在
+
+---
+
+### GET /api/training-plans/{planId}/members/{userId}/progress
+
+获取指定成员在训练计划中的详细进度，包含题目列表和完成状态。
+
+#### 认证
+
+需要登录后携带 JSESSIONID Cookie。
+
+#### 可见性
+
+- PUBLIC 计划：计划成员和管理员可查看其他成员进度
+- PERSONAL 计划：仅创建者可查看
+
+#### 成功响应
+
+**200 OK**
+
+```json
+{
+  "userId": 2,
+  "nickname": "Bob",
+  "completedCount": 3,
+  "totalCount": 10,
+  "lastAcceptedTime": "2026-07-28T14:30:00",
+  "rank": 1,
+  "completionOrder": 1,
+  "problems": [
+    {
+      "problemId": 1,
+      "problemTitle": "Two Sum",
+      "platform": "CUSTOM",
+      "difficulty": "800",
+      "problemActive": true,
+      "sortOrder": 0,
+      "required": true,
+      "myStatus": "ACCEPTED",
+      "performanceNote": null
+    }
+  ]
+}
+```
+
+#### 错误响应
+
+**401 Unauthorized** — 未登录
+
+**404 Not Found** — 计划不存在、成员不存在或无权查看
+
+---
+
 ### 计划中/尚未实现的训练计划 API（草稿）
 
 以下接口为后续版本规划，当前未实现：
@@ -1410,7 +1555,6 @@ GET 请求不需要 CSRF Token。
 |------|------|------|------|
 | PUT | `/api/training-plans/{id}/problems` | 批量更新题目列表（含排序） | 已实现 |
 | GET | `/api/training-plans/{id}/members` | 分页查询成员列表及进度 | 计划中/尚未实现 |
-| PUT | `/api/training-plans/{id}/members/{userId}/status` | 更新成员题目完成状态 | 计划中/尚未实现 |
 | GET | `/api/training-plans/{id}/statistics` | 训练计划统计（完成率、排名快照） | 计划中/尚未实现 |
 | GET | `/api/training-plans/{id}/rankings` | 赛时排名快照 | 计划中/尚未实现 |
 

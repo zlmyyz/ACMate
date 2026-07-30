@@ -7,6 +7,9 @@ import type {
   UpdatePlanRequest,
   AddProblemRequest,
   UpdateProblemsRequest,
+  UpdateStatusRequest,
+  UpdateNoteRequest,
+  MemberProgress,
 } from '@/types/training'
 
 export async function listPlans(params: {
@@ -96,4 +99,25 @@ export async function removeMember(planId: number, userId: number): Promise<void
       headers: { [headerName]: token },
     }),
   )
+}
+
+export async function updateProblemStatus(planId: number, problemId: number, data: UpdateStatusRequest): Promise<void> {
+  return withCsrf((headerName, token) =>
+    apiClient.put(`/training-plans/${planId}/problems/${problemId}/status`, data, {
+      headers: { [headerName]: token },
+    }),
+  )
+}
+
+export async function updateProblemNote(planId: number, problemId: number, data: UpdateNoteRequest): Promise<void> {
+  return withCsrf((headerName, token) =>
+    apiClient.put(`/training-plans/${planId}/problems/${problemId}/note`, data, {
+      headers: { [headerName]: token },
+    }),
+  )
+}
+
+export async function getMemberProgress(planId: number, userId: number): Promise<MemberProgress> {
+  const response = await apiClient.get<MemberProgress>(`/training-plans/${planId}/members/${userId}/progress`)
+  return response.data
 }

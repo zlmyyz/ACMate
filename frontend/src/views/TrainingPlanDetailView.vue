@@ -7,9 +7,11 @@ import {
   deactivatePlan,
   restorePlan,
   removeMember,
+  updateProblemStatus,
+  updateProblemNote,
 } from '@/api/training'
-import type { PlanDetail } from '@/types/training'
-import { trainingTypeLabels, trainingTimeStatusLabels, platformLabels } from '@/constants/labels'
+import type { PlanDetail, ProblemStatusType } from '@/types/training'
+import { trainingTypeLabels, trainingTimeStatusLabels, platformLabels, progressLabels } from '@/constants/labels'
 import PageContainer from '@/components/layout/PageContainer.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
 import ErrorState from '@/components/common/ErrorState.vue'
@@ -28,6 +30,10 @@ const deactivateReason = ref('')
 const showDeactivateDialog = ref(false)
 const actionError = ref('')
 const removingMemberId = ref<number | null>(null)
+const updatingProblemId = ref<number | null>(null)
+const editingNoteProblemId = ref<number | null>(null)
+const editingNoteText = ref('')
+const settingStatusProblemId = ref<number | null>(null)
 
 const planId = computed(() => Number(route.params.id))
 
@@ -103,6 +109,44 @@ async function handleRemoveMember(userId: number) {
   } finally {
     removingMemberId.value = null
   }
+}
+
+async function handleStatusChange(problemId: number, status: ProblemStatusType) {
+  settingStatusProblemId.value = problemId
+  try {
+    await updateProblemStatus(planId.value, problemId, { status })
+    await fetchDetail()
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { message?: string } } }
+    alert(err.response?.data?.message ?? '更新状态失败')
+  } finally {
+    settingStatusProblemId.value = null
+  }
+}
+
+function startEditNote(problemId: number, currentNote: string | null) {
+  editingNoteProblemId.value = problemId
+  editingNoteText.value = currentNote || ''
+}
+
+async function saveNote(problemId: number) {
+  updatingProblemId.value = problemId
+  try {
+    await updateProblemNote(planId.value, problemId, { note: editingNoteText.value || null })
+    editingNoteProblemId.value = null
+    editingNoteText.value = ''
+    await fetchDetail()
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { message?: string } } }
+    alert(err.response?.data?.message ?? '保存备注失败')
+  } finally {
+    updatingProblemId.value = null
+  }
+}
+
+function cancelEditNote() {
+  editingNoteProblemId.value = null
+  editingNoteText.value = ''
 }
 
 function formatDate(d: string | null): string {
@@ -199,6 +243,24 @@ onMounted(fetchDetail)
         <div v-if="plan.description" class="plan-desc">{{ plan.description }}</div>
       </div>
 
+      <div v-if="plan.joined && plan.myProgress" class="progress-card">
+        <h2 class="section-title">我的进度</h2>
+        <div class="progress-stats">
+          <div class="stat-item">
+            <span class="stat-label">必做</span>
+            <span class="stat-value">{{ plan.myProgress.requiredCompletedCount }}/{{ plan.myProgress.requiredTotal }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">选做</span>
+            <span class="stat-value">{{ plan.myProgress.optionalCompletedCount }}/{{ plan.myProgress.optionalTotal }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">总计</span>
+            <span class="stat-value">{{ plan.myProgress.requiredCompletedCount + plan.myProgress.optionalCompletedCount }}/{{ plan.myProgress.requiredTotal + plan.myProgress.optionalTotal }}</span>
+          </div>
+        </div>
+      </div>
+
       <div class="problems-card">
         <h2 class="section-title">题目列表（{{ plan.problems.length }}）</h2>
         <div v-if="plan.problems.length === 0" class="empty-hint">暂无题目</div>
@@ -217,6 +279,32 @@ onMounted(fetchDetail)
             </RouterLink>
             <span class="problem-platform">{{ platformLabels[p.platform] || p.platform }}</span>
             <span v-if="p.difficulty" class="problem-diff">{{ p.difficulty }}</span>
+            <span v-if="plan.joined && p.myStatus" class="status-badge" :class="p.myStatus.toLowerCase()">
+              {{ progressLabels[p.myStatus] || p.myStatus }}
+            </span>
+            <div v-if="plan.joined && p.myStatus !== 'ACCEPTED'" class="status-actions">
+              <button
+                v-if="(!p.myStatus || p.myStatus === 'NOT_STARTED') && settingStatusProblemId !== p.problemId"
+                class="status-btn challenging-btn"
+                @click="handleStatusChange(p.problemId, 'CHALLENGING')"
+              >挑战中</button>
+              <button
+                v-if="p.myStatus === 'CHALLENGING' && settingStatusProblemId !== p.problemId"
+                class="status-btn accepted-btn"
+                @click="handleStatusChange(p.problemId, 'ACCEPTED')"
+              >已通过</button>
+              <span v-if="settingStatusProblemId === p.problemId" class="status-updating">更新中...</span>
+            </div>
+            <div v-if="plan.joined" class="note-area">
+              <span v-if="editingNoteProblemId !== p.problemId" class="note-text" @click="startEditNote(p.problemId, p.performanceNote || null)">
+                {{ p.performanceNote || '添加备注' }}
+              </span>
+              <div v-else class="note-edit">
+                <input v-model="editingNoteText" class="note-input" maxlength="500" placeholder="填写备注" @keyup.enter="saveNote(p.problemId)" />
+                <button class="note-save-btn" :disabled="updatingProblemId === p.problemId" @click="saveNote(p.problemId)">{{ updatingProblemId === p.problemId ? '保存中' : '保存' }}</button>
+                <button class="note-cancel-btn" @click="cancelEditNote()">取消</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -391,6 +479,7 @@ onMounted(fetchDetail)
 }
 .problem-row:hover { background: var(--color-surface-container-low); }
 .problem-row.inactive { opacity: 0.5; }
+.problem-row { flex-wrap: wrap; }
 
 .problem-order {
   width: 28px; text-align: center; font-family: var(--font-mono);
@@ -415,6 +504,60 @@ onMounted(fetchDetail)
   font-size: var(--text-body-sm); color: var(--color-on-surface-variant);
   font-family: var(--font-mono); white-space: nowrap;
 }
+
+.status-badge {
+  font-size: var(--text-label-sm); font-weight: 600;
+  padding: 1px 8px; border-radius: 999px;
+  white-space: nowrap;
+}
+.status-badge.not_started { color: var(--color-on-surface-variant); background: var(--color-surface-container); }
+.status-badge.challenging { color: var(--color-status-pending); background: rgba(243,161,60,0.12); }
+.status-badge.accepted { color: var(--color-status-success); background: rgba(52,168,83,0.12); }
+
+.status-actions { display: flex; gap: 4px; }
+.status-btn {
+  height: 26px; padding: 0 10px; border: none; border-radius: var(--radius-sm);
+  font-size: var(--text-label-sm); font-weight: 600; cursor: pointer;
+}
+.status-btn:hover { opacity: 0.9; }
+.challenging-btn { background: rgba(243,161,60,0.15); color: var(--color-status-pending); }
+.accepted-btn { background: rgba(52,168,83,0.15); color: var(--color-status-success); }
+.status-updating { font-size: var(--text-label-sm); color: var(--color-on-surface-variant); }
+
+.note-area { width: 100%; margin-top: 4px; }
+.note-text {
+  font-size: var(--text-label-sm); color: var(--color-on-surface-variant);
+  cursor: pointer; display: inline-block; padding: 2px 6px;
+  border-radius: var(--radius-sm); border: 1px dashed transparent;
+}
+.note-text:hover { border-color: var(--color-border-subtle); background: var(--color-surface-container-low); }
+.note-edit { display: flex; gap: 4px; align-items: center; }
+.note-input {
+  flex: 1; padding: 4px 8px; border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm); font-size: var(--text-label-sm);
+}
+.note-input:focus { outline: none; border-color: var(--color-primary-container); }
+.note-save-btn, .note-cancel-btn {
+  height: 24px; padding: 0 8px; border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm); background: transparent;
+  font-size: var(--text-label-sm); cursor: pointer;
+}
+.note-save-btn { border-color: var(--color-primary-container); color: var(--color-primary-container); }
+.note-save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.note-cancel-btn:hover { background: var(--color-surface-container); }
+
+.progress-card {
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 24px;
+  margin-bottom: var(--space-stack-md);
+}
+.progress-stats { display: flex; gap: 24px; margin-top: 12px; }
+.stat-item { display: flex; flex-direction: column; gap: 4px; }
+.stat-label { font-size: var(--text-label-sm); color: var(--color-on-surface-variant); }
+.stat-value { font-size: var(--text-headline-sm); font-weight: 700; color: var(--color-on-surface); }
 
 .member-list { display: flex; flex-direction: column; gap: 4px; }
 

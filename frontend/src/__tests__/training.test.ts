@@ -3,7 +3,7 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
 
-const { mockListPlans, mockGetPlanDetail, mockCreatePlan, mockUpdatePlan, mockDeactivatePlan, mockRestorePlan, mockJoinPlan } = vi.hoisted(() => ({
+const { mockListPlans, mockGetPlanDetail, mockCreatePlan, mockUpdatePlan, mockDeactivatePlan, mockRestorePlan, mockJoinPlan, mockUpdateProblemStatus } = vi.hoisted(() => ({
   mockListPlans: vi.fn(),
   mockGetPlanDetail: vi.fn(),
   mockCreatePlan: vi.fn(),
@@ -11,6 +11,7 @@ const { mockListPlans, mockGetPlanDetail, mockCreatePlan, mockUpdatePlan, mockDe
   mockDeactivatePlan: vi.fn(),
   mockRestorePlan: vi.fn(),
   mockJoinPlan: vi.fn(),
+  mockUpdateProblemStatus: vi.fn(),
 }))
 
 vi.mock('@/api/training', () => ({
@@ -24,6 +25,8 @@ vi.mock('@/api/training', () => ({
   addPlanProblem: vi.fn(),
   removePlanProblem: vi.fn(),
   removeMember: vi.fn(),
+  updateProblemStatus: mockUpdateProblemStatus,
+  updateProblemNote: vi.fn(),
 }))
 
 const { mockGetUser } = vi.hoisted(() => ({ mockGetUser: vi.fn() }))
@@ -41,6 +44,9 @@ function emptyRouter() {
 }
 
 function makePlanDetail(overrides: Record<string, unknown> = {}) {
+  const members = (overrides.members as Record<string, unknown>[]) || [{ userId: 1, username: 'admin', nickname: 'Admin', avatarUrl: null, joinTime: '2024-01-01T00:00:00', creator: true, completedCount: 0, totalCount: 0, requiredCompletedCount: 0, requiredTotal: 0, lastAcceptedTime: null, rank: 1, completionOrder: null }]
+  const memberCount = overrides.memberCount !== undefined ? overrides.memberCount : members.length
+  const joined = overrides.joined !== undefined ? overrides.joined : false
   return {
     id: 1,
     title: 'Test Plan',
@@ -56,16 +62,17 @@ function makePlanDetail(overrides: Record<string, unknown> = {}) {
     endTime: null,
     timeStatus: 'ONGOING',
     problemCount: 0,
-    memberCount: 1,
-    joined: false,
+    memberCount,
+    joined,
     creator: false,
     canEdit: false,
     canJoin: true,
     canRemoveMembers: false,
     canDeactivate: false,
     canRestore: false,
-    members: [{ userId: 1, username: 'admin', nickname: 'Admin', avatarUrl: null, joinTime: '2024-01-01T00:00:00', creator: true }],
+    members,
     problems: [],
+    myProgress: joined ? { requiredCompletedCount: 0, requiredTotal: 0, optionalCompletedCount: 0, optionalTotal: 0 } : null,
     createTime: '2024-01-01T00:00:00',
     updateTime: '2024-01-01T00:00:00',
     ...overrides,
@@ -238,6 +245,61 @@ describe('TrainingPlanDetailView', () => {
     const wrapper = await mountDetail('/training-plans/1')
     await flushPromises()
     expect(wrapper.text()).toContain('计划不存在')
+  })
+
+  it('should show progress card when joined', async () => {
+    mockGetPlanDetail.mockResolvedValueOnce(makePlanDetail({
+      joined: true, creator: true,
+      myProgress: { requiredCompletedCount: 1, requiredTotal: 2, optionalCompletedCount: 0, optionalTotal: 1 },
+      members: [{ userId: 1, username: 'admin', nickname: 'Admin', avatarUrl: null, joinTime: '2024-01-01T00:00:00', creator: true, completedCount: 1, totalCount: 3, requiredCompletedCount: 1, requiredTotal: 2, lastAcceptedTime: null, rank: 1, completionOrder: null }],
+    }))
+    const wrapper = await mountDetail('/training-plans/1')
+    await flushPromises()
+    expect(wrapper.text()).toContain('我的进度')
+    expect(wrapper.text()).toContain('1/2')
+  })
+
+  it('should show status badge on problem row', async () => {
+    mockGetPlanDetail.mockResolvedValueOnce(makePlanDetail({
+      joined: true,
+      problems: [{ id: 1, problemId: 1, problemTitle: 'P1', platform: 'CUSTOM', difficulty: null, problemActive: true, sortOrder: 0, required: true, myStatus: 'CHALLENGING', performanceNote: 'hard' }],
+      members: [{ userId: 1, username: 'admin', nickname: 'Admin', avatarUrl: null, joinTime: '2024-01-01T00:00:00', creator: false, completedCount: 0, totalCount: 1, requiredCompletedCount: 0, requiredTotal: 1, lastAcceptedTime: null, rank: 1, completionOrder: null }],
+    }))
+    const wrapper = await mountDetail('/training-plans/1')
+    await flushPromises()
+    expect(wrapper.text()).toContain('挑战中')
+    expect(wrapper.text()).toContain('hard')
+  })
+
+  it('should show status toggle for non-ACCEPTED problems', async () => {
+    mockGetPlanDetail.mockResolvedValueOnce(makePlanDetail({
+      joined: true,
+      problems: [{ id: 1, problemId: 1, problemTitle: 'P1', platform: 'CUSTOM', difficulty: null, problemActive: true, sortOrder: 0, required: true, myStatus: 'NOT_STARTED', performanceNote: null }],
+      members: [{ userId: 1, username: 'admin', nickname: 'Admin', avatarUrl: null, joinTime: '2024-01-01T00:00:00', creator: false, completedCount: 0, totalCount: 1, requiredCompletedCount: 0, requiredTotal: 1, lastAcceptedTime: null, rank: 1, completionOrder: null }],
+    }))
+    const wrapper = await mountDetail('/training-plans/1')
+    await flushPromises()
+    expect(wrapper.text()).toContain('挑战中')
+  })
+
+  it('should show ACCEPTED status badge for solved problems', async () => {
+    mockGetPlanDetail.mockResolvedValueOnce(makePlanDetail({
+      joined: true,
+      problems: [{ id: 1, problemId: 1, problemTitle: 'P1', platform: 'CUSTOM', difficulty: null, problemActive: true, sortOrder: 0, required: true, myStatus: 'ACCEPTED', performanceNote: null }],
+      members: [{ userId: 1, username: 'admin', nickname: 'Admin', avatarUrl: null, joinTime: '2024-01-01T00:00:00', creator: false, completedCount: 1, totalCount: 1, requiredCompletedCount: 1, requiredTotal: 1, lastAcceptedTime: '2024-06-01T00:00:00', rank: 1, completionOrder: null }],
+    }))
+    const wrapper = await mountDetail('/training-plans/1')
+    await flushPromises()
+    expect(wrapper.text()).toContain('已通过')
+  })
+
+  it('should not show progress when not joined', async () => {
+    mockGetPlanDetail.mockResolvedValueOnce(makePlanDetail({
+      joined: false, members: [],
+    }))
+    const wrapper = await mountDetail('/training-plans/1')
+    await flushPromises()
+    expect(wrapper.text()).not.toContain('我的进度')
   })
 })
 

@@ -9,6 +9,7 @@ import com.itnoduck.acmate.problem.dto.UpdateProblemRequest;
 import com.itnoduck.acmate.auditlog.service.AuditLogService;
 import com.itnoduck.acmate.problem.entity.Problem;
 import com.itnoduck.acmate.problem.mapper.ProblemMapper;
+import com.itnoduck.acmate.training.mapper.UserProblemStatusMapper;
 import com.itnoduck.acmate.testutil.MybatisPlusTestHelper;
 import com.itnoduck.acmate.user.entity.AppUser;
 import com.itnoduck.acmate.user.mapper.AppUserMapper;
@@ -43,6 +44,8 @@ class ProblemCommandServiceImplTest {
     private AuditLogService auditLogService;
     @Mock
     private AppUserMapper appUserMapper;
+    @Mock
+    private UserProblemStatusMapper upsMapper;
 
     @InjectMocks
     private ProblemCommandServiceImpl service;
@@ -54,6 +57,7 @@ class ProblemCommandServiceImplTest {
         creator.setUsername("testuser");
         creator.setNickname("TestUser");
         lenient().when(appUserMapper.selectById(anyLong())).thenReturn(creator);
+        lenient().when(upsMapper.selectCount(any())).thenReturn(0L);
     }
 
     private CreateProblemRequest buildRequest(String platform, String externalKey) {

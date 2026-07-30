@@ -11,9 +11,12 @@ import com.itnoduck.acmate.training.dto.*;
 import com.itnoduck.acmate.training.entity.TrainingPlan;
 import com.itnoduck.acmate.training.entity.TrainingPlanMember;
 import com.itnoduck.acmate.training.entity.TrainingPlanProblem;
+import com.itnoduck.acmate.training.entity.UserProblemStatus;
+import com.itnoduck.acmate.training.enums.ProblemStatus;
 import com.itnoduck.acmate.training.mapper.TrainingPlanMapper;
 import com.itnoduck.acmate.training.mapper.TrainingPlanMemberMapper;
 import com.itnoduck.acmate.training.mapper.TrainingPlanProblemMapper;
+import com.itnoduck.acmate.training.mapper.UserProblemStatusMapper;
 import com.itnoduck.acmate.training.service.TrainingPlanService;
 import com.itnoduck.acmate.user.entity.AppUser;
 import com.itnoduck.acmate.user.mapper.AppUserMapper;
@@ -40,6 +43,7 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
     private final ProblemMapper problemMapper;
     private final AuditLogService auditLogService;
     private final ApplicationEventPublisher eventPublisher;
+    private final UserProblemStatusMapper upsMapper;
 
     public TrainingPlanServiceImpl(TrainingPlanMapper planMapper,
                                     TrainingPlanProblemMapper planProblemMapper,
@@ -47,7 +51,8 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
                                     AppUserMapper userMapper,
                                     ProblemMapper problemMapper,
                                     AuditLogService auditLogService,
-                                    ApplicationEventPublisher eventPublisher) {
+                                    ApplicationEventPublisher eventPublisher,
+                                    UserProblemStatusMapper upsMapper) {
         this.planMapper = planMapper;
         this.planProblemMapper = planProblemMapper;
         this.memberMapper = memberMapper;
@@ -55,6 +60,7 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
         this.problemMapper = problemMapper;
         this.auditLogService = auditLogService;
         this.eventPublisher = eventPublisher;
+        this.upsMapper = upsMapper;
     }
 
     @Override
@@ -110,9 +116,13 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
 
         boolean scheduleChanged = false;
         if (request.getStartTime() != null && !request.getStartTime().equals(plan.getStartTime())) {
+            if ("ENDED".equals(computeTimeStatus(plan)))
+                throw new BusinessException(400, "已结束的计划不能修改时间");
             scheduleChanged = true;
         }
         if (request.getEndTime() != null && !request.getEndTime().equals(plan.getEndTime())) {
+            if ("ENDED".equals(computeTimeStatus(plan)))
+                throw new BusinessException(400, "已结束的计划不能修改时间");
             scheduleChanged = true;
         }
 
@@ -329,6 +339,9 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
         TrainingPlan plan = getPlan(planId);
         checkEditPermission(plan, userId);
 
+        if ("ENDED".equals(computeTimeStatus(plan)))
+            throw new BusinessException(400, "已结束的计划不能修改题目");
+
         Problem problem = problemMapper.selectById(request.getProblemId());
         if (problem == null || problem.getStatus() == 0) {
             throw new BusinessException(404, "题目不存在");
@@ -355,6 +368,8 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
     public void removeProblem(Long planId, Long problemId, Long userId) {
         TrainingPlan plan = getPlan(planId);
         checkEditPermission(plan, userId);
+        if ("ENDED".equals(computeTimeStatus(plan)))
+            throw new BusinessException(400, "已结束的计划不能修改题目");
         planProblemMapper.delete(new LambdaQueryWrapper<TrainingPlanProblem>()
                 .eq(TrainingPlanProblem::getPlanId, planId)
                 .eq(TrainingPlanProblem::getProblemId, problemId));
@@ -366,6 +381,8 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
     public void updateProblems(Long planId, UpdateProblemsRequest request, Long userId) {
         TrainingPlan plan = getPlan(planId);
         checkEditPermission(plan, userId);
+        if ("ENDED".equals(computeTimeStatus(plan)))
+            throw new BusinessException(400, "已结束的计划不能修改题目");
 
         List<PlanProblemRequest> reqProblems = request.getProblems();
         if (reqProblems == null) reqProblems = List.of();
@@ -465,7 +482,16 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
         TrainingPlanMember existing = memberMapper.selectOne(new LambdaQueryWrapper<TrainingPlanMember>()
                 .eq(TrainingPlanMember::getPlanId, planId)
                 .eq(TrainingPlanMember::getUserId, userId));
-        if (existing != null) return;
+        if (existing != null) {
+            if (existing.getStatus() != null && existing.getStatus() == 0) {
+                // restore removed member
+                existing.setStatus(1);
+                existing.setRemoveTime(null);
+                existing.setRemovedBy(null);
+                memberMapper.updateById(existing);
+            }
+            return;
+        }
 
         TrainingPlanMember member = new TrainingPlanMember();
         member.setPlanId(planId);
@@ -491,10 +517,13 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
             throw new BusinessException(400, "不能移除计划创建者");
         }
 
-        int deleted = memberMapper.delete(new LambdaQueryWrapper<TrainingPlanMember>()
+        int updated = memberMapper.update(null, new LambdaUpdateWrapper<TrainingPlanMember>()
                 .eq(TrainingPlanMember::getPlanId, planId)
-                .eq(TrainingPlanMember::getUserId, memberUserId));
-        if (deleted == 0) {
+                .eq(TrainingPlanMember::getUserId, memberUserId)
+                .set(TrainingPlanMember::getStatus, 0)
+                .set(TrainingPlanMember::getRemoveTime, LocalDateTime.now())
+                .set(TrainingPlanMember::getRemovedBy, operatorUserId));
+        if (updated == 0) {
             throw new BusinessException(404, "该成员不在计划中");
         }
         var memberPayload = new LinkedHashMap<String, Object>();
@@ -526,17 +555,18 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
         if ("PUBLIC".equals(plan.getPlanType())) return;
         if (plan.getCreatorUserId().equals(userId)) return;
         if (isAdminUser(userId)) return;
-        // member of a deactivated plan can still view
+        // active member of a deactivated plan can still view
         TrainingPlanMember membership = memberMapper.selectOne(new LambdaQueryWrapper<TrainingPlanMember>()
                 .eq(TrainingPlanMember::getPlanId, plan.getId())
                 .eq(TrainingPlanMember::getUserId, userId));
-        if (membership != null) return;
+        if (membership != null && (membership.getStatus() == null || membership.getStatus() == 1)) return;
         throw new BusinessException(404, "训练计划不存在");
     }
 
     private Set<Long> getCurrentMemberUserIds(Long planId) {
         return memberMapper.selectList(new LambdaQueryWrapper<TrainingPlanMember>()
-                .eq(TrainingPlanMember::getPlanId, planId))
+                .eq(TrainingPlanMember::getPlanId, planId)
+                .eq(TrainingPlanMember::getStatus, 1))
                 .stream().map(TrainingPlanMember::getUserId).collect(Collectors.toSet());
     }
 
@@ -567,7 +597,8 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
         if (planIds.isEmpty()) return Map.of();
         Map<Long, Integer> result = new HashMap<>();
         List<TrainingPlanMember> all = memberMapper.selectList(
-                new LambdaQueryWrapper<TrainingPlanMember>().in(TrainingPlanMember::getPlanId, planIds));
+                new LambdaQueryWrapper<TrainingPlanMember>().in(TrainingPlanMember::getPlanId, planIds)
+                        .eq(TrainingPlanMember::getStatus, 1));
         for (TrainingPlanMember m : all) {
             result.merge(m.getPlanId(), 1, Integer::sum);
         }
@@ -612,10 +643,11 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
             r.setCreatorNickname(creator.getNickname());
         }
 
-        // Members
+        // Members (active only)
         List<TrainingPlanMember> members = memberMapper.selectList(
                 new LambdaQueryWrapper<TrainingPlanMember>()
                         .eq(TrainingPlanMember::getPlanId, plan.getId())
+                        .eq(TrainingPlanMember::getStatus, 1)
                         .orderByAsc(TrainingPlanMember::getJoinTime));
 
         boolean joined = members.stream().anyMatch(m -> m.getUserId().equals(userId));
@@ -637,9 +669,86 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
         Set<Long> memberUserIds = members.stream().map(TrainingPlanMember::getUserId).collect(Collectors.toSet());
         Map<Long, AppUser> memberUserMap = batchLoadUsers(memberUserIds);
 
+        // Load progress stats for all members
+        List<TrainingPlanProblem> tpps = planProblemMapper.selectList(
+                new LambdaQueryWrapper<TrainingPlanProblem>()
+                        .eq(TrainingPlanProblem::getPlanId, plan.getId())
+                        .orderByAsc(TrainingPlanProblem::getSortOrder));
+        Set<Long> problemIds = tpps.stream().map(TrainingPlanProblem::getProblemId).collect(Collectors.toSet());
+        Map<Long, Problem> probMap = batchLoadProblems(problemIds);
+
+        // Per-user progress: batch load all statuses for all members
+        Map<Long, List<UserProblemStatus>> memberStatusMap = new HashMap<>();
+        if (!memberUserIds.isEmpty() && !problemIds.isEmpty()) {
+            List<UserProblemStatus> allStatuses = upsMapper.selectList(
+                    new LambdaQueryWrapper<UserProblemStatus>()
+                            .in(UserProblemStatus::getUserId, memberUserIds)
+                            .in(UserProblemStatus::getProblemId, problemIds));
+            for (UserProblemStatus s : allStatuses) {
+                memberStatusMap.computeIfAbsent(s.getUserId(), k -> new ArrayList<>()).add(s);
+            }
+        }
+
+        // Compute progress per member with deadline/current field separation
+        boolean hasRequired = tpps.stream().anyMatch(tpp -> tpp.getRequiredFlag() == 1);
+        LocalDateTime deadline = plan.getEndTime();
+
         List<PlanMemberResponse> memberList = new ArrayList<>();
         for (TrainingPlanMember m : members) {
             AppUser mu = memberUserMap.get(m.getUserId());
+            List<UserProblemStatus> sts = memberStatusMap.getOrDefault(m.getUserId(), List.of());
+            Map<Long, UserProblemStatus> stsMap = sts.stream()
+                .collect(Collectors.toMap(UserProblemStatus::getProblemId, s -> s));
+
+            int completedAll = 0, reqCompleted = 0, reqTotal = 0, deadlineReqCompleted = 0;
+            LocalDateTime currentLastAc = null, deadlineLastAc = null, latestReqAc = null;
+            boolean allReqCompleted = true;
+
+            for (TrainingPlanProblem tpp : tpps) {
+                boolean isReq = hasRequired ? tpp.getRequiredFlag() == 1 : true;
+                if (isReq) reqTotal++;
+
+                UserProblemStatus s = stsMap.get(tpp.getProblemId());
+                boolean isAccepted = s != null && s.getStatus() != null && s.getStatus() == 2;
+                if (isAccepted) completedAll++;
+
+                if (isReq) {
+                    if (isAccepted) {
+                        reqCompleted++;
+                        if (s.getFirstAcTime() != null) {
+                            if (currentLastAc == null || s.getFirstAcTime().isAfter(currentLastAc))
+                                currentLastAc = s.getFirstAcTime();
+                            if (latestReqAc == null || s.getFirstAcTime().isAfter(latestReqAc))
+                                latestReqAc = s.getFirstAcTime();
+                            if (deadline == null || !s.getFirstAcTime().isAfter(deadline)) {
+                                deadlineReqCompleted++;
+                                if (deadlineLastAc == null || s.getFirstAcTime().isAfter(deadlineLastAc))
+                                    deadlineLastAc = s.getFirstAcTime();
+                            }
+                        } else {
+                            deadlineReqCompleted++;
+                        }
+                    } else {
+                        allReqCompleted = false;
+                    }
+                }
+            }
+
+            LocalDateTime currentCompletedAt = allReqCompleted && reqCompleted == reqTotal ? latestReqAc : null;
+            boolean allBeforeDeadline = deadline == null ? allReqCompleted && reqCompleted == reqTotal : false;
+            if (!allBeforeDeadline && deadline != null && allReqCompleted && reqCompleted == reqTotal) {
+                allBeforeDeadline = true;
+                for (TrainingPlanProblem tpp : tpps) {
+                    boolean isReq = hasRequired ? tpp.getRequiredFlag() == 1 : true;
+                    if (!isReq) continue;
+                    UserProblemStatus s = stsMap.get(tpp.getProblemId());
+                    if (s != null && s.getFirstAcTime() != null && s.getFirstAcTime().isAfter(deadline)) {
+                        allBeforeDeadline = false;
+                        break;
+                    }
+                }
+            }
+
             PlanMemberResponse mi = new PlanMemberResponse();
             mi.setUserId(m.getUserId());
             mi.setUsername(mu != null ? mu.getUsername() : null);
@@ -647,20 +756,58 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
             mi.setAvatarUrl(mu != null ? mu.getAvatarUrl() : null);
             mi.setJoinTime(m.getJoinTime());
             mi.setCreator(m.getUserId().equals(plan.getCreatorUserId()));
+            mi.setCompletedCount(completedAll);
+            mi.setTotalCount(tpps.size());
+            mi.setRequiredCompletedCount(reqCompleted);
+            mi.setRequiredTotal(reqTotal);
+            mi.setCurrentLastAcceptedTime(currentLastAc);
+            mi.setDeadlineLastAcceptedTime(deadlineLastAc);
+            mi.setCurrentCompletedAt(currentCompletedAt);
+            mi.setDeadlineCompletedAt(allBeforeDeadline ? currentCompletedAt : null);
+            mi.setDeadlineCompletedCount(deadlineReqCompleted);
             memberList.add(mi);
         }
+
+        // Rank by deadlineCompletedCount DESC → deadlineLastAcceptedTime NULLS LAST ASC → userId ASC
+        List<PlanMemberResponse> sorted = new ArrayList<>(memberList);
+        sorted.sort((a, b) -> {
+            int cmp = Integer.compare(b.getDeadlineCompletedCount(), a.getDeadlineCompletedCount());
+            if (cmp != 0) return cmp;
+            LocalDateTime ta = a.getDeadlineLastAcceptedTime();
+            LocalDateTime tb = b.getDeadlineLastAcceptedTime();
+            if (ta != null && tb != null) return ta.compareTo(tb);
+            if (ta == null && tb == null) return Long.compare(a.getUserId(), b.getUserId());
+            return ta == null ? 1 : -1;
+        });
+        Map<Long, Integer> rankMap = new HashMap<>();
+        for (int i = 0; i < sorted.size(); i++) {
+            rankMap.put(sorted.get(i).getUserId(), i + 1);
+        }
+        for (PlanMemberResponse mi : memberList) {
+            mi.setRank((long) rankMap.get(mi.getUserId()));
+        }
+
+        // completionOrder: only for pre-deadline completers
+        List<PlanMemberResponse> completedOrdered = memberList.stream()
+            .filter(mi -> mi.getDeadlineCompletedAt() != null)
+            .sorted(Comparator.comparing(PlanMemberResponse::getDeadlineCompletedAt)
+                .thenComparingLong(PlanMemberResponse::getUserId))
+            .collect(Collectors.toList());
+        Map<Long, Integer> completionOrderMap = new HashMap<>();
+        for (int i = 0; i < completedOrdered.size(); i++) {
+            completionOrderMap.put(completedOrdered.get(i).getUserId(), i + 1);
+        }
+        for (PlanMemberResponse mi : memberList) {
+            mi.setCompletionOrder(completionOrderMap.get(mi.getUserId()));
+        }
+
         r.setMembers(memberList);
 
-        // Problems
-        List<TrainingPlanProblem> tpps = planProblemMapper.selectList(
-                new LambdaQueryWrapper<TrainingPlanProblem>()
-                        .eq(TrainingPlanProblem::getPlanId, plan.getId())
-                        .orderByAsc(TrainingPlanProblem::getSortOrder));
-
-        Set<Long> problemIds = tpps.stream().map(TrainingPlanProblem::getProblemId).collect(Collectors.toSet());
-        Map<Long, Problem> probMap = batchLoadProblems(problemIds);
-
+        // Problems with my status
         List<PlanProblemResponse> problems = new ArrayList<>();
+        Map<Long, UserProblemStatus> myStatusMap = joined ? memberStatusMap.getOrDefault(userId, List.of()).stream()
+                .collect(Collectors.toMap(UserProblemStatus::getProblemId, s -> s)) : Map.of();
+
         for (TrainingPlanProblem tpp : tpps) {
             PlanProblemResponse pp = new PlanProblemResponse();
             pp.setId(tpp.getId());
@@ -674,10 +821,35 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
                 pp.setDifficulty(prob.getDifficulty());
                 pp.setProblemActive(prob.getStatus() != null && prob.getStatus() == 1);
             }
+            UserProblemStatus myS = myStatusMap.get(tpp.getProblemId());
+            if (myS != null) {
+                pp.setMyStatus(ProblemStatus.fromCode(myS.getStatus()).name());
+                pp.setPerformanceNote(myS.getPerformanceNote());
+            }
             problems.add(pp);
         }
         r.setProblems(problems);
         r.setProblemCount(problems.size());
+
+        // My progress summary
+        int myCompleted = 0, reqCompleted = 0, reqTotal = 0;
+        Map<Long, UserProblemStatus> myStsMap = joined ? memberStatusMap.getOrDefault(userId, List.of()).stream()
+                .collect(Collectors.toMap(UserProblemStatus::getProblemId, s -> s)) : Map.of();
+        for (TrainingPlanProblem tpp : tpps) {
+            boolean isReq = hasRequired ? tpp.getRequiredFlag() == 1 : true;
+            if (isReq) reqTotal++;
+            UserProblemStatus s = myStsMap.get(tpp.getProblemId());
+            if (s != null && s.getStatus() != null && s.getStatus() == 2) {
+                myCompleted++;
+                if (isReq) reqCompleted++;
+            }
+        }
+        ProgressSummaryResponse myProgress = new ProgressSummaryResponse();
+        myProgress.setRequiredCompletedCount(reqCompleted);
+        myProgress.setRequiredTotal(reqTotal);
+        myProgress.setOptionalCompletedCount(myCompleted - reqCompleted);
+        myProgress.setOptionalTotal(tpps.size() - reqTotal);
+        r.setMyProgress(myProgress);
 
         return r;
     }

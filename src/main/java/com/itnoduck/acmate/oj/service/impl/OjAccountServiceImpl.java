@@ -6,6 +6,9 @@ import com.itnoduck.acmate.common.exception.BusinessException;
 import com.itnoduck.acmate.oj.client.CodeforcesApiClient;
 import com.itnoduck.acmate.oj.client.CodeforcesProblemDto;
 import com.itnoduck.acmate.oj.client.CodeforcesSubmissionDto;
+import com.itnoduck.acmate.problem.entity.Problem;
+import com.itnoduck.acmate.problem.mapper.ProblemMapper;
+import com.itnoduck.acmate.training.mapper.UserProblemStatusMapper;
 import com.itnoduck.acmate.oj.dto.SyncResult;
 import com.itnoduck.acmate.oj.entity.FirstAc;
 import com.itnoduck.acmate.oj.entity.OjAccount;
@@ -46,19 +49,25 @@ public class OjAccountServiceImpl implements OjAccountService {
     private final SyncTaskLogMapper taskLogMapper;
     private final AuditLogService auditLogService;
     private final CodeforcesApiClient cfClient;
+    private final ProblemMapper problemMapper;
+    private final UserProblemStatusMapper upsMapper;
 
     public OjAccountServiceImpl(OjAccountMapper accountMapper,
                                 OjSubmissionMapper submissionMapper,
                                 FirstAcMapper firstAcMapper,
                                 SyncTaskLogMapper taskLogMapper,
                                 AuditLogService auditLogService,
-                                CodeforcesApiClient cfClient) {
+                                CodeforcesApiClient cfClient,
+                                ProblemMapper problemMapper,
+                                UserProblemStatusMapper upsMapper) {
         this.accountMapper = accountMapper;
         this.submissionMapper = submissionMapper;
         this.firstAcMapper = firstAcMapper;
         this.taskLogMapper = taskLogMapper;
         this.auditLogService = auditLogService;
         this.cfClient = cfClient;
+        this.problemMapper = problemMapper;
+        this.upsMapper = upsMapper;
     }
 
     @Override
@@ -343,6 +352,20 @@ public class OjAccountServiceImpl implements OjAccountService {
                 if (firstAc) {
                     sub.setIsFirstAc(1);
                     submissionMapper.updateById(sub);
+                    // Update user_problem_status
+                    try {
+                        List<Problem> localProblems = problemMapper.selectList(
+                                new LambdaQueryWrapper<Problem>()
+                                        .eq(Problem::getPlatform, "CODEFORCES")
+                                        .eq(Problem::getExternalProblemKey, problemKey)
+                                        .last("LIMIT 1"));
+                        if (!localProblems.isEmpty()) {
+                            Problem lp = localProblems.get(0);
+                            upsMapper.upsertFirstAc(account.getUserId(), lp.getId(), submittedTime, sub.getId(), "CODEFORCES");
+                        }
+                    } catch (Exception e) {
+                        log.warn("Failed to upsert user_problem_status for firstAc subId={}", sub.getId(), e);
+                    }
                 }
             }
         }

@@ -1,6 +1,7 @@
 export type PlanType = 'PERSONAL' | 'PUBLIC'
 export type TimeStatus = 'NOT_STARTED' | 'ONGOING' | 'ENDED'
 export type ListType = 'PUBLIC' | 'MY_CREATED' | 'MY_JOINED'
+export type ProblemStatusType = 'NOT_STARTED' | 'CHALLENGING' | 'ACCEPTED'
 
 export interface PlanSummary {
   id: number
@@ -24,6 +25,13 @@ export interface PlanMember {
   avatarUrl: string | null
   joinTime: string
   creator: boolean
+  completedCount: number
+  totalCount: number
+  requiredCompletedCount: number
+  requiredTotal: number
+  lastAcceptedTime: string | null
+  rank: number | null
+  completionOrder: number | null
 }
 
 export interface PlanProblem {
@@ -35,6 +43,8 @@ export interface PlanProblem {
   problemActive: boolean
   sortOrder: number
   required: boolean
+  myStatus: string | null
+  performanceNote: string | null
 }
 
 export interface PlanDetail {
@@ -62,8 +72,16 @@ export interface PlanDetail {
   canRestore: boolean
   members: PlanMember[]
   problems: PlanProblem[]
+  myProgress: ProgressSummary | null
   createTime: string
   updateTime: string
+}
+
+export interface ProgressSummary {
+  requiredCompletedCount: number
+  requiredTotal: number
+  optionalCompletedCount: number
+  optionalTotal: number
 }
 
 export interface CreatePlanRequest {
@@ -99,6 +117,41 @@ export interface AddProblemRequest {
   problemId: number
   sortOrder: number
   requiredFlag: number
+}
+
+export interface UpdateStatusRequest {
+  status: string
+}
+
+export interface UpdateNoteRequest {
+  note: string | null
+}
+
+export interface MemberProgressItem {
+  problemId: number
+  problemTitle: string
+  platform: string
+  difficulty: string | null
+  problemActive: boolean
+  sortOrder: number
+  required: boolean
+  myStatus: string
+  performanceNote: string | null
+}
+
+export interface MemberProgress {
+  userId: number
+  username: string | null
+  nickname: string | null
+  avatarUrl: string | null
+  joinTime: string
+  creator: boolean
+  completedCount: number
+  totalCount: number
+  lastAcceptedTime: string | null
+  rank: number | null
+  completionOrder: number | null
+  problems: MemberProgressItem[]
 }
 
 export interface PlanListResponse {

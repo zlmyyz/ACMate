@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.itnoduck.acmate.training.mapper.UserProblemStatusMapper">
+
+    <!-- First AC upsert: idempotent, only updates when incoming AC is earlier -->
+    <insert id="upsertFirstAc">
+        INSERT INTO user_problem_status (user_id, problem_id, status, first_ac_time, solve_source, accepted_submission_id)
+        VALUES (#{userId}, #{problemId}, 2, #{firstAcTime}, #{solveSource}, #{submissionId})
+        ON DUPLICATE KEY UPDATE
+            status = 2,
+            accepted_submission_id = CASE
+                WHEN VALUES(first_ac_time) &lt; user_problem_status.first_ac_time
+                     OR (VALUES(first_ac_time) = user_problem_status.first_ac_time AND user_problem_status.accepted_submission_id IS NULL)
+                     OR user_problem_status.first_ac_time IS NULL
+                THEN VALUES(accepted_submission_id)
+                ELSE user_problem_status.accepted_submission_id
+            END,
+            solve_source = CASE
+                WHEN VALUES(first_ac_time) &lt; user_problem_status.first_ac_time
+                     OR (VALUES(first_ac_time) = user_problem_status.first_ac_time AND user_problem_status.accepted_submission_id IS NULL)
+                     OR user_problem_status.first_ac_time IS NULL
+                THEN VALUES(solve_source)
+                ELSE user_problem_status.solve_source
+            END,
+            first_ac_time = CASE
+                WHEN VALUES(first_ac_time) &lt; user_problem_status.first_ac_time
+                     OR (VALUES(first_ac_time) = user_problem_status.first_ac_time AND user_problem_status.accepted_submission_id IS NULL)
+                     OR user_problem_status.first_ac_time IS NULL
+                THEN VALUES(first_ac_time)
+                ELSE user_problem_status.first_ac_time
+            END
+    </insert>
+
+    <!-- Atomic manual status update: never overwrites ACCEPTED, no-op if same status -->
+    <update id="updateStatusAtomic">
+        UPDATE user_problem_status
+        SET status = #{newStatus}
+        WHERE user_id = #{userId}
+          AND problem_id = #{problemId}
+          AND status != 2
+          AND status != #{newStatus}
+    </update>
+
+    <!-- Note upsert: only touches performance_note -->
+    <insert id="upsertNote">
+        INSERT INTO user_problem_status (user_id, problem_id, status, performance_note)
+        VALUES (#{userId}, #{problemId}, 0, #{note})
+        ON DUPLICATE KEY UPDATE
+            performance_note = VALUES(performance_note)
+    </insert>
+
+    <!-- Batch backfill: problem mapping created/updated → fill from oj_first_ac -->
+    <insert id="batchBackfillFromFirstAc">
+        INSERT INTO user_problem_status (user_id, problem_id, status, first_ac_time, solve_source, accepted_submission_id)
+        SELECT fa.user_id, #{problemId}, 2, o.submitted_time, fa.platform, fa.submission_id
+        FROM oj_first_ac fa
+        JOIN oj_submission o ON o.id = fa.submission_id
+        WHERE fa.platform = #{platform}
+          AND fa.external_problem_key = #{externalProblemKey}
+        ON DUPLICATE KEY UPDATE
+            status = 2,
+            accepted_submission_id = CASE
+                WHEN VALUES(first_ac_time) &lt; user_problem_status.first_ac_time
+                     OR user_problem_status.first_ac_time IS NULL
+                THEN VALUES(accepted_submission_id)
+                ELSE user_problem_status.accepted_submission_id
+            END,
+            solve_source = CASE
+                WHEN VALUES(first_ac_time) &lt; user_problem_status.first_ac_time
+                     OR user_problem_status.first_ac_time IS NULL
+                THEN VALUES(solve_source)
+                ELSE user_problem_status.solve_source
+            END,
+            first_ac_time = CASE
+                WHEN VALUES(first_ac_time) &lt; user_problem_status.first_ac_time
+                     OR user_problem_status.first_ac_time IS NULL
+                THEN VALUES(first_ac_time)
+                ELSE user_problem_status.first_ac_time
+            END
+    </insert>
+
+</mapper>

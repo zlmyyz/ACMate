@@ -17,6 +17,10 @@ public class TrainingPlanMember {
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime joinTime;
 
+    private Integer status;
+    private LocalDateTime removeTime;
+    private Long removedBy;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -28,4 +32,11 @@ public class TrainingPlanMember {
 
     public LocalDateTime getJoinTime() { return joinTime; }
     public void setJoinTime(LocalDateTime joinTime) { this.joinTime = joinTime; }
+
+    public Integer getStatus() { return status; }
+    public void setStatus(Integer status) { this.status = status; }
+    public LocalDateTime getRemoveTime() { return removeTime; }
+    public void setRemoveTime(LocalDateTime removeTime) { this.removeTime = removeTime; }
+    public Long getRemovedBy() { return removedBy; }
+    public void setRemovedBy(Long removedBy) { this.removedBy = removedBy; }
 }
