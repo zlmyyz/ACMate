@@ -198,12 +198,13 @@ async function handleLogout() {
 
 .user-trigger {
   display: flex; align-items: center; gap: 4px;
-  color: var(--color-on-surface); font-weight: 500; font-size: var(--text-body-md);
-  padding: 6px 8px; border-radius: var(--radius-md); cursor: pointer;
-  transition: background 0.2s;
+  color: var(--color-on-surface); font-weight: 600; font-size: var(--text-body-md);
+  padding: 8px 14px; border-radius: var(--radius-md); cursor: pointer;
+  border: 1px solid var(--color-border-subtle);
+  transition: background 0.2s, border-color 0.2s;
 }
-.user-trigger:hover { background: var(--color-surface-container-low); }
-.arrow { font-size: 10px; transition: transform 0.2s; }
+.user-trigger:hover { background: var(--color-surface-container-low); border-color: var(--color-primary-container); }
+.arrow { font-size: 12px; transition: transform 0.2s; margin-left: 2px; }
 .arrow.open { transform: rotate(180deg); }
 
 .menu-dropdown {
