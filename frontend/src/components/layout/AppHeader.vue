@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notifications'
 import { useRouter } from 'vue-router'
@@ -16,6 +16,7 @@ const badgeText = computed(() => {
 })
 
 const menuOpen = ref(false)
+const userMenuRef = ref<HTMLElement | null>(null)
 
 function toggleMenu() {
   menuOpen.value = !menuOpen.value
@@ -24,6 +25,15 @@ function toggleMenu() {
 function closeMenu() {
   menuOpen.value = false
 }
+
+function onDocumentClick(e: MouseEvent) {
+  if (userMenuRef.value && !userMenuRef.value.contains(e.target as Node)) {
+    closeMenu()
+  }
+}
+
+onMounted(() => document.addEventListener('click', onDocumentClick))
+onUnmounted(() => document.removeEventListener('click', onDocumentClick))
 
 async function handleLogout() {
   await auth.logout()
@@ -84,7 +94,7 @@ async function handleLogout() {
           &#128276;
           <span v-if="badgeText" class="badge">{{ badgeText }}</span>
         </RouterLink>
-        <div v-if="auth.user" class="user-menu" @mouseleave="closeMenu">
+        <div v-if="auth.user" ref="userMenuRef" class="user-menu">
           <button class="user-trigger" @click="toggleMenu">
             {{ auth.user.nickname || auth.user.username }}
             <span class="arrow" :class="{ open: menuOpen }">&#9662;</span>
