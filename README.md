@@ -2,6 +2,10 @@
 
 校内程序设计竞赛社的训练与题解交流平台。支持帖子讨论、题库管理、训练计划跟踪、Codeforces 账号同步与可信排行榜。
 
+功能演示
+
+https://github.com/user-attachments/assets/e4facc2c-1c83-44a4-98ed-668b53096a94
+
 ## 技术栈
 
 ### 后端
@@ -147,3 +151,6 @@ curl http://localhost:8080/api/health
 ## 开发进度
 
 详见 [ROADMAP.md](docs/ROADMAP.md)。
+
+
+
