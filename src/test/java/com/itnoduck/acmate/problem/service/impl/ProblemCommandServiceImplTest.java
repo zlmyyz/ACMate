@@ -22,6 +22,7 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DuplicateKeyException;
 
 import java.time.LocalDateTime;
@@ -46,6 +47,8 @@ class ProblemCommandServiceImplTest {
     private AppUserMapper appUserMapper;
     @Mock
     private UserProblemStatusMapper upsMapper;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private ProblemCommandServiceImpl service;

@@ -14,12 +14,16 @@ import com.itnoduck.acmate.problem.service.ProblemCommandService;
 import com.itnoduck.acmate.training.mapper.UserProblemStatusMapper;
 import com.itnoduck.acmate.user.entity.AppUser;
 import com.itnoduck.acmate.user.mapper.AppUserMapper;
+import com.itnoduck.acmate.notification.event.NotificationEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * 题目命令服务实现。
@@ -35,14 +39,17 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
     private final AuditLogService auditLogService;
     private final AppUserMapper appUserMapper;
     private final UserProblemStatusMapper upsMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ProblemCommandServiceImpl(ProblemMapper problemMapper, AuditLogService auditLogService,
                                       AppUserMapper appUserMapper,
-                                      UserProblemStatusMapper upsMapper) {
+                                      UserProblemStatusMapper upsMapper,
+                                      ApplicationEventPublisher eventPublisher) {
         this.problemMapper = problemMapper;
         this.auditLogService = auditLogService;
         this.appUserMapper = appUserMapper;
         this.upsMapper = upsMapper;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -330,6 +337,11 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
         }
         auditLogService.log(operatorUserId, "PROBLEM_RESTORED", "PROBLEM", problemId, null,
                 existing.getStatus() != null && existing.getStatus() == 1 ? "active" : "deactivated", "active");
+        if (operatorAdmin && !Objects.equals(existing.getCreatorUserId(), operatorUserId)) {
+            eventPublisher.publishEvent(new NotificationEvent(
+                    Set.of(existing.getCreatorUserId()), operatorUserId, "PROBLEM_RESTORED",
+                    "PROBLEM", problemId, Map.of("problemTitle", existing.getTitle())));
+        }
     }
 
     @Override
@@ -382,6 +394,9 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
             throw new RuntimeException("停用题目异常：状态不匹配");
         }
         auditLogService.log(operatorUserId, "PROBLEM_ADMIN_DEACTIVATED", "PROBLEM", problemId, reason, "active", "deactivated");
+        eventPublisher.publishEvent(new NotificationEvent(
+                Set.of(existing.getCreatorUserId()), operatorUserId, "PROBLEM_ADMIN_DEACTIVATED",
+                "PROBLEM", problemId, Map.of("problemTitle", existing.getTitle(), "reason", reason)));
     }
 
     private ProblemDetailResponse toDetailResponse(Problem p) {
