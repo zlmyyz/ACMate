@@ -467,7 +467,7 @@ describe('NotificationsView', () => {
     expect(wrapper.find('.mark-all-btn').exists()).toBe(false)
   })
 
-  it('notificationText renders all 11 types correctly', async () => {
+  it('notificationText renders all 13 types correctly', async () => {
     const types = [
       { type: 'POST_COMMENTED', payload: { postTitle: 'P1', actorNickname: 'Alice' }, expected: 'Alice 评论了你的帖子「P1」' },
       { type: 'COMMENT_REPLIED', payload: { actorNickname: 'Bob' }, expected: 'Bob 回复了你的评论' },
@@ -475,6 +475,8 @@ describe('NotificationsView', () => {
       { type: 'COMMENT_ADMIN_DEACTIVATED', payload: { reason: '违规内容' }, expected: '管理员停用了你的评论，原因：违规内容' },
       { type: 'POST_RESTORED', payload: { postTitle: 'P3' }, expected: '管理员恢复了你的帖子「P3」' },
       { type: 'COMMENT_RESTORED', payload: {}, expected: '管理员恢复了你的评论' },
+      { type: 'PROBLEM_ADMIN_DEACTIVATED', payload: { problemTitle: 'ProbX', reason: '违规' }, expected: '管理员停用了你的题目「ProbX」，原因：违规' },
+      { type: 'PROBLEM_RESTORED', payload: { problemTitle: 'ProbY' }, expected: '管理员恢复了你的题目「ProbY」' },
       { type: 'TRAINING_MEMBER_REMOVED', payload: { planTitle: 'Plan A' }, expected: '你被移出了计划「Plan A」' },
       { type: 'TRAINING_ADMIN_DEACTIVATED', payload: { planTitle: 'Plan B', reason: '暂停' }, expected: '管理员停用了计划「Plan B」，原因：暂停' },
       { type: 'TRAINING_RESTORED', payload: { planTitle: 'Plan C' }, expected: '管理员恢复了计划「Plan C」' },

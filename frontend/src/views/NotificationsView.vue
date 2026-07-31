@@ -57,6 +57,7 @@ function linkFor(n: NotificationItem): string | null {
       return pid ? `/posts/${pid}` : null
     }
     case 'TRAINING_PLAN': return `/training-plans/${n.resourceId}`
+    case 'PROBLEM': return `/problems/${n.resourceId}`
     default: return null
   }
 }
@@ -66,6 +67,7 @@ function notificationText(n: NotificationItem): string {
   const actor = p.actorNickname || ''
   const planTitle = p.planTitle || ''
   const postTitle = p.postTitle || ''
+  const problemTitle = p.problemTitle || ''
   const reason = p.reason || ''
 
   switch (n.notificationType) {
@@ -81,6 +83,10 @@ function notificationText(n: NotificationItem): string {
       return `管理员恢复了你的帖子「${postTitle}」`
     case 'COMMENT_RESTORED':
       return `管理员恢复了你的评论`
+    case 'PROBLEM_ADMIN_DEACTIVATED':
+      return `管理员停用了你的题目「${problemTitle}」${reason ? '，原因：' + reason : ''}`
+    case 'PROBLEM_RESTORED':
+      return `管理员恢复了你的题目「${problemTitle}」`
     case 'TRAINING_MEMBER_REMOVED':
       return `你被移出了计划「${planTitle}」`
     case 'TRAINING_ADMIN_DEACTIVATED':
