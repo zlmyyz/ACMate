@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notifications'
 import { useRouter } from 'vue-router'
@@ -14,6 +14,16 @@ const badgeText = computed(() => {
   if (c <= 0) return ''
   return c > 99 ? '99+' : String(c)
 })
+
+const menuOpen = ref(false)
+
+function toggleMenu() {
+  menuOpen.value = !menuOpen.value
+}
+
+function closeMenu() {
+  menuOpen.value = false
+}
 
 async function handleLogout() {
   await auth.logout()
@@ -74,13 +84,20 @@ async function handleLogout() {
           &#128276;
           <span v-if="badgeText" class="badge">{{ badgeText }}</span>
         </RouterLink>
-        <RouterLink v-if="auth.user" to="/settings/profile" class="user-greeting">
-          {{ auth.user.nickname || auth.user.username }}
-        </RouterLink>
+        <div v-if="auth.user" class="user-menu" @mouseleave="closeMenu">
+          <button class="user-trigger" @click="toggleMenu">
+            {{ auth.user.nickname || auth.user.username }}
+            <span class="arrow" :class="{ open: menuOpen }">&#9662;</span>
+          </button>
+          <div v-if="menuOpen" class="menu-dropdown" @click="closeMenu">
+            <RouterLink to="/settings/profile" class="menu-item">编辑资料</RouterLink>
+            <RouterLink to="/settings/oj-account" class="menu-item">OJ 账号</RouterLink>
+            <button class="menu-item logout" @click="handleLogout">
+              {{ actionLabels.logout }}
+            </button>
+          </div>
+        </div>
         <span v-if="auth.isAdmin" class="admin-badge">管理员</span>
-        <button class="logout-btn" @click="handleLogout">
-          {{ actionLabels.logout }}
-        </button>
       </div>
     </div>
   </header>
@@ -161,16 +178,6 @@ async function handleLogout() {
   gap: 16px;
 }
 
-.user-greeting {
-  color: var(--color-on-surface);
-  font-weight: 500;
-  transition: color 0.2s;
-}
-
-.user-greeting:hover {
-  color: var(--color-primary);
-}
-
 .admin-badge {
   font-size: var(--text-label-sm);
   font-weight: 600;
@@ -187,17 +194,29 @@ async function handleLogout() {
   min-width: 16px; height: 16px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
 }
 
-.logout-btn {
-  color: var(--color-on-surface-variant);
-  font-size: var(--text-body-md);
-  font-weight: 500;
-  padding: 6px 12px;
-  border-radius: var(--radius-md);
-  transition: background 0.2s, color 0.2s;
-}
+.user-menu { position: relative; }
 
-.logout-btn:hover {
-  color: var(--color-primary);
-  background: var(--color-surface-container-low);
+.user-trigger {
+  display: flex; align-items: center; gap: 4px;
+  color: var(--color-on-surface); font-weight: 500; font-size: var(--text-body-md);
+  padding: 6px 8px; border-radius: var(--radius-md); cursor: pointer;
+  transition: background 0.2s;
 }
+.user-trigger:hover { background: var(--color-surface-container-low); }
+.arrow { font-size: 10px; transition: transform 0.2s; }
+.arrow.open { transform: rotate(180deg); }
+
+.menu-dropdown {
+  position: absolute; top: 100%; right: 0; margin-top: 4px;
+  min-width: 140px; background: var(--color-surface-card);
+  border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card); overflow: hidden; z-index: 100;
+}
+.menu-item {
+  display: block; width: 100%; padding: 10px 16px; text-align: left;
+  font-size: var(--text-body-md); font-weight: 500; color: var(--color-on-surface);
+  transition: background 0.15s;
+}
+.menu-item:hover { background: var(--color-surface-container-low); }
+.menu-item.logout { color: var(--color-status-error); border-top: 1px solid var(--color-border-subtle); }
 </style>
