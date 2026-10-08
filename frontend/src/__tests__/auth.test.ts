@@ -177,6 +177,42 @@ describe('Auth Store', () => {
     await flushPromises()
     expect(wrapper.text()).toContain('昵称全站唯一')
   })
+
+  it('shows the username rule before sending an invalid registration', async () => {
+    const wrapper = mountRegister()
+    await wrapper.find('#reg-username').setValue('这里没有鸭子')
+    await wrapper.find('#reg-nickname').setValue('测试昵称')
+    await wrapper.find('#reg-password').setValue('password123')
+    await wrapper.find('#reg-confirm-password').setValue('password123')
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('用户名只能使用4-32位英文字母、数字或下划线')
+    expect(mockRegister).not.toHaveBeenCalled()
+  })
+
+  it('shows the field named in a validation response', async () => {
+    mockRegister.mockRejectedValueOnce({
+      response: {
+        status: 400,
+        data: {
+          message: '请求参数校验失败',
+          fieldErrors: [{ field: 'email', message: 'must be a well-formed email address' }],
+        },
+      },
+    })
+    const wrapper = mountRegister()
+    await wrapper.find('#reg-username').setValue('valid_user')
+    await wrapper.find('#reg-nickname').setValue('测试昵称')
+    await wrapper.find('#reg-email').setValue('user@example.com')
+    await wrapper.find('#reg-password').setValue('password123')
+    await wrapper.find('#reg-confirm-password').setValue('password123')
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('邮箱格式不正确')
+    expect(wrapper.text()).not.toContain('请求参数校验失败')
+  })
 })
 
 describe('isAdmin', () => {

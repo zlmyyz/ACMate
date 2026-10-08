@@ -15,11 +15,36 @@ const password = ref('')
 const confirmPassword = ref('')
 const submitting = ref(false)
 const errorMsg = ref('')
+const fieldMessages = {
+  username: '用户名只能使用4-32位英文字母、数字或下划线',
+  nickname: '昵称长度需为2-32个字符',
+  email: '邮箱格式不正确或超过128个字符',
+  password: '密码长度需为8-64位',
+}
 
 async function handleRegister() {
   errorMsg.value = ''
-  if (!username.value.trim() || !nickname.value.trim() || !password.value) {
+  const cleanUsername = username.value.trim()
+  const cleanNickname = nickname.value.trim()
+  const cleanEmail = email.value.trim()
+  if (!cleanUsername || !cleanNickname || !password.value.trim()) {
     errorMsg.value = '请填写必填字段'
+    return
+  }
+  if (!/^[A-Za-z0-9_]{4,32}$/.test(cleanUsername)) {
+    errorMsg.value = fieldMessages.username
+    return
+  }
+  if (cleanNickname.length < 2 || cleanNickname.length > 32) {
+    errorMsg.value = fieldMessages.nickname
+    return
+  }
+  if (password.value.length < 8 || password.value.length > 64) {
+    errorMsg.value = fieldMessages.password
+    return
+  }
+  if (cleanEmail.length > 128) {
+    errorMsg.value = fieldMessages.email
     return
   }
   if (password.value !== confirmPassword.value) {
@@ -29,20 +54,25 @@ async function handleRegister() {
   submitting.value = true
   try {
     await auth.register(
-      username.value.trim(),
+      cleanUsername,
       password.value,
-      nickname.value.trim(),
-      email.value.trim() || undefined,
+      cleanNickname,
+      cleanEmail || undefined,
     )
     ElMessage.success('注册成功，请登录')
     router.push({ name: 'login' })
   } catch (e: unknown) {
-    const err = e as { response?: { status: number; data?: { message?: string } } }
+    const err = e as { response?: { status: number; data?: { message?: string; fieldErrors?: { field: string }[] } } }
     const status = err.response?.status
     if (status === 409) {
       errorMsg.value = err.response?.data?.message || '用户名或昵称已被使用'
     } else if (status === 400) {
-      errorMsg.value = err.response?.data?.message || '请求参数有误'
+      const messages = err.response?.data?.fieldErrors
+        ?.map(({ field }) => field in fieldMessages ? fieldMessages[field as keyof typeof fieldMessages] : null)
+        .filter((message): message is string => Boolean(message))
+      errorMsg.value = messages?.length
+        ? [...new Set(messages)].join('；')
+        : '注册信息有误，请检查输入'
     } else {
       errorMsg.value = '注册失败，请稍后重试'
     }
@@ -73,7 +103,7 @@ async function handleRegister() {
             placeholder="请输入用户名"
             :disabled="submitting"
           />
-          <p class="field-hint">用户名用于登录，注册成功后不可修改。</p>
+          <p class="field-hint">用户名用于登录，注册成功后不可修改。仅限4-32位英文字母、数字或下划线。</p>
         </div>
         <div class="form-field">
           <label for="reg-nickname">昵称 <span class="required">*</span></label>
@@ -84,7 +114,7 @@ async function handleRegister() {
             placeholder="请输入昵称"
             :disabled="submitting"
           />
-          <p class="field-hint">昵称全站唯一，将显示在题目、帖子和排行榜中。</p>
+          <p class="field-hint">昵称全站唯一，长度需为2-32个字符，将显示在题目、帖子和排行榜中。</p>
         </div>
         <div class="form-field">
           <label for="reg-email">邮箱</label>
@@ -107,6 +137,7 @@ async function handleRegister() {
             placeholder="请输入密码"
             :disabled="submitting"
           />
+          <p class="field-hint">密码长度需为8-64位。</p>
         </div>
         <div class="form-field">
           <label for="reg-confirm-password">确认密码 <span class="required">*</span></label>
@@ -119,7 +150,7 @@ async function handleRegister() {
             :disabled="submitting"
           />
         </div>
-        <p v-if="errorMsg" class="form-error">{{ errorMsg }}</p>
+        <p v-if="errorMsg" class="form-error" role="alert">{{ errorMsg }}</p>
         <button type="submit" class="btn-primary" :disabled="submitting">
           {{ submitting ? '注册中...' : actionLabels.register }}
         </button>
