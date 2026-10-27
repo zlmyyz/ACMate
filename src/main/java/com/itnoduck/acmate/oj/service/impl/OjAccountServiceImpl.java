@@ -51,6 +51,7 @@ public class OjAccountServiceImpl implements OjAccountService {
     private final CodeforcesApiClient cfClient;
     private final ProblemMapper problemMapper;
     private final UserProblemStatusMapper upsMapper;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     public OjAccountServiceImpl(OjAccountMapper accountMapper,
                                 OjSubmissionMapper submissionMapper,
@@ -59,7 +60,8 @@ public class OjAccountServiceImpl implements OjAccountService {
                                 AuditLogService auditLogService,
                                 CodeforcesApiClient cfClient,
                                 ProblemMapper problemMapper,
-                                UserProblemStatusMapper upsMapper) {
+                                UserProblemStatusMapper upsMapper,
+                                org.springframework.jdbc.core.JdbcTemplate jdbc) {
         this.accountMapper = accountMapper;
         this.submissionMapper = submissionMapper;
         this.firstAcMapper = firstAcMapper;
@@ -68,12 +70,13 @@ public class OjAccountServiceImpl implements OjAccountService {
         this.cfClient = cfClient;
         this.problemMapper = problemMapper;
         this.upsMapper = upsMapper;
+        this.jdbc = jdbc;
     }
 
     @Override
     public Map<String, Object> getMyAccount(AuthenticatedUser user) {
         var acc = accountMapper.selectOne(new LambdaQueryWrapper<OjAccount>()
-                .eq(OjAccount::getUserId, user.getId()));
+                .eq(OjAccount::getUserId, user.getId()).eq(OjAccount::getPlatform, "CODEFORCES"));
         if (acc == null) return Map.of("hasAccount", false);
         var result = new java.util.LinkedHashMap<String, Object>();
         result.put("hasAccount", true);
@@ -94,11 +97,11 @@ public class OjAccountServiceImpl implements OjAccountService {
         if (handle == null || handle.isBlank()) throw new BusinessException(400, "Codeforces handle 不能为空");
 
         var existing = accountMapper.selectOne(new LambdaQueryWrapper<OjAccount>()
-                .eq(OjAccount::getUserId, user.getId()));
+                .eq(OjAccount::getUserId, user.getId()).eq(OjAccount::getPlatform, "CODEFORCES"));
         if (existing != null) throw new BusinessException(409, "已绑定过 Codeforces 账号，请先解绑");
 
         var conflict = accountMapper.selectOne(new LambdaQueryWrapper<OjAccount>()
-                .eq(OjAccount::getExternalUserId, handle.trim()));
+                .eq(OjAccount::getExternalUserId, handle.trim()).eq(OjAccount::getPlatform, "CODEFORCES"));
         if (conflict != null) throw new BusinessException(409, "该 Codeforces 账号已被其他用户绑定");
 
         OjAccount acc = new OjAccount();
@@ -114,7 +117,7 @@ public class OjAccountServiceImpl implements OjAccountService {
     @Override
     @Transactional
     public void unbind(AuthenticatedUser user) {
-        accountMapper.delete(new LambdaQueryWrapper<OjAccount>().eq(OjAccount::getUserId, user.getId()));
+        accountMapper.delete(new LambdaQueryWrapper<OjAccount>().eq(OjAccount::getUserId, user.getId()).eq(OjAccount::getPlatform, "CODEFORCES"));
     }
 
     @Override
@@ -143,8 +146,14 @@ public class OjAccountServiceImpl implements OjAccountService {
     @Transactional
     public void verify(Long id, int status, AuthenticatedUser user) {
         if (!user.isAdmin()) throw new BusinessException(403, "无权操作");
-        var acc = accountMapper.selectById(id);
+        var acc = accountMapper.selectOne(new LambdaQueryWrapper<OjAccount>().eq(OjAccount::getId,id).last("FOR UPDATE"));
         if (acc == null) throw new BusinessException(404, "账号不存在");
+        if (status != 1 && status != 2) throw new BusinessException(400, "无效的审核状态");
+        if (status == 1 && "NOWCODER".equals(acc.getPlatform())) {
+            jdbc.update("INSERT IGNORE INTO nowcoder_account_owner(uid,user_id) VALUES(?,?)",acc.getExternalUserId(),acc.getUserId());
+            Long owner=jdbc.queryForObject("SELECT user_id FROM nowcoder_account_owner WHERE uid=? FOR UPDATE",Long.class,acc.getExternalUserId());
+            if(owner==null || !owner.equals(acc.getUserId())) throw new BusinessException(409,"该牛客账号已归属于其他用户，请联系管理员处理");
+        }
         String before = String.valueOf(acc.getVerifyStatus());
         acc.setVerifyStatus(status);
         accountMapper.updateById(acc);
@@ -156,7 +165,7 @@ public class OjAccountServiceImpl implements OjAccountService {
     public SyncResult syncMyAccount(AuthenticatedUser user) {
         // Step 1: get verified CF account
         var acc = accountMapper.selectOne(new LambdaQueryWrapper<OjAccount>()
-                .eq(OjAccount::getUserId, user.getId()));
+                .eq(OjAccount::getUserId, user.getId()).eq(OjAccount::getPlatform, "CODEFORCES"));
         if (acc == null) throw new BusinessException(404, "未绑定 Codeforces 账号");
         if (!"CODEFORCES".equals(acc.getPlatform())) throw new BusinessException(400, "仅支持 Codeforces 平台同步");
         if (acc.getVerifyStatus() == null || acc.getVerifyStatus() != 1)

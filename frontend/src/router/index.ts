@@ -5,6 +5,8 @@ import HomeView from '@/views/HomeView.vue'
 const router = createRouter({
   history: createWebHistory(),
   routes: [
+    { path: '/forgot-password', name: 'forgot-password', component: () => import('@/views/ForgotPasswordView.vue') },
+    { path: '/account-link', name: 'account-link', component: () => import('@/views/AccountLinkView.vue') },
     {
       path: '/',
       name: 'home',
@@ -71,9 +73,18 @@ const router = createRouter({
       component: () => import('@/views/UserProfileView.vue'),
     },
     {
+      path: '/settings/security',
+      name: 'account-security',
+      component: () => import('@/views/AccountSecurityView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/settings/profile',
       name: 'profile-edit',
       component: () => import('@/views/ProfileEditView.vue'),
+      beforeEnter: (to) => typeof to.query.github === 'string'
+        ? { path: '/settings/security', query: to.query, replace: true }
+        : true,
       meta: { requiresAuth: true },
     },
     {

@@ -21,6 +21,8 @@ public class AppUser {
     private String email;
     private String avatarUrl;
     private String bio;
+    private String location;
+    private String gender;
     private Integer isAdmin;
     private Integer status;
     private LocalDateTime lastLoginTime;

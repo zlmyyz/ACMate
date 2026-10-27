@@ -50,7 +50,6 @@ export const postTypeLabels: Record<string, string> = {
 }
 
 export const navLabels = {
-  home: '首页',
   problems: '题库',
   myProblems: '我的题目',
   trainingPlans: '训练计划',

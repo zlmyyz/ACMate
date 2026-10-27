@@ -5,9 +5,13 @@ import { getProblemDetail, deactivateProblem, restoreProblem, adminDeactivatePro
 import { useAuthStore } from '@/stores/auth'
 import type { ProblemDetail } from '@/types/problem'
 import { platformLabels } from '@/constants/labels'
+import { extractDataConstraintDetails } from '@/utils/problem-constraints'
 import PageContainer from '@/components/layout/PageContainer.vue'
 import MarkdownContent from '@/components/common/MarkdownContent.vue'
+import ConstraintFormula from '@/components/common/ConstraintFormula.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
+import NowcoderPracticePanel from '@/components/problem/NowcoderPracticePanel.vue'
+import ProblemReviews from '@/components/problem/ProblemReviews.vue'
 import ErrorState from '@/components/common/ErrorState.vue'
 
 const route = useRoute()
@@ -25,6 +29,8 @@ const actionLoading = ref(false)
 const actionError = ref('')
 
 const problemId = computed(() => Number(route.params.id))
+const isTrainingWorkspace = computed(() => problem.value?.platform === 'NOWCODER' && problem.value.active)
+const dataConstraints = computed(() => extractDataConstraintDetails(problem.value?.contentMd ?? null))
 
 const isCreator = computed(() => {
   if (!problem.value || !auth.user) return false
@@ -33,19 +39,19 @@ const isCreator = computed(() => {
 
 const canEdit = computed(() => {
   if (!problem.value || !auth.user) return false
-  return auth.isAdmin || isCreator.value
+  return auth.isAdmin || (isCreator.value && problem.value.platform === 'CUSTOM')
 })
 
 const canDeactivate = computed(() => {
   if (!problem.value || !auth.user) return false
-  return (isCreator.value || auth.isAdmin) && problem.value.active
+  return (auth.isAdmin || (isCreator.value && problem.value.platform === 'CUSTOM')) && problem.value.active
 })
 
 const canRestore = computed(() => {
   if (!problem.value || !auth.user) return false
   if (problem.value.active) return false
   if (isCreator.value && problem.value.deactivationSource === 'ADMIN') return false
-  return isCreator.value || auth.isAdmin
+  return auth.isAdmin || (isCreator.value && problem.value.platform === 'CUSTOM')
 })
 
 const isInactive = computed(() => {
@@ -145,6 +151,8 @@ onMounted(fetchDetail)
         该题目当前已停用，不会出现在公共题库中。
       </div>
 
+      <div class="problem-workspace" :class="{ 'with-editor': isTrainingWorkspace }">
+      <div class="statement-pane">
       <div class="detail-card">
         <div class="detail-top">
           <h1 class="detail-title">{{ problem.title }}</h1>
@@ -157,8 +165,10 @@ onMounted(fetchDetail)
             </template>
             <button v-if="canRestore" class="restore-btn" @click="handleRestore" :disabled="actionLoading">恢复</button>
             <button v-if="canEdit" class="edit-btn" @click="goToEdit">编辑</button>
+            <button v-else-if="problem.active && problem.platform !== 'CUSTOM'" class="edit-btn" @click="goToEdit">提出修改建议</button>
           </div>
         </div>
+        <p v-if="route.query.review === 'submitted'" role="status">修改建议已提交，等待管理员审核。</p>
 
         <div v-if="showDeactivateDialog" class="deactivate-dialog">
           <template v-if="isCreator">
@@ -230,8 +240,15 @@ onMounted(fetchDetail)
       </div>
 
       <div class="content-card">
-        <h2 class="content-heading">题目描述</h2>
-        <MarkdownContent :content="problem.contentMd" />
+        <h2 class="content-heading">题目内容</h2>
+        <aside v-if="dataConstraints.length" class="data-constraints" aria-label="数据范围提示">
+          <div class="constraints-heading"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v7M12 7v.5"/></svg><strong>数据范围提示</strong></div>
+          <ul class="constraints-list"><li v-for="range in dataConstraints" :key="range.text"><ConstraintFormula :range="range" /></li></ul>
+        </aside>
+        <MarkdownContent class="problem-statement" :content="problem.contentMd" />
+      </div>
+      </div>
+      <NowcoderPracticePanel v-if="isTrainingWorkspace" class="editor-pane" :key="problem.id" :problem-id="problem.id" />
       </div>
     </template>
 
@@ -252,10 +269,21 @@ onMounted(fetchDetail)
       <p>你没有权限查看该题目。</p>
       <button class="status-btn" @click="router.push({ name: 'problems' })">返回题库</button>
     </div>
+    <ProblemReviews v-if="problem && problem.platform !== 'CUSTOM'" :problem-id="problemId" />
   </PageContainer>
 </template>
 
 <style scoped>
+.problem-workspace{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;align-items:start}
+.problem-workspace.with-editor{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr)}
+.statement-pane,.editor-pane{min-width:0}.editor-pane{margin-top:0;position:sticky;top:calc(var(--header-height) + 20px);max-height:calc(100dvh - var(--header-height) - 40px);overflow-y:auto}
+.with-editor .detail-top{flex-wrap:wrap;gap:12px}.with-editor .detail-title{font-size:24px}.with-editor .meta-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.with-editor .meta-value.link{overflow-wrap:anywhere}
+.data-constraints{margin:0 0 24px;padding:16px 18px;border-left:3px solid var(--color-primary);border-radius:8px;background:var(--color-surface-container-low)}
+.constraints-heading{display:flex;align-items:center;gap:8px;color:var(--color-primary);font-size:14px;margin-bottom:10px}.constraints-heading svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}.constraints-list{display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0;list-style:none}.constraints-list li{min-width:0;max-width:100%;padding:5px 9px;border:1px solid var(--color-border-subtle);border-radius:5px;background:var(--color-surface-card);color:var(--color-on-surface);overflow-x:auto}.constraints-list code{font:13px/1.55 var(--font-mono),monospace;overflow-wrap:anywhere}.constraints-list :deep(.katex){font-size:1em}
+.problem-statement.markdown-content{font-size:15px;line-height:1.9;letter-spacing:.01em}.problem-statement.markdown-content :deep(h1),.problem-statement.markdown-content :deep(h2),.problem-statement.markdown-content :deep(h3),.problem-statement.markdown-content :deep(h4){font-family:var(--font-body);font-weight:650;line-height:1.45;letter-spacing:0;margin:1.6em 0 .6em}.problem-statement.markdown-content :deep(h1){font-size:1.32em}.problem-statement.markdown-content :deep(h2){font-size:1.2em}.problem-statement.markdown-content :deep(h3),.problem-statement.markdown-content :deep(h4){font-size:1.08em}.problem-statement.markdown-content :deep(p){margin:.8em 0}.problem-statement.markdown-content :deep(ul),.problem-statement.markdown-content :deep(ol){margin:.7em 0;padding-left:1.6em}.problem-statement.markdown-content :deep(li){margin:.3em 0}.problem-statement.markdown-content :deep(pre){margin:1em 0;padding:14px 16px;line-height:1.65}.problem-statement.markdown-content :deep(p img),.problem-statement.markdown-content :deep(li img){vertical-align:middle;border-radius:0}.problem-statement.markdown-content :deep(h1:first-child),.problem-statement.markdown-content :deep(h2:first-child),.problem-statement.markdown-content :deep(h3:first-child){margin-top:0}
+@media(min-width:1400px){.problem-workspace.with-editor{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr)}}
+@media(max-width:1000px){.problem-workspace.with-editor{grid-template-columns:minmax(0,1fr)}.editor-pane{position:static;max-height:none;overflow:visible}}
+
 .detail-header {
   display: flex;
   align-items: center;

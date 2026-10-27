@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 import { getMyAccount, bindAccount, unbindAccount, getPendingAccounts, verifyAccount, syncMyAccount } from '@/api/oj'
 import type { MyAccount, PendingAccount, SyncResult } from '@/types/oj'
 import PageContainer from '@/components/layout/PageContainer.vue'
+import NowcoderAccountPanel from '@/components/problem/NowcoderAccountPanel.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
 import ErrorState from '@/components/common/ErrorState.vue'
 
@@ -166,6 +167,8 @@ onMounted(() => { fetchMyAccount(); fetchPending() })
         <p v-if="msg" class="form-msg">{{ msg }}</p>
       </div>
 
+      <NowcoderAccountPanel />
+
       <div v-if="auth.isAdmin" class="admin-section">
         <h2 class="section-title">审核管理</h2>
         <LoadingState v-if="pendingLoading" />
@@ -173,7 +176,8 @@ onMounted(() => { fetchMyAccount(); fetchPending() })
         <div v-else class="pending-list">
           <div v-for="acc in pendingAccounts" :key="acc.id" class="pending-row">
             <span class="pending-user">UID: {{ acc.userId }}</span>
-            <span class="pending-handle">{{ acc.externalUserId }}</span>
+            <span class="pending-handle">{{ acc.platform }} · {{ acc.externalUserId }}</span>
+            <a v-if="acc.platform === 'NOWCODER'" :href="`https://ac.nowcoder.com/acm/contest/profile/${acc.externalUserId}`" target="_blank" rel="noopener noreferrer">核对牛客主页 ↗</a>
             <span class="pending-status" :class="{ pending: acc.verifyStatus === 0, verified: acc.verifyStatus === 1, rejected: acc.verifyStatus === 2 }">
               {{ verifyLabels[acc.verifyStatus] || '未知' }}
             </span>

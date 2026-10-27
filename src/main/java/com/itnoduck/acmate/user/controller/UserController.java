@@ -32,13 +32,16 @@ import java.util.Map;
 @RequestMapping("/api/users")
 public class UserController {
 
+    private final com.itnoduck.acmate.user.mapper.AppUserMapper appUserMapper;
     private final UserProfileService userProfileService;
     private final ProblemQueryService problemQueryService;
     private final TrainingPlanService trainingPlanService;
 
     public UserController(UserProfileService userProfileService,
                           ProblemQueryService problemQueryService,
-                          TrainingPlanService trainingPlanService) {
+                          TrainingPlanService trainingPlanService,
+                          com.itnoduck.acmate.user.mapper.AppUserMapper appUserMapper) {
+        this.appUserMapper = appUserMapper;
         this.userProfileService = userProfileService;
         this.problemQueryService = problemQueryService;
         this.trainingPlanService = trainingPlanService;
@@ -46,17 +49,16 @@ public class UserController {
 
     @GetMapping("/me")
     public CurrentUserResponse me(@AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
-        return new CurrentUserResponse(
-                authenticatedUser.getId(),
-                authenticatedUser.getUsername(),
-                authenticatedUser.getNickname(),
-                authenticatedUser.getEmail(),
-                authenticatedUser.getAvatarUrl(),
-                authenticatedUser.getBio(),
-                authenticatedUser.isAdmin()
-        );
+        // Session principals are snapshots; permissions may change after sign-in.
+        var user = appUserMapper.selectById(authenticatedUser.getId());
+        if (user == null || !Integer.valueOf(1).equals(user.getStatus())) {
+            throw new com.itnoduck.acmate.common.exception.BusinessException(401, "登录已失效，请重新登录");
+        }
+        String avatar = user.getAvatarUrl();
+        if (avatar == null || avatar.isBlank()) avatar = appUserMapper.githubAvatarUrl(user.getId());
+        return new CurrentUserResponse(user.getId(), user.getUsername(), user.getNickname(),
+                user.getEmail(), avatar, user.getBio(), Integer.valueOf(1).equals(user.getIsAdmin()));
     }
-
     @GetMapping("/{id}")
     public PublicUserProfileResponse profile(@PathVariable long id) {
         return userProfileService.getProfile(id);
@@ -100,3 +102,4 @@ public class UserController {
         return ResponseEntity.ok(profile);
     }
 }
+

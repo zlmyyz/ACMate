@@ -109,7 +109,7 @@ describe('Auth Store', () => {
       })
 
       const auth = useAuthStore()
-      await auth.register('new', 'password', 'New')
+      await auth.register('new', 'password', 'New', 'new@example.com', '123456')
 
       expect(auth.user).toBeNull()
       expect(auth.isLoggedIn).toBe(false)

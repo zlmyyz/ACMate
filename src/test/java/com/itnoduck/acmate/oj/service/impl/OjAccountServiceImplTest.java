@@ -42,6 +42,7 @@ class OjAccountServiceImplTest {
     @Mock private SyncTaskLogMapper taskLogMapper;
     @Mock private AuditLogService auditLogService;
     @Mock private CodeforcesApiClient cfClient;
+    @Mock private org.springframework.jdbc.core.JdbcTemplate jdbc;
     @InjectMocks private OjAccountServiceImpl service;
 
     private static final Long USER_ID = 1L;
@@ -180,7 +181,7 @@ class OjAccountServiceImplTest {
 
     @Test
     void verify_notFound_throws404() {
-        when(accountMapper.selectById(ACCOUNT_ID)).thenReturn(null);
+        when(accountMapper.selectOne(any())).thenReturn(null);
         var e = assertThrows(BusinessException.class, () -> service.verify(ACCOUNT_ID, 1, adminUser));
         assertEquals(404, e.getCode());
     }
@@ -189,7 +190,7 @@ class OjAccountServiceImplTest {
     void verify_approve_setsStatusAndAudits() {
         OjAccount acc = verifiedAccount();
         acc.setVerifyStatus(0);
-        when(accountMapper.selectById(ACCOUNT_ID)).thenReturn(acc);
+        when(accountMapper.selectOne(any())).thenReturn(acc);
         service.verify(ACCOUNT_ID, 1, adminUser);
         assertEquals(1, acc.getVerifyStatus());
         verify(accountMapper).updateById(acc);
@@ -201,11 +202,30 @@ class OjAccountServiceImplTest {
     void verify_reject_setsStatusAndAudits() {
         OjAccount acc = verifiedAccount();
         acc.setVerifyStatus(0);
-        when(accountMapper.selectById(ACCOUNT_ID)).thenReturn(acc);
+        when(accountMapper.selectOne(any())).thenReturn(acc);
         service.verify(ACCOUNT_ID, 2, adminUser);
         assertEquals(2, acc.getVerifyStatus());
         verify(auditLogService).log(eq(ADMIN_ID), eq("OJ_ACCOUNT_REJECTED"), eq("OJ_ACCOUNT"), eq(ACCOUNT_ID),
                 eq("rejected"), eq("0"), eq("2"));
+    }
+
+    @Test
+    void verify_nowcoder_reserves_uid_only_after_admin_approval() {
+        OjAccount acc=verifiedAccount();acc.setPlatform("NOWCODER");acc.setExternalUserId("456");acc.setVerifyStatus(0);
+        when(accountMapper.selectOne(any())).thenReturn(acc);
+        when(jdbc.queryForObject(anyString(),eq(Long.class),eq("456"))).thenReturn(acc.getUserId());
+        service.verify(ACCOUNT_ID,1,adminUser);
+        verify(jdbc).update(contains("INSERT IGNORE INTO nowcoder_account_owner"),eq("456"),eq(acc.getUserId()));
+        assertEquals(1,acc.getVerifyStatus());
+    }
+
+    @Test
+    void verify_nowcoder_rejects_existing_owner_from_another_user() {
+        OjAccount acc=verifiedAccount();acc.setPlatform("NOWCODER");acc.setExternalUserId("456");acc.setVerifyStatus(0);
+        when(accountMapper.selectOne(any())).thenReturn(acc);
+        when(jdbc.queryForObject(anyString(),eq(Long.class),eq("456"))).thenReturn(999L);
+        assertEquals(409,assertThrows(BusinessException.class,()->service.verify(ACCOUNT_ID,1,adminUser)).getCode());
+        verify(accountMapper,never()).updateById(any(OjAccount.class));
     }
 
     // ---- syncMyAccount ----

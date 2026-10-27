@@ -24,9 +24,14 @@ public class RegisterRequest {
     @Size(min = 2, max = 32)
     private String nickname;
 
+    @NotBlank(message = "邮箱不能为空")
     @Email
     @Size(max = 128)
     private String email;
+
+    @NotBlank(message = "请输入邮箱验证码")
+    @Pattern(regexp = "[0-9]{6}", message = "验证码必须为六位数字")
+    private String emailCode;
 
     public void setUsername(String username) {
         this.username = username == null ? null : username.strip().toLowerCase(Locale.ROOT);

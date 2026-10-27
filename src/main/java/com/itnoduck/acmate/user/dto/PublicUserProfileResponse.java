@@ -8,11 +8,23 @@ public class PublicUserProfileResponse {
     private String nickname;
     private String avatarUrl;
     private String bio;
+    private String location;
+    private String gender;
+    public String getLocation() { return location; }
+    public void setLocation(String value) { location = value; }
+    public String getGender() { return gender; }
+    public void setGender(String value) { gender = value; }
     private boolean admin;
     /** ACTIVE / DISABLED */
     private String accountStatus;
     private long createdProblemCount;
     private String codeforcesHandle;
+    private String githubLogin;
+    private String githubName;
+    public String getGithubName() { return githubName; }
+    public void setGithubName(String value) { githubName = value; }
+    public String getGithubLogin() { return githubLogin; }
+    public void setGithubLogin(String value) { githubLogin = value; }
     private OjStatsResponse ojStats;
     private LocalDateTime createTime;
 

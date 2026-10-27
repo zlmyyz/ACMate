@@ -19,6 +19,10 @@ public class ProblemQueryRequest {
     private String keyword;
     @Min(1)
     private Long creatorUserId;
+    @Pattern(regexp = "SOLVED|UNSOLVED")
+    private String completion;
+    public String getCompletion() { return completion; }
+    public void setCompletion(String completion) { this.completion = completion == null || completion.isBlank() ? null : completion.strip().toUpperCase(Locale.ROOT); }
 
     public long getPage() { return page; }
     public void setPage(long page) { this.page = page; }

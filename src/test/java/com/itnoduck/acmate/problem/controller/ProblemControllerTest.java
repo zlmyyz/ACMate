@@ -99,10 +99,10 @@ class ProblemControllerTest {
                 List.of(new ProblemSummaryResponse(1L, "CUSTOM", "EXT-1", "Two Sum",
                         "https://example.com", "800", "dp,greedy", 1L, null, null,
                         LocalDateTime.of(2026, 7, 20, 12, 0))));
-        when(problemQueryService.listProblems(any())).thenReturn(page);
+        when(problemQueryService.listProblemsForUser(any(), anyLong())).thenReturn(page);
 
         mockMvc.perform(get("/api/problems")
-                        .with(user("testuser")))
+                        .with(user(buildNormalUser())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.page").value(1))
                 .andExpect(jsonPath("$.size").value(20))
@@ -443,7 +443,7 @@ class ProblemControllerTest {
     @Test
     void shouldStillAllowGetForNormalUser() throws Exception {
         PageResponse<ProblemSummaryResponse> page = new PageResponse<>(1, 20, 0, 0, List.of());
-        when(problemQueryService.listProblems(any())).thenReturn(page);
+        when(problemQueryService.listProblemsForUser(any(), anyLong())).thenReturn(page);
 
         mockMvc.perform(get("/api/problems")
                         .with(user(buildNormalUser())))

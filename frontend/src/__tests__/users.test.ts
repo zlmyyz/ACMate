@@ -35,6 +35,36 @@ vi.mock('@/api/auth', () => ({
   logout: vi.fn(),
 }))
 
+const {
+  mockGetSocialSummary,
+  mockGetFollowList,
+  mockSetFollow,
+  mockGetSubmissionActivity,
+  mockGetRecentSubmissions,
+  mockGetOjOverview,
+} = vi.hoisted(() => ({
+  mockGetSocialSummary: vi.fn(),
+  mockGetFollowList: vi.fn(),
+  mockSetFollow: vi.fn(),
+  mockGetSubmissionActivity: vi.fn(),
+  mockGetRecentSubmissions: vi.fn(),
+  mockGetOjOverview: vi.fn(),
+}))
+
+vi.mock('@/api/profile-social', () => ({
+  getSocialSummary: mockGetSocialSummary,
+  getFollowList: mockGetFollowList,
+  setFollow: mockSetFollow,
+  getSubmissionActivity: mockGetSubmissionActivity,
+  getRecentSubmissions: mockGetRecentSubmissions,
+  getOjOverview: mockGetOjOverview,
+}))
+
+// 牛客面板会自行拉取接口，个人主页测试里用占位组件隔开
+vi.mock('@/components/common/NowcoderProfilePanel.vue', () => ({
+  default: { name: 'NowcoderProfilePanel', template: '<div />' },
+}))
+
 function emptyRouter() {
   return createRouter({ history: createWebHistory(), routes: [] })
 }
@@ -54,14 +84,6 @@ function defaultProfile(overrides = {}) {
     createTime: '2024-01-15T00:00:00',
     ...overrides,
   }
-}
-
-function defaultPlans() {
-  return { plans: [], total: 0, page: 1, size: 20 }
-}
-
-function defaultProblems() {
-  return { records: [], total: 0, pages: 1, page: 1, size: 20 }
 }
 
 describe('User Profile API', () => {
@@ -193,6 +215,15 @@ describe('UserProfileView', () => {
     vi.clearAllMocks()
     const pinia = createPinia()
     setActivePinia(pinia)
+    // 个人主页改版后依赖社交与 OJ 概览接口，默认返回空数据
+    mockGetSocialSummary.mockResolvedValue({
+      followingCount: 1, followerCount: 2, following: false, ipRegion: '河北',
+      contributions: { views: 10, likes: 2, favorites: 1 },
+    })
+    mockGetFollowList.mockResolvedValue({ records: [], total: 0, page: 1, pages: 1, size: 20 })
+    mockGetSubmissionActivity.mockResolvedValue({ days: [], total: 0 })
+    mockGetRecentSubmissions.mockResolvedValue([])
+    mockGetOjOverview.mockResolvedValue({ accounts: [], stats: null })
   })
 
   async function mountProfile(route: string) {
@@ -219,34 +250,22 @@ describe('UserProfileView', () => {
     mockGetUserProfile.mockResolvedValueOnce(defaultProfile(overrides))
   }
 
-  function setupProblems(data = {}) {
-    mockGetUserProblems.mockResolvedValueOnce({ ...defaultProblems(), ...data })
-  }
-
-  function setupPlans(data = {}) {
-    mockGetUserTrainingPlans.mockResolvedValueOnce({ ...defaultPlans(), ...data })
-  }
-
   // --- Basic profile ---
 
   it('should render user profile after load', async () => {
     setupProfile()
-    setupProblems()
-    setupPlans()
 
     const wrapper = await mountProfile('/users/1')
     await flushPromises()
 
     expect(wrapper.text()).toContain('Test User')
-    expect(wrapper.text()).toContain('@testuser')
+    expect(wrapper.text()).toContain('testuser')
     expect(wrapper.text()).toContain('A bio')
-    expect(wrapper.text()).toContain('5')
+    expect(wrapper.text()).toContain('刷题统计')
   })
 
   it('should show admin badge for admin user', async () => {
     setupProfile({ admin: true })
-    setupProblems()
-    setupPlans()
 
     const wrapper = await mountProfile('/users/2')
     await flushPromises()
@@ -263,13 +282,13 @@ describe('UserProfileView', () => {
     await useAuthStore().init()
 
     setupProfile()
-    setupProblems()
-    setupPlans()
 
     const wrapper = await mountProfile('/users/1')
     await flushPromises()
 
-    expect(wrapper.text()).toContain('编辑资料')
+    const editLink = wrapper.find('.edit-profile')
+    expect(editLink.exists()).toBe(true)
+    expect(editLink.attributes('to')).toBe('/settings/profile')
   })
 
   it('should show not found when user missing', async () => {
@@ -285,8 +304,6 @@ describe('UserProfileView', () => {
 
   it('should show disabled banner for disabled user', async () => {
     setupProfile({ accountStatus: 'DISABLED' })
-    setupProblems()
-    setupPlans()
 
     const wrapper = await mountProfile('/users/1')
     await flushPromises()
@@ -296,8 +313,6 @@ describe('UserProfileView', () => {
 
   it('should not show disabled banner for active user', async () => {
     setupProfile({ accountStatus: 'ACTIVE' })
-    setupProblems()
-    setupPlans()
 
     const wrapper = await mountProfile('/users/1')
     await flushPromises()
@@ -309,127 +324,55 @@ describe('UserProfileView', () => {
 
   it('should show Codeforces handle when present', async () => {
     setupProfile({ codeforcesHandle: 'tourist' })
-    setupProblems()
-    setupPlans()
 
     const wrapper = await mountProfile('/users/1')
     await flushPromises()
 
     expect(wrapper.text()).toContain('tourist')
-    expect(wrapper.text()).toContain('Codeforces')
+    expect(wrapper.find('a[href="https://codeforces.com/profile/tourist"]').exists()).toBe(true)
   })
 
   it('should not show Codeforces section when handle is null', async () => {
     setupProfile({ codeforcesHandle: null })
-    setupProblems()
-    setupPlans()
 
     const wrapper = await mountProfile('/users/1')
     await flushPromises()
 
-    expect(wrapper.text()).not.toContain('Codeforces')
+    expect(wrapper.find('a[href*="codeforces.com/profile"]').exists()).toBe(false)
   })
 
   // --- OJ Stats ---
 
   it('should show OJ stats when present', async () => {
-    setupProfile({
-      ojStats: {
+    setupProfile()
+    mockGetOjOverview.mockResolvedValue({
+      accounts: [],
+      stats: {
         solvedCount: 100,
         solvedCount30d: 20,
         solvedCount7d: 5,
         lastAcceptedTime: '2024-06-01T12:00:00',
       },
     })
-    setupProblems()
-    setupPlans()
 
     const wrapper = await mountProfile('/users/1')
     await flushPromises()
 
     expect(wrapper.text()).toContain('刷题统计')
+    expect(wrapper.text()).toContain('累计通过')
+    expect(wrapper.text()).toContain('近 30 天通过')
+    expect(wrapper.text()).toContain('近 7 天通过')
     expect(wrapper.text()).toContain('100')
-    expect(wrapper.text()).toContain('20')
-    expect(wrapper.text()).toContain('5')
-    expect(wrapper.text()).toContain('总通过')
-    expect(wrapper.text()).toContain('30天通过')
-    expect(wrapper.text()).toContain('7天通过')
   })
 
-  it('should not show OJ stats section when null', async () => {
-    setupProfile({ ojStats: null })
-    setupProblems()
-    setupPlans()
-
-    const wrapper = await mountProfile('/users/1')
-    await flushPromises()
-
-    expect(wrapper.text()).not.toContain('刷题统计')
-  })
-
-  // --- Public problems ---
-
-  it('should show problem list', async () => {
+  it('should fall back to placeholder when stats are missing', async () => {
     setupProfile()
-    setupProblems({
-      records: [
-        { id: 1, title: 'Problem A', platform: 'CODEFORCES', difficulty: '800', tags: null, creatorUserId: 1, creatorUsername: 'test', creatorNickname: 'Test', createTime: '2024-01-01T00:00:00' },
-        { id: 2, title: 'Problem B', platform: 'ATCODER', difficulty: '1200', tags: null, creatorUserId: 1, creatorUsername: 'test', creatorNickname: 'Test', createTime: '2024-02-01T00:00:00' },
-      ],
-      total: 2,
-    })
-    setupPlans()
 
     const wrapper = await mountProfile('/users/1')
     await flushPromises()
 
-    expect(wrapper.text()).toContain('公开题目')
-    expect(wrapper.text()).toContain('Problem A')
-    expect(wrapper.text()).toContain('Problem B')
-  })
-
-  it('should show empty hint when no problems', async () => {
-    setupProfile()
-    setupProblems({ records: [], total: 0 })
-    setupPlans()
-
-    const wrapper = await mountProfile('/users/1')
-    await flushPromises()
-
-    expect(wrapper.text()).toContain('暂无公开题目')
-  })
-
-  // --- Public plans ---
-
-  it('should show training plan list', async () => {
-    setupProfile()
-    setupProblems()
-    setupPlans({
-      plans: [
-        { id: 1, title: 'Plan X', timeStatus: 'ONGOING', startTime: '2024-01-01T00:00:00', endTime: null, problemCount: 10, memberCount: 5, createTime: '2024-01-01T00:00:00' },
-        { id: 2, title: 'Plan Y', timeStatus: 'ENDED', startTime: '2024-01-01T00:00:00', endTime: '2024-06-01T00:00:00', problemCount: 20, memberCount: 8, createTime: '2024-02-01T00:00:00' },
-      ],
-      total: 2,
-    })
-
-    const wrapper = await mountProfile('/users/1')
-    await flushPromises()
-
-    expect(wrapper.text()).toContain('公开训练计划')
-    expect(wrapper.text()).toContain('Plan X')
-    expect(wrapper.text()).toContain('Plan Y')
-    expect(wrapper.text()).toContain('进行中')
-    expect(wrapper.text()).toContain('已结束')
-  })
-
-  it('should show empty hint when no plans', async () => {
-    setupProfile()
-    setupProblems()
-    setupPlans({ plans: [], total: 0 })
-
-    const wrapper = await mountProfile('/users/1')
-    await flushPromises()
-
-    expect(wrapper.text()).toContain('暂无公开训练计划')
+    expect(wrapper.text()).toContain('累计通过')
+    expect(wrapper.text()).toContain('—')
+    expect(wrapper.text()).toContain('暂无已同步的通过记录。')
   })
 })

@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue'
-import type { CreateProblemRequest, ProblemDetail } from '@/types/problem'
+import type { CreateProblemRequest, ProblemDetail, ImportedProblemPreview } from '@/types/problem'
+import { importNowcoderProblem } from '@/api/problems'
+import MarkdownContent from '@/components/common/MarkdownContent.vue'
 import { platformLabels } from '@/constants/labels'
 
 const props = defineProps<{
+  allowImport?: boolean
   initialData?: ProblemDetail | null
   draftKey: string
   submitting: boolean
@@ -15,6 +18,33 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
+const importUrl = ref('')
+const importing = ref(false)
+const importError = ref('')
+const importPreview = ref<ImportedProblemPreview | null>(null)
+async function readNowcoder() {
+  if (!importUrl.value.trim() || importing.value) return
+  importError.value = ''
+  importPreview.value = null
+  importing.value = true
+  try { importPreview.value = await importNowcoderProblem(importUrl.value.trim()) }
+  catch (e: unknown) {
+    const error = e as { response?: { data?: { message?: string } } }
+    importError.value = error.response?.data?.message || '读取失败，请稍后重试或手动填写'
+  } finally { importing.value = false }
+}
+function applyImport() {
+  const data = importPreview.value
+  if (!data) return
+  platform.value = data.platform
+  externalProblemKey.value = data.externalProblemKey || ''
+  title.value = data.title
+  sourceUrl.value = data.sourceUrl || ''
+  difficulty.value = data.difficulty || ''
+  tags.value = data.tags || ''
+  contentMd.value = data.contentMd || ''
+  importPreview.value = null
+}
 const platform = ref('CUSTOM')
 const externalProblemKey = ref('')
 const title = ref('')
@@ -95,7 +125,7 @@ function loadInitial() {
 }
 
 function handleSubmit() {
-  if (nonCustomNoKey.value) return
+  if (nonCustomNoKey.value || importing.value) return
   emit('submit', buildRequest())
 }
 
@@ -127,6 +157,23 @@ defineExpose({ clearDraft, isDirty })
 
 <template>
   <form class="problem-form" @submit.prevent="handleSubmit">
+    <section v-if="allowImport" class="link-import" aria-label="牛客链接导入">
+      <label for="nowcoder-import-url" class="form-label">从牛客链接导入</label>
+      <div class="import-input-row">
+        <input id="nowcoder-import-url" v-model="importUrl" type="text" inputmode="url" class="form-input" placeholder="粘贴牛客题目链接（https://…）" :disabled="importing || submitting" @keydown.enter.prevent="readNowcoder" />
+        <button type="button" class="btn-submit" :disabled="importing || submitting || !importUrl.trim()" @click="readNowcoder">{{ importing ? '读取中…' : '读取题目' }}</button>
+      </div>
+      <p class="form-hint">支持牛客竞赛题、公开题库及练习题。读取后确认填入，检查内容后再保存。</p>
+      <p v-if="importError" role="alert" class="form-error">{{ importError }}</p>
+      <div v-if="importPreview" class="import-preview" role="status">
+        <strong>{{ importPreview.title }}</strong>
+        <p class="form-hint">牛客 · {{ importPreview.externalProblemKey }}<span v-if="importPreview.difficulty"> · 难度 {{ importPreview.difficulty }}</span></p>
+        <p v-for="warning in importPreview.warnings" :key="warning" class="form-hint">{{ warning }}</p>
+        <details><summary>查看题面</summary><MarkdownContent :content="importPreview.contentMd || null" /></details>
+        <p class="form-hint">填入将替换当前表单中的题目信息。</p>
+        <div class="import-actions"><button type="button" class="btn-submit" :disabled="submitting" @click="applyImport">确认填入表单</button><button type="button" class="btn-cancel" @click="importPreview = null">取消</button></div>
+      </div>
+    </section>
     <div class="form-group">
       <label class="form-label">
         平台 <span class="required">*</span>
@@ -225,7 +272,7 @@ defineExpose({ clearDraft, isDirty })
       <button type="button" class="btn-cancel" :disabled="submitting" @click="$emit('cancel')">
         取消
       </button>
-      <button type="submit" class="btn-submit" :disabled="submitting || nonCustomNoKey">
+      <button type="submit" class="btn-submit" :disabled="submitting || importing || nonCustomNoKey">
         {{ submitting ? '提交中...' : '保存' }}
       </button>
     </div>
@@ -233,6 +280,12 @@ defineExpose({ clearDraft, isDirty })
 </template>
 
 <style scoped>
+.link-import{display:grid;gap:10px;padding-bottom:22px;border-bottom:1px solid var(--color-border-subtle)}
+.import-input-row{display:flex;gap:12px}.import-input-row input{flex:1;min-width:0}.import-input-row button{white-space:nowrap}
+.import-preview{display:grid;gap:10px;padding:16px;background:var(--color-surface-container-low);border-radius:var(--radius-sm)}
+.import-preview details summary{cursor:pointer;color:var(--color-primary)}.import-actions{display:flex;gap:10px}
+@media(max-width:600px){.import-input-row{flex-direction:column}}
+
 .problem-form {
   display: flex;
   flex-direction: column;
@@ -376,3 +429,4 @@ defineExpose({ clearDraft, isDirty })
   }
 }
 </style>
+

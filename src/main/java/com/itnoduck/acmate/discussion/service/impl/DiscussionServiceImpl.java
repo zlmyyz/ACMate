@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.itnoduck.acmate.auditlog.service.AuditLogService;
+import com.itnoduck.acmate.common.cache.RedisIdBloomFilter;
+import com.itnoduck.acmate.common.cache.RedisJsonCache;
 import com.itnoduck.acmate.common.exception.BusinessException;
 import com.itnoduck.acmate.discussion.dto.*;
 import com.itnoduck.acmate.discussion.entity.Post;
@@ -18,11 +20,14 @@ import com.itnoduck.acmate.problem.entity.Problem;
 import com.itnoduck.acmate.problem.mapper.ProblemMapper;
 import com.itnoduck.acmate.user.entity.AppUser;
 import com.itnoduck.acmate.user.mapper.AppUserMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.core.type.TypeReference;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -40,11 +45,18 @@ public class DiscussionServiceImpl implements DiscussionService {
     private final ProblemMapper problemMapper;
     private final AuditLogService auditLogService;
     private final ApplicationEventPublisher eventPublisher;
+    private final RedisJsonCache redisCache;
+    private final RedisIdBloomFilter idBloomFilter;
+    private static final Duration PUBLIC_LIST_CACHE_TTL = Duration.ofSeconds(15);
+    private static final TypeReference<List<PostSummaryResponse>> POST_LIST_TYPE = new TypeReference<>() {};
+    private static final TypeReference<Integer> POST_COUNT_TYPE = new TypeReference<>() {};
 
+    @Autowired
     public DiscussionServiceImpl(PostMapper postMapper, PostCommentMapper commentMapper,
                                   PostLikeMapper likeMapper, AppUserMapper userMapper,
                                   ProblemMapper problemMapper, AuditLogService auditLogService,
-                                  ApplicationEventPublisher eventPublisher) {
+                                  ApplicationEventPublisher eventPublisher, RedisJsonCache redisCache,
+                                  RedisIdBloomFilter idBloomFilter) {
         this.postMapper = postMapper;
         this.commentMapper = commentMapper;
         this.likeMapper = likeMapper;
@@ -52,6 +64,24 @@ public class DiscussionServiceImpl implements DiscussionService {
         this.problemMapper = problemMapper;
         this.auditLogService = auditLogService;
         this.eventPublisher = eventPublisher;
+        this.redisCache = redisCache;
+        this.idBloomFilter = idBloomFilter;
+    }
+
+    public DiscussionServiceImpl(PostMapper postMapper, PostCommentMapper commentMapper,
+                                  PostLikeMapper likeMapper, AppUserMapper userMapper,
+                                  ProblemMapper problemMapper, AuditLogService auditLogService,
+                                  ApplicationEventPublisher eventPublisher, RedisJsonCache redisCache) {
+        this(postMapper, commentMapper, likeMapper, userMapper, problemMapper, auditLogService,
+                eventPublisher, redisCache, null);
+    }
+
+    public DiscussionServiceImpl(PostMapper postMapper, PostCommentMapper commentMapper,
+                                  PostLikeMapper likeMapper, AppUserMapper userMapper,
+                                  ProblemMapper problemMapper, AuditLogService auditLogService,
+                                  ApplicationEventPublisher eventPublisher) {
+        this(postMapper, commentMapper, likeMapper, userMapper, problemMapper, auditLogService,
+                eventPublisher, null);
     }
 
     @Override
@@ -148,6 +178,9 @@ public class DiscussionServiceImpl implements DiscussionService {
     @Override
     @Transactional
     public PostDetailResponse getPostDetail(Long postId, Long userId) {
+        if (postId == null) {
+            throw new BusinessException(404, "帖子不存在");
+        }
         Post post = getPost(postId);
         boolean isAdmin = isAdminUser(userId);
         if (post.getStatus() == 0 && !post.getAuthorUserId().equals(userId) && !isAdmin) {
@@ -156,12 +189,17 @@ public class DiscussionServiceImpl implements DiscussionService {
         postMapper.update(null, new LambdaUpdateWrapper<Post>()
                 .setSql("view_count = view_count + 1")
                 .eq(Post::getId, postId));
+        eventPublisher.publishEvent(new com.itnoduck.acmate.discussion.service.PostReadStatistics.Read(postId));
         post = postMapper.selectById(postId);
         return toDetailResponse(post, userId);
     }
 
     @Override
     public List<PostSummaryResponse> listPosts(String postType, Long problemId, String keyword, int page, int size) {
+        return loadPostList(postType, problemId, keyword, page, size);
+    }
+
+    private List<PostSummaryResponse> loadPostList(String postType, Long problemId, String keyword, int page, int size) {
         LambdaQueryWrapper<Post> qw = new LambdaQueryWrapper<>();
         qw.eq(Post::getStatus, 1);
         if (postType != null && !postType.isBlank()) qw.eq(Post::getPostType, postType);
@@ -178,11 +216,17 @@ public class DiscussionServiceImpl implements DiscussionService {
         Set<Long> pids = posts.stream().map(Post::getProblemId).filter(Objects::nonNull).collect(Collectors.toSet());
         Map<Long, Problem> probMap = batchLoadProblems(pids);
 
-        return posts.stream().map(p -> toSummaryResponse(p, userMap, probMap)).collect(Collectors.toList());
+        List<PostSummaryResponse> summaries = posts.stream()
+                .map(p -> toSummaryResponse(p, userMap, probMap)).collect(Collectors.toList());
+        return summaries;
     }
 
     @Override
     public int countPosts(String postType, Long problemId, String keyword) {
+        return loadPostCount(postType, problemId, keyword);
+    }
+
+    private int loadPostCount(String postType, Long problemId, String keyword) {
         LambdaQueryWrapper<Post> qw = new LambdaQueryWrapper<>();
         qw.eq(Post::getStatus, 1);
         if (postType != null && !postType.isBlank()) qw.eq(Post::getPostType, postType);
@@ -190,6 +234,13 @@ public class DiscussionServiceImpl implements DiscussionService {
         if (keyword != null && !keyword.isBlank()) qw.like(Post::getTitle, keyword.strip());
         Long c = postMapper.selectCount(qw);
         return c != null ? c.intValue() : 0;
+    }
+
+    private String postQueryKey(String postType, Long problemId, String keyword) {
+        String material = String.valueOf(postType == null || postType.isBlank() ? "" : postType) + "\u0000"
+                + String.valueOf(problemId == null ? "" : problemId) + "\u0000"
+                + String.valueOf(keyword == null ? "" : keyword.strip());
+        return RedisJsonCache.keyFor("acmate:cache:posts:v1", material);
     }
 
     @Override

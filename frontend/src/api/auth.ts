@@ -9,7 +9,8 @@ export interface RegisterRequest {
   username: string
   password: string
   nickname: string
-  email?: string
+  email: string
+  emailCode: string
 }
 
 export interface UserInfo {
@@ -33,11 +34,11 @@ export async function login(data: LoginRequest): Promise<UserInfo> {
   return response.data
 }
 
-export async function getLoginMethods(): Promise<{ email: boolean; github: boolean }> {
+export async function getLoginMethods(): Promise<{ email: boolean; github: boolean; registration: boolean }> {
   return (await apiClient.get('/auth/methods')).data
 }
 
-async function loginPost<T>(path: string, data: unknown): Promise<T> {
+export async function loginPost<T>(path: string, data: unknown): Promise<T> {
   const csrf = await getCsrfToken()
   return (await apiClient.post<T>(path, data, { headers: { [csrf.headerName]: csrf.token } })).data
 }

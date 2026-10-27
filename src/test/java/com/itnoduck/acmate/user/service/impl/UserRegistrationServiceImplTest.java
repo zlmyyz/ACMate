@@ -26,6 +26,7 @@ class UserRegistrationServiceImplTest {
 
     @Mock
     private AppUserMapper appUserMapper;
+    @Mock private com.itnoduck.acmate.user.service.AlternativeLoginService emailLogin;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -34,7 +35,15 @@ class UserRegistrationServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new UserRegistrationServiceImpl(appUserMapper, passwordEncoder);
+        service = new UserRegistrationServiceImpl(appUserMapper, passwordEncoder, emailLogin);
+        lenient().when(emailLogin.emailAvailable()).thenReturn(true);
+    }
+
+    @Test void disabledEmailClosesRegistration() {
+        when(emailLogin.emailAvailable()).thenReturn(false);
+        assertThatThrownBy(() -> service.register(buildRequest("testuser", "password123", "Test User", "test@example.com")))
+            .isInstanceOf(BusinessException.class).hasMessageContaining("注册暂未开放");
+        verifyNoInteractions(appUserMapper);
     }
 
     @Test
@@ -92,7 +101,8 @@ class UserRegistrationServiceImplTest {
     void shouldThrow409WhenEmailExists() {
         RegisterRequest req = buildRequest("testuser", "password123", "Test User", "test@example.com");
         when(appUserMapper.selectCount(ArgumentMatchers.<LambdaQueryWrapper<AppUser>>any()))
-                .thenReturn(0L).thenReturn(0L).thenReturn(1L);
+                .thenReturn(0L);
+        when(appUserMapper.findByLoginEmail("test@example.com")).thenReturn(new AppUser());
 
         assertThatThrownBy(() -> service.register(req))
                 .isInstanceOf(BusinessException.class)
@@ -106,19 +116,9 @@ class UserRegistrationServiceImplTest {
         RegisterRequest req = buildRequest("testuser", "password123", "Test User", "   ");
         assertThat(req.getEmail()).isNull();
 
-        when(appUserMapper.selectCount(ArgumentMatchers.<LambdaQueryWrapper<AppUser>>any())).thenReturn(0L);
-        when(appUserMapper.insert(ArgumentMatchers.<AppUser>any())).thenAnswer(inv -> {
-            AppUser u = inv.getArgument(0);
-            u.setId(1L);
-            return 1;
-        });
-
-        RegisterResponse resp = service.register(req);
-        assertThat(resp.email()).isNull();
-
-        ArgumentCaptor<AppUser> captor = ArgumentCaptor.forClass(AppUser.class);
-        verify(appUserMapper).insert(captor.capture());
-        assertThat(captor.getValue().getEmail()).isNull();
+        assertThatThrownBy(() -> service.register(req)).isInstanceOf(BusinessException.class).hasMessage("邮箱不能为空");
+        verifyNoInteractions(appUserMapper);
+        verify(emailLogin, never()).verifyCode(anyString(), anyString(), anyString());
     }
 
     @Test
@@ -199,6 +199,7 @@ class UserRegistrationServiceImplTest {
         req.setPassword(password);
         req.setNickname(nickname);
         req.setEmail(email);
+        req.setEmailCode("123456");
         return req;
     }
 }

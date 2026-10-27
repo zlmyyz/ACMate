@@ -69,8 +69,12 @@ public class UserProfileServiceImpl implements UserProfileService {
         r.setId(user.getId());
         r.setUsername(user.getUsername());
         r.setNickname(user.getNickname());
-        r.setAvatarUrl(user.getAvatarUrl());
+        r.setAvatarUrl(user.getAvatarUrl() == null || user.getAvatarUrl().isBlank() ? appUserMapper.githubAvatarUrl(userId) : user.getAvatarUrl());
+        r.setLocation(user.getLocation());
+        r.setGender(user.getGender());
         r.setBio(user.getBio());
+        r.setGithubLogin(appUserMapper.githubLogin(userId));
+        r.setGithubName(appUserMapper.githubName(userId));
         r.setAdmin(user.getIsAdmin() != null && user.getIsAdmin() == 1);
         r.setAccountStatus(isDisabled ? "DISABLED" : "ACTIVE");
         r.setCreatedProblemCount(problemCount);
@@ -135,6 +139,8 @@ public class UserProfileServiceImpl implements UserProfileService {
         if (request.getBio() != null) {
             wrapper.set(AppUser::getBio, request.getBio().isBlank() ? null : request.getBio().strip());
         }
+        if (request.getLocation() != null) wrapper.set(AppUser::getLocation, request.getLocation().isBlank() ? null : request.getLocation().strip());
+        if (request.getGender() != null) wrapper.set(AppUser::getGender, request.getGender().isBlank() ? null : request.getGender());
 
         try {
             appUserMapper.update(null, wrapper);

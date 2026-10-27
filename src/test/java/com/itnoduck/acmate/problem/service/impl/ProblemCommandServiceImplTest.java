@@ -401,6 +401,16 @@ class ProblemCommandServiceImplTest {
     }
 
     @Test
+    void ownerCannotDirectlyEditOrDeactivatePublicProblem() {
+        Problem existing = buildExistingProblem(1L, 5L, 1); existing.setPlatform("NOWCODER"); existing.setExternalProblemKey("NC1");
+        when(problemMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(existing);
+        UpdateProblemRequest request = buildUpdateRequest("NOWCODER", "NC1");
+        assertEquals(403,assertThrows(BusinessException.class,()->service.updateProblem(1L,request,5L,false)).getCode());
+        assertEquals(403,assertThrows(BusinessException.class,()->service.deactivateProblem(1L,5L,false)).getCode());
+        verify(problemMapper,never()).update(any(),any(LambdaUpdateWrapper.class));
+    }
+
+    @Test
     void shouldReturn409WhenOtherProblemHasSameKey() {
         Problem existing = buildExistingProblem(1L, 5L, 1);
         UpdateProblemRequest req = buildUpdateRequest("CODEFORCES", "CONFLICT");
@@ -408,7 +418,7 @@ class ProblemCommandServiceImplTest {
         when(problemMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
 
         BusinessException ex = assertThrows(BusinessException.class,
-                () -> service.updateProblem(1L, req, 5L, false));
+                () -> service.updateProblem(1L, req, 5L, true));
         assertEquals(409, ex.getCode());
         assertEquals("该平台题目标识已存在", ex.getMessage());
         verify(problemMapper, never()).update(any(), any(LambdaUpdateWrapper.class));
@@ -424,7 +434,7 @@ class ProblemCommandServiceImplTest {
                 .thenThrow(new DuplicateKeyException("dup"));
 
         BusinessException ex = assertThrows(BusinessException.class,
-                () -> service.updateProblem(1L, req, 5L, false));
+                () -> service.updateProblem(1L, req, 5L, true));
         assertEquals(409, ex.getCode());
         assertEquals("该平台题目标识已存在", ex.getMessage());
     }

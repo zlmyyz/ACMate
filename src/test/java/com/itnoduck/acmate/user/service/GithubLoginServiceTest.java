@@ -76,7 +76,10 @@ class GithubLoginServiceTest {
         server.expect(requestTo("https://api.github.com/user"))
                 .andExpect(header("Authorization", "Bearer server-token"))
                 .andRespond(withSuccess("{\"id\":12345,\"login\":\"test-user\",\"name\":\"GitHub Display Name\"}", MediaType.APPLICATION_JSON));
-        assertEquals(new GithubProfile(12345L, "test-user", "GitHub Display Name"), service.exchangeProfile("code", "proof"));
+        server.expect(requestTo("https://api.github.com/user/emails"))
+                .andExpect(header("Authorization", "Bearer server-token"))
+                .andRespond(withSuccess("[{\"email\":\"unverified@example.com\",\"verified\":false,\"primary\":true},{\"email\":\"verified@example.com\",\"verified\":true,\"primary\":false}]", MediaType.APPLICATION_JSON));
+        assertEquals(new GithubProfile(12345L, "test-user", "GitHub Display Name", "verified@example.com"), service.exchangeProfile("code", "proof"));
         server.verify();
     }
 
@@ -107,7 +110,7 @@ class GithubLoginServiceTest {
         AppUser user = createdUser(new GithubProfile(12345L, "test-user", " GitHub 昵称 "));
         assertEquals("GitHub 昵称", user.getNickname());
         assertEquals(0, user.getIsAdmin());
-        verify(jdbc).update(startsWith("INSERT INTO user_github"), eq(12345L), eq(11L));
+        verify(jdbc).update(startsWith("INSERT INTO user_login_identity"), eq(12345L), eq(11L), eq("test-user"), eq(" GitHub 昵称 "));
     }
 
     @Test void missingDisplayNameFallsBackToGithubLogin() {
@@ -130,7 +133,7 @@ class GithubLoginServiceTest {
         assertEquals("existing-local-user", service.resolveUsername(new GithubProfile(12345L, "renamed-on-github", "Different Name")));
         verify(users, never()).insert(any(AppUser.class));
         verify(users, never()).updateById(any(AppUser.class));
-        verify(jdbc, never()).update(anyString(), any(), any());
+        verify(jdbc).update(startsWith("UPDATE user_login_identity"), eq("renamed-on-github"), eq("Different Name"), eq(12345L));
     }
 
     @Test void oldGeneratedNicknameIsReplacedWithoutCreatingAnotherAccount() {

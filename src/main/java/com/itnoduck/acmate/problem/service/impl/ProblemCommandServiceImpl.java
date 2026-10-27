@@ -122,11 +122,15 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
 
         // 资源所有权校验：创建者或管理员可以管理题目
         // 非创建者且非管理员：停用题目返回 404（不暴露存在性），正常题目返回 403
-        if (!operatorAdmin && !Objects.equals(existing.getCreatorUserId(), operatorUserId)) {
+        if (!operatorAdmin && (!"CUSTOM".equals(existing.getPlatform()) || !Objects.equals(existing.getCreatorUserId(), operatorUserId))) {
             if (existing.getStatus() != null && existing.getStatus() == 0) {
                 throw new BusinessException(404, "题目不存在");
             }
             throw new BusinessException(403, "无权修改该题目");
+        }
+
+        if (!operatorAdmin && !"CUSTOM".equals(request.getPlatform())) {
+            throw new BusinessException(403, "公共题目修改需提交管理员审核");
         }
 
         if (!"CUSTOM".equals(request.getPlatform()) && request.getExternalProblemKey() == null) {
@@ -231,7 +235,7 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
 
         // 权限判断：创建者或管理员
         // 停用题目对其他用户返回 404，不暴露私有停用题目存在性
-        if (!operatorAdmin && !Objects.equals(existing.getCreatorUserId(), operatorUserId)) {
+        if (!operatorAdmin && (!"CUSTOM".equals(existing.getPlatform()) || !Objects.equals(existing.getCreatorUserId(), operatorUserId))) {
             if (existing.getStatus() != null && existing.getStatus() == 0) {
                 throw new BusinessException(404, "题目不存在");
             }
@@ -289,7 +293,7 @@ public class ProblemCommandServiceImpl implements ProblemCommandService {
             throw new BusinessException(404, "题目不存在");
         }
 
-        if (!operatorAdmin && !Objects.equals(existing.getCreatorUserId(), operatorUserId)) {
+        if (!operatorAdmin && (!"CUSTOM".equals(existing.getPlatform()) || !Objects.equals(existing.getCreatorUserId(), operatorUserId))) {
             if (existing.getStatus() != null && existing.getStatus() == 0) {
                 throw new BusinessException(404, "题目不存在");
             }

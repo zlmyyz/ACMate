@@ -17,7 +17,7 @@ const error = ref('')
 const total = ref(0)
 const page = ref(1)
 const size = 20
-const keyword = ref('')
+const keyword = ref(typeof route.query.keyword === 'string' ? route.query.keyword : '')
 const types = Object.keys(postTypeLabels) as PostType[]
 
 function categoryFromQuery(value: unknown) {
@@ -39,9 +39,11 @@ function onSearch() { page.value = 1; fetchPosts() }
 function onPageChange(p: number) { page.value = p; fetchPosts() }
 
 onMounted(fetchPosts)
-watch(() => route.query.postType, (value) => {
+watch(() => [route.query.postType, route.query.keyword], ([value, queryKeyword]) => {
   const category = categoryFromQuery(value)
-  if (category === postType.value) return
+  const nextKeyword = typeof queryKeyword === 'string' ? queryKeyword : ''
+  if (category === postType.value && nextKeyword === keyword.value) return
+  keyword.value = nextKeyword
   postType.value = category
   page.value = 1
   fetchPosts()
@@ -146,3 +148,4 @@ watch(() => route.query.postType, (value) => {
 
 .post-stats { display: flex; gap: 12px; flex-shrink: 0; margin-left: 16px; font-size: var(--text-body-sm); color: var(--color-on-surface-variant); }
 </style>
+

@@ -9,8 +9,10 @@ const props = defineProps<{
     keyword?: string
     platform?: string
     difficulty?: string
+    completion?: string
   }
   showCreatorFilter?: boolean
+  showCompletionFilter?: boolean
   creatorId?: number | null
 }>()
 
@@ -25,6 +27,7 @@ const router = useRouter()
 const localKeyword = ref(props.modelValue.keyword || '')
 const localPlatform = ref(props.modelValue.platform || '')
 const localDifficulty = ref(props.modelValue.difficulty || '')
+const localCompletion = ref(props.modelValue.completion || '')
 const localCreatorId = ref(props.creatorId || null)
 
 const platforms = ['', 'CUSTOM', 'CODEFORCES', 'NOWCODER', 'OTHER']
@@ -35,6 +38,7 @@ watch(
     localKeyword.value = v.keyword || ''
     localPlatform.value = v.platform || ''
     localDifficulty.value = v.difficulty || ''
+    localCompletion.value = v.completion || ''
   },
 )
 
@@ -50,6 +54,7 @@ function apply() {
   if (localKeyword.value) query.keyword = localKeyword.value
   if (localPlatform.value) query.platform = localPlatform.value
   if (localDifficulty.value) query.difficulty = localDifficulty.value
+  if (props.showCompletionFilter && localCompletion.value) query.completion = localCompletion.value
   router.push({ query: { ...query, page: '1' } })
   emit('update:creatorId', localCreatorId.value || null)
   emit('search')
@@ -59,6 +64,7 @@ function reset() {
   localKeyword.value = ''
   localPlatform.value = ''
   localDifficulty.value = ''
+  localCompletion.value = ''
   localCreatorId.value = null
   router.push({ query: {} })
   emit('update:creatorId', null)
@@ -89,6 +95,9 @@ function reset() {
         class="filter-input difficulty-input"
         placeholder="难度"
       />
+      <select v-if="showCompletionFilter" v-model="localCompletion" class="filter-select" aria-label="完成状态">
+        <option value="">全部状态</option><option value="SOLVED">已完成</option><option value="UNSOLVED">未完成</option>
+      </select>
       <div v-if="showCreatorFilter" class="filter-input creator-input">
         <input
           v-model="localCreatorId"

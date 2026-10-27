@@ -43,6 +43,9 @@ class DisabledUserSessionTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @MockitoBean private com.itnoduck.acmate.security.PasswordLoginLimiter passwordLoginLimiter;
+    @MockitoBean private com.itnoduck.acmate.security.ClientIpResolver clientIpResolver;
+
     @Autowired
     private SessionRegistry sessionRegistry;
 
@@ -84,6 +87,7 @@ class DisabledUserSessionTest {
     private MockHttpSession login(String username) throws Exception {
         AppUser user = buildAppUser(1L, username, 1);
         when(appUserMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(user);
+        when(appUserMapper.selectById(user.getId())).thenReturn(user);
         MockHttpSession session = new MockHttpSession();
         mockMvc.perform(post("/api/auth/login")
                 .session(session)
@@ -152,6 +156,7 @@ class DisabledUserSessionTest {
 
         AppUser userB = buildAppUser(2L, "userB", 1);
         when(appUserMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(userB);
+        when(appUserMapper.selectById(userB.getId())).thenReturn(userB);
         MockHttpSession userBSession = new MockHttpSession();
         mockMvc.perform(post("/api/auth/login")
                 .session(userBSession)
@@ -174,3 +179,5 @@ class DisabledUserSessionTest {
                 .andExpect(jsonPath("$.username").value("userB"));
     }
 }
+
+

@@ -15,7 +15,7 @@ const route = useRoute()
 const username = ref('')
 const password = ref('')
 const showPassword = ref(false)
-const isTyping = ref(false)
+const isUsernameFocused = ref(false)
 const submitting = ref(false)
 const errorMsg = ref('')
 const mode = ref<'password' | 'email'>('password')
@@ -38,6 +38,7 @@ onUnmounted(() => clearInterval(timer))
 function changeMode(value: 'password' | 'email') {
   mode.value = value; errorMsg.value = ''; notice.value = ''; code.value = ''; password.value = ''
   showPassword.value = false
+  isUsernameFocused.value = false
 }
 
 function message(error: unknown, fallback: string): string {
@@ -101,7 +102,7 @@ async function handleLogin() {
   <div class="auth-page">
     <AnimatedLoginCharacters
       class="auth-illustration"
-      :is-typing="isTyping"
+      :is-username-focused="isUsernameFocused"
       :is-password-hidden="Boolean(password) && !showPassword"
       :is-password-revealed="showPassword && Boolean(password)"
     />
@@ -141,8 +142,8 @@ async function handleLogin() {
             autocomplete="username"
             placeholder="请输入用户名"
             :disabled="submitting"
-            @focus="isTyping = true"
-            @blur="isTyping = false"
+            @focus="isUsernameFocused = true"
+            @blur="isUsernameFocused = false"
           />
         </div>
         <div v-if="mode === 'password'" class="form-field">
@@ -154,8 +155,6 @@ async function handleLogin() {
             autocomplete="current-password"
             placeholder="请输入密码"
             :disabled="submitting"
-            @focus="isTyping = true"
-            @blur="isTyping = false"
           />
           <button
             class="password-toggle"
@@ -174,6 +173,7 @@ async function handleLogin() {
           {{ submitting ? '登录中...' : actionLabels.login }}
         </button>
       </form>
+      <p class="auth-footer"><RouterLink to="/forgot-password" class="auth-link">忘记密码？</RouterLink></p>
       <div class="other-login">
         <span class="login-hint">其他登录方式</span>
         <button type="button" class="github-button" :disabled="!methods.github || submitting || sending" @click="githubLogin">

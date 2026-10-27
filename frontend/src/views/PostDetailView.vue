@@ -9,6 +9,7 @@ import PageContainer from '@/components/layout/PageContainer.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
 import ErrorState from '@/components/common/ErrorState.vue'
 import MarkdownContent from '@/components/common/MarkdownContent.vue'
+import { getFavorite, setFavorite } from '@/api/profile-social'
 
 const route = useRoute()
 const router = useRouter()
@@ -20,13 +21,29 @@ const notFound = ref(false)
 const commentText = ref('')
 const replyTo = ref<{ id: number; username: string } | null>(null)
 const commentSaving = ref(false)
+const favorite = ref({ favorited: false, count: 0 })
+const favoriteBusy = ref(false)
+const favoriteError = ref('')
+const favoriteLoaded = ref(false)
+async function loadFavorite() {
+  favoriteError.value = ''; favoriteLoaded.value = false
+  try { favorite.value = await getFavorite(postId.value); favoriteLoaded.value = true }
+  catch { favoriteError.value = '收藏状态加载失败，请重试' }
+}
+async function toggleFavorite() {
+  if (favoriteBusy.value || !favoriteLoaded.value) return
+  favoriteBusy.value = true; favoriteError.value = ''
+  try { favorite.value = await setFavorite(postId.value, !favorite.value.favorited) }
+  catch { favoriteError.value = '收藏操作失败，请稍后重试' }
+  finally { favoriteBusy.value = false }
+}
 
 const postId = computed(() => Number(route.params.id))
 const canEdit = computed(() => post.value && auth.user?.id === post.value.authorUserId)
 
 async function fetch() {
   loading.value = true; error.value = ''; notFound.value = false
-  try { post.value = await getPostDetail(postId.value) }
+  try { post.value = await getPostDetail(postId.value); if (post.value.active) await loadFavorite() }
   catch (e: unknown) {
     const err = e as { response?: { status: number } }
     if (err.response?.status === 404) { notFound.value = true; return }
@@ -126,7 +143,9 @@ onMounted(fetch)
           <button class="like-btn" :class="{ liked: post.likedByMe }" @click="handleLike">
             {{ post.likedByMe ? '♥' : '♡' }} {{ post.likeCount }}
           </button>
+          <button class="like-btn favorite-btn" :class="{ favorited: favorite.favorited }" :disabled="favoriteBusy || !favoriteLoaded || !post.active" :aria-pressed="favorite.favorited" @click="toggleFavorite">{{ favorite.favorited ? '★ 已收藏' : '☆ 收藏' }} {{ favorite.count }}</button>
         </div>
+        <p v-if="favoriteError" class="favorite-error" role="alert">{{ favoriteError }} <button v-if="!favoriteLoaded" @click="loadFavorite">重试</button></p>
       </div>
 
       <div class="comments-section">
@@ -204,7 +223,8 @@ onMounted(fetch)
 
 .content { margin-bottom: 16px; color: var(--color-on-surface); line-height: 1.7; }
 
-.like-row { display: flex; justify-content: center; padding-top: 12px; border-top: 1px solid var(--color-border-subtle); }
+.like-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; padding-top: 12px; border-top: 1px solid var(--color-border-subtle); }
+.favorite-btn.favorited { color: #b98513; border-color: #d3ae5c; }.favorite-btn:disabled { opacity: .5; cursor: not-allowed; }.favorite-error { text-align: center; color: var(--color-status-critical); font-size: 13px; margin-top: 12px; }.favorite-error button { background: none; border: 0; color: inherit; text-decoration: underline; cursor: pointer; }
 .like-btn { height: 40px; padding: 0 24px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md); background: transparent; font-size: var(--text-body-lg); cursor: pointer; transition: all 0.2s; }
 .like-btn.liked { color: var(--color-status-critical); border-color: var(--color-status-critical); }
 .like-btn:hover { transform: scale(1.05); }

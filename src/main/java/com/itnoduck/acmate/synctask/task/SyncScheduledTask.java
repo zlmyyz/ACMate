@@ -35,6 +35,7 @@ public class SyncScheduledTask {
         }
         try {
             var accounts = accountMapper.selectList(new LambdaQueryWrapper<OjAccount>()
+                    .eq(OjAccount::getPlatform, "CODEFORCES")
                     .eq(OjAccount::getVerifyStatus, 1)
                     .eq(OjAccount::getSyncEnabled, 1));
             log.info("Scheduled sync started: {} verified accounts to sync", accounts.size());

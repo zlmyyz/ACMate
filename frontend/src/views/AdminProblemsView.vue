@@ -11,6 +11,7 @@ import PaginationBar from '@/components/common/PaginationBar.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
 import ErrorState from '@/components/common/ErrorState.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import ProblemReviews from '@/components/problem/ProblemReviews.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -43,6 +44,7 @@ function getRowClass(problem: AdminProblemSummary) {
 }
 
 function creatorLabel(p: AdminProblemSummary) {
+  if (p.creatorUserId === null) return '系统导入'
   if (p.creatorNickname) {
     return `${p.creatorNickname} (${p.creatorUsername || '#' + p.creatorUserId})`
   }
@@ -404,6 +406,7 @@ onMounted(() => {
         </div>
       </div>
     </Teleport>
+    <ProblemReviews pending />
   </PageContainer>
 </template>
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
-import { getProblemDetail, updateProblem } from '@/api/problems'
+import { getProblemDetail, updateProblem, submitProblemReview } from '@/api/problems'
 import { useAuthStore } from '@/stores/auth'
 import type { ProblemDetail, UpdateProblemRequest } from '@/types/problem'
 import PageContainer from '@/components/layout/PageContainer.vue'
@@ -20,6 +20,7 @@ const pageError = ref('')
 const formRef = ref<InstanceType<typeof ProblemForm> | null>(null)
 
 const problemId = computed(() => Number(route.params.id))
+const isProposal = computed(() => !!problem.value && problem.value.platform !== 'CUSTOM' && !auth.isAdmin)
 const DRAFT_KEY = computed(() => `acmate:edit-problem:${problemId.value}:draft`)
 
 async function loadProblem() {
@@ -27,7 +28,7 @@ async function loadProblem() {
   pageError.value = ''
   try {
     problem.value = await getProblemDetail(problemId.value)
-    if (!auth.isAdmin && auth.user && auth.user.id !== problem.value.creatorUserId) {
+    if (!auth.isAdmin && problem.value.platform === 'CUSTOM' && auth.user && auth.user.id !== problem.value.creatorUserId) {
       pageError.value = 'forbidden'
     }
   } catch (e: unknown) {
@@ -50,10 +51,11 @@ async function handleSubmit(data: UpdateProblemRequest) {
   errorMsg.value = ''
   submitting.value = true
   try {
-    const result = await updateProblem(problemId.value, data)
+    if (isProposal.value) await submitProblemReview(problemId.value, data)
+    else await updateProblem(problemId.value, data)
     localStorage.removeItem(DRAFT_KEY.value)
     formRef.value?.clearDraft()
-    router.push({ name: 'problem-detail', params: { id: result.id } })
+    router.push({ name: 'problem-detail', params: { id: problemId.value }, query: isProposal.value ? { review: 'submitted' } : {} })
   } catch (e: unknown) {
     const err = e as { response?: { status: number; data?: { message?: string } } }
     if (err.response?.status === 401) {
@@ -101,7 +103,7 @@ onMounted(loadProblem)
     <template #header>
       <div class="edit-header">
         <button class="back-link" @click="handleCancel">&larr; 返回详情</button>
-        <h1 class="page-title">编辑题目</h1>
+        <h1 class="page-title">{{ isProposal ? '提交题目修改建议' : '编辑题目' }}</h1>
       </div>
     </template>
 
@@ -109,6 +111,7 @@ onMounted(loadProblem)
 
     <template v-else-if="problem && !pageError">
       <div class="form-card">
+        <p v-if="isProposal">修改建议需经管理员审核后生效；平台和题号不能修改。</p>
         <ProblemForm
           ref="formRef"
           :initial-data="problem"

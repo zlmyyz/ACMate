@@ -108,7 +108,7 @@ public class AdminProblemQueryServiceImpl implements AdminProblemQueryService {
     }
 
     private AdminProblemSummaryResponse toAdminSummaryResponse(Problem p, Map<Long, AppUser> userMap) {
-        AppUser creator = userMap.get(p.getCreatorUserId());
+        AppUser creator = p.getCreatorUserId() == null ? null : userMap.get(p.getCreatorUserId());
         return new AdminProblemSummaryResponse(
                 p.getId(), p.getPlatform(), p.getExternalProblemKey(), p.getTitle(),
                 p.getSourceUrl(), p.getDifficulty(), p.getTags(),

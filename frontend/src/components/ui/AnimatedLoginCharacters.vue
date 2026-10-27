@@ -5,12 +5,12 @@ import { siteBrand } from '@/constants/site'
 
 const props = withDefaults(
   defineProps<{
-    isTyping?: boolean
+    isUsernameFocused?: boolean
     isPasswordHidden?: boolean
     isPasswordRevealed?: boolean
   }>(),
   {
-    isTyping: false,
+    isUsernameFocused: false,
     isPasswordHidden: false,
     isPasswordRevealed: false,
   },
@@ -106,7 +106,7 @@ function trackPointer(event: PointerEvent) {
 }
 
 function characterHeight(character: Character, index: number) {
-  return index === 0 && !props.isPasswordRevealed && props.isTyping
+  return index === 0 && !props.isPasswordRevealed && props.isUsernameFocused
     ? 440
     : character.height
 }
@@ -126,13 +126,13 @@ function bodyPose(character: Character, index: number) {
   let skew = position(character, index).skew
   let shift = 0
   if (props.isPasswordRevealed) skew = 0
-  else if (index === 0 && props.isTyping) {
+  else if (index === 0 && props.isUsernameFocused) {
     skew -= 12
     shift = 40
   } else if (index === 1 && lookingAtEachOther.value) {
     skew = skew * 1.5 + 10
     shift = 20
-  } else if (index === 1 && (props.isTyping || props.isPasswordHidden)) skew *= 1.5
+  } else if (index === 1 && (props.isUsernameFocused || props.isPasswordHidden)) skew *= 1.5
   return { transform: `skewX(${skew}deg) translateX(${shift}px)` }
 }
 
@@ -152,6 +152,17 @@ function forceLook(index: number) {
   if (lookingAtEachOther.value && index < 2)
     return { x: index === 0 ? 3 : 0, y: index === 0 ? 4 : -4 }
   return null
+}
+
+function mouthPose(character: Character, index: number) {
+  const motion = position(character, index)
+  const x = props.isPasswordRevealed ? character.awayX : character.faceX
+  const y = props.isPasswordRevealed ? character.awayY : character.faceY
+  const eyesWidth = character.eyeSize * 2 + character.eyeGap
+  return {
+    left: `${x + motion.x + eyesWidth / 2 - 30}px`,
+    top: `${y + motion.y + character.eyeSize + 22}px`,
+  }
 }
 
 function schedulePeek() {
@@ -178,11 +189,11 @@ watch(
 )
 
 watch(
-  () => props.isTyping,
-  (typing) => {
+  () => props.isUsernameFocused,
+  (focused) => {
     clearTimeout(glanceTimer)
-    lookingAtEachOther.value = typing
-    if (typing)
+    lookingAtEachOther.value = focused
+    if (focused)
       glanceTimer = setTimeout(() => {
         lookingAtEachOther.value = false
       }, 800)
@@ -222,7 +233,7 @@ onUnmounted(() => {
 
     <div class="panel-message">
       <p class="panel-kicker">· 一起练习，一起成长</p>
-      <h1>把热爱，写进<br />每一次 <span>Accepted</span></h1>
+      <h1>把热爱，写进<br />每一次 <span>AC</span></h1>
       <p class="panel-description">{{ subtitle }}</p>
     </div>
 
@@ -265,6 +276,12 @@ onUnmounted(() => {
             :blink-delay="index * 1.3"
           />
         </div>
+        <div
+          v-if="index === 3"
+          class="mascot-mouth"
+          :style="mouthPose(character, index)"
+          aria-hidden="true"
+        ></div>
       </div>
       <div class="mascot-floor" aria-hidden="true"></div>
     </div>
@@ -436,6 +453,17 @@ onUnmounted(() => {
   position: absolute;
   display: flex;
   align-items: center;
+  transition:
+    left 0.32s ease-out,
+    top 0.32s ease-out;
+}
+
+.mascot-mouth {
+  position: absolute;
+  width: 60px;
+  height: 4px;
+  border-radius: 999px;
+  background: #2d2d2d;
   transition:
     left 0.32s ease-out,
     top 0.32s ease-out;

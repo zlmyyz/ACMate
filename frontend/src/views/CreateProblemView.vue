@@ -52,6 +52,7 @@ function handleCancel() {
 
     <div class="form-card">
       <ProblemForm
+        allow-import
         :draft-key="DRAFT_KEY"
         :submitting="submitting"
         :error-msg="errorMsg"

@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
 import PageContainer from '@/components/layout/PageContainer.vue'
+import UserAvatar from '@/components/common/UserAvatar.vue'
 import {
-  navLabels,
   trainingTimeStatusLabels,
   trainingTypeLabels,
   postTypeLabels,
@@ -14,7 +13,6 @@ import { listPosts } from '@/api/discussion'
 import type { PlanSummary } from '@/types/training'
 import type { PostSummary, PostType } from '@/types/discussion'
 
-const auth = useAuthStore()
 const router = useRouter()
 const planTab = ref<'MY_CREATED' | 'MY_JOINED'>('MY_CREATED')
 const postCategory = ref<PostType | ''>('')
@@ -94,49 +92,8 @@ onUnmounted(() => {
 
 <template>
   <PageContainer>
-    <template #header>
-      <div class="welcome-section">
-        <h1 class="welcome-title">欢迎回来，{{ auth.user?.nickname || auth.user?.username }}</h1>
-        <p v-if="auth.isAdmin" class="role-badge">管理员</p>
-      </div>
-    </template>
-
-    <div class="home-grid">
-      <section class="home-card">
-        <h2 class="card-title">快速入口</h2>
-        <div class="quick-links">
-          <RouterLink to="/problems" class="quick-link">
-            <span class="link-icon">&#128218;</span>
-            <span class="link-label">{{ navLabels.problems }}</span>
-          </RouterLink>
-          <RouterLink to="/problems/create" class="quick-link">
-            <span class="link-icon">&#10133;</span>
-            <span class="link-label">创建题目</span>
-          </RouterLink>
-          <RouterLink to="/my/problems" class="quick-link">
-            <span class="link-icon">&#128451;</span>
-            <span class="link-label">{{ navLabels.myProblems }}</span>
-          </RouterLink>
-          <RouterLink v-if="auth.isAdmin" to="/admin/problems" class="quick-link">
-            <span class="link-icon">&#128202;</span>
-            <span class="link-label">{{ navLabels.adminProblems }}</span>
-          </RouterLink>
-          <RouterLink to="/training-plans" class="quick-link">
-            <span class="link-icon">&#128220;</span>
-            <span class="link-label">{{ navLabels.trainingPlans }}</span>
-          </RouterLink>
-          <RouterLink to="/posts" class="quick-link">
-            <span class="link-icon">&#128172;</span>
-            <span class="link-label">{{ navLabels.discussions }}</span>
-          </RouterLink>
-          <RouterLink to="/leaderboard" class="quick-link">
-            <span class="link-icon">&#127942;</span>
-            <span class="link-label">{{ navLabels.leaderboard }}</span>
-          </RouterLink>
-        </div>
-      </section>
-
-      <section class="home-card" aria-labelledby="my-plans-title" :aria-busy="plansLoading">
+    <div class="home-sections">
+      <section class="home-section" aria-labelledby="my-plans-title" :aria-busy="plansLoading">
         <div class="section-heading">
           <h2 id="my-plans-title" class="section-title">我的训练计划</h2>
           <div class="section-actions">
@@ -189,12 +146,13 @@ onUnmounted(() => {
           </RouterLink>
         </div>
         <ul v-else class="preview-list plan-preview">
-          <li v-for="plan in plans" :key="plan.id">
+          <li v-for="(plan, index) in plans.slice(0, 3)" :key="plan.id">
             <RouterLink
               :to="{ name: 'plan-detail', params: { id: plan.id } }"
               class="preview-row"
               :class="{ 'row-inactive': !plan.active }"
             >
+              <div class="plan-art" :class="`plan-art-${index % 3}`" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none"><rect x="13" y="10" width="38" height="45" rx="6" stroke="currentColor" stroke-width="3" /><path d="m22 26 5 5 11-12M22 43h20M34 32h8" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" /></svg></div>
               <div class="preview-main">
                 <div class="preview-title-row">
                   <span class="preview-title">{{ plan.title }}</span>
@@ -207,19 +165,14 @@ onUnmounted(() => {
                     plan.endTime ? `截止 ${formatDate(plan.endTime)}` : '不限截止时间'
                   }}</span>
                 </div>
+                <span class="plan-status" :class="plan.active ? plan.timeStatus.toLowerCase() : 'inactive'">{{ plan.active ? trainingTimeStatusLabels[plan.timeStatus] : '已停用' }}</span>
               </div>
-              <span
-                class="plan-status"
-                :class="plan.active ? plan.timeStatus.toLowerCase() : 'inactive'"
-              >
-                {{ plan.active ? trainingTimeStatusLabels[plan.timeStatus] : '已停用' }}
-              </span>
             </RouterLink>
           </li>
         </ul>
       </section>
 
-      <section class="home-card" aria-labelledby="discussion-title" :aria-busy="postsLoading">
+      <section class="home-section discussion-section" aria-labelledby="discussion-title" :aria-busy="postsLoading">
         <div class="section-heading">
           <div class="discussion-heading-main">
             <h2 id="discussion-title" class="section-title">讨论区</h2>
@@ -256,30 +209,30 @@ onUnmounted(() => {
           <RouterLink to="/posts/create" class="section-link">发布第一篇讨论</RouterLink>
         </div>
         <ul v-else class="preview-list post-preview">
-          <li v-for="post in posts" :key="post.id">
-            <RouterLink :to="{ name: 'post-detail', params: { id: post.id } }" class="preview-row">
-              <div class="preview-main">
+          <li v-for="post in posts" :key="post.id" class="feed-post">
+            <RouterLink :to="`/users/${post.authorUserId}`" class="feed-avatar" :aria-label="`${post.authorNickname || post.authorUsername}的个人主页`"><UserAvatar :src="post.authorAvatarUrl" :name="post.authorNickname || post.authorUsername" /></RouterLink>
+              <div class="preview-main feed-main">
+                <RouterLink :to="`/users/${post.authorUserId}`" class="feed-author">{{ post.authorNickname || post.authorUsername }}</RouterLink>
                 <div class="preview-title-row">
                   <span v-if="post.pinned" class="item-badge pinned-badge">置顶</span>
                   <span class="item-badge">{{
                     postTypeLabels[post.postType] || post.postType
                   }}</span>
                   <span v-if="!post.active" class="item-badge">已停用</span>
-                  <span class="preview-title">{{ post.title }}</span>
+                  <RouterLink :to="{ name: 'post-detail', params: { id: post.id } }" class="preview-title post-title-link">{{ post.title }}</RouterLink>
                 </div>
                 <div class="preview-meta">
-                  <span>{{ post.authorNickname || post.authorUsername }}</span>
                   <span>{{ formatDate(post.createTime) }}</span>
                   <span v-if="post.problemTitle" class="related-problem">{{
                     post.problemTitle
                   }}</span>
-                </div>
-              </div>
-              <div class="post-counts">
+                  <span>{{ post.viewCount }} 次阅读</span>
+                  <div class="post-counts">
                 <span>{{ post.commentCount }} 评论</span>
                 <span>{{ post.likeCount }} 赞</span>
+                  </div>
+                </div>
               </div>
-            </RouterLink>
           </li>
         </ul>
       </section>
@@ -288,318 +241,49 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-.welcome-section {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.welcome-title {
-  font-family: var(--font-headline);
-  font-size: var(--text-display-lg);
-  font-weight: 700;
-  line-height: var(--leading-display-lg);
-  color: var(--color-on-surface);
-}
-
-.role-badge {
-  font-size: var(--text-label-sm);
-  font-weight: 600;
-  color: var(--color-on-primary);
-  background: var(--color-primary-container);
-  padding: 2px 12px;
-  border-radius: 999px;
-}
-
-.home-grid {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-stack-lg);
-}
-
-.home-card {
-  background: var(--color-surface-card);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
-  padding: 24px;
-}
-
-.card-title {
-  font-family: var(--font-headline);
-  font-size: var(--text-headline-sm);
-  font-weight: 600;
-  color: var(--color-on-surface);
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--color-border-subtle);
-}
-
-.section-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--color-border-subtle);
-}
-.section-title {
-  flex-shrink: 0;
-  margin: 0;
-  font: 600 var(--text-headline-sm)/1.4 var(--font-headline);
-  color: var(--color-on-surface);
-}
-.discussion-heading-main {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px 20px;
-}
-.discussion-filters {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-.discussion-filters button {
-  padding: 7px 10px;
-  border-radius: var(--radius-md);
-  color: var(--color-on-surface-variant);
-  white-space: nowrap;
-}
-.discussion-filters button:hover {
-  background: var(--color-surface-container-low);
-}
-.discussion-filters button.selected {
-  color: var(--color-primary);
-  background: var(--color-surface-container-low);
-  font-weight: 600;
-}
-.discussion-filters button:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 3px;
-}
-.section-actions {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-}
-.section-link {
-  color: var(--color-primary);
-  font-weight: 500;
-}
-.section-link:hover {
-  text-decoration: underline;
-}
-.section-action {
-  padding: 7px 14px;
-  border-radius: var(--radius-md);
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-  font-weight: 500;
-}
-.plan-filters {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding-top: 16px;
-}
-.plan-filters button {
-  padding: 7px 12px;
-  border-radius: var(--radius-md);
-  color: var(--color-on-surface-variant);
-}
-.plan-filters button.selected {
-  background: var(--color-surface-container-low);
-  color: var(--color-primary);
-  font-weight: 600;
-}
-.plan-total {
-  margin-left: auto;
-  color: var(--color-on-surface-variant);
-  font-size: var(--text-label-sm);
-}
-.section-status,
-.section-empty {
-  padding: 30px 16px;
-  text-align: center;
-  color: var(--color-on-surface-variant);
-}
-.section-empty {
-  display: grid;
-  justify-items: center;
-  gap: 10px;
-}
-.section-empty p {
-  color: var(--color-on-surface);
-  font-weight: 500;
-}
-.section-empty > span {
-  color: var(--color-outline);
-}
-.section-error {
-  color: var(--color-error);
-}
-.retry-button {
-  margin-top: 12px;
-  color: var(--color-primary);
-  text-decoration: underline;
-}
-.preview-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.preview-list li + li {
-  border-top: 1px solid var(--color-border-subtle);
-}
-.preview-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 18px 8px;
-  border-radius: 6px;
-}
-.preview-row:hover {
-  background: var(--color-surface-container-low);
-}
-.preview-main {
-  flex: 1;
-  min-width: 0;
-}
-.preview-title-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  margin-bottom: 7px;
-}
-.preview-title {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--color-on-surface);
-  font-weight: 600;
-  font-size: var(--text-body-lg);
-}
-.item-badge {
-  flex-shrink: 0;
-  padding: 1px 7px;
-  border-radius: 5px;
-  background: var(--color-surface-container-low);
-  color: var(--color-on-surface-variant);
-  font-size: var(--text-label-sm);
-}
-.pinned-badge {
-  color: #986500;
-  background: #fff5da;
-}
-.preview-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 16px;
-  color: var(--color-on-surface-variant);
-  font-size: var(--text-label-sm);
-}
-.related-problem {
-  max-width: 280px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.plan-status {
-  flex-shrink: 0;
-  font-size: var(--text-label-sm);
-  color: var(--color-on-surface-variant);
-}
-.plan-status.ongoing {
-  color: var(--color-primary);
-}
-.plan-status.not_started {
-  color: #9a6900;
-}
-.plan-status.ended,
-.plan-status.inactive {
-  color: var(--color-outline);
-}
-.row-inactive .preview-title {
-  color: var(--color-outline);
-}
-.post-counts {
-  display: flex;
-  flex-shrink: 0;
-  gap: 16px;
-  color: var(--color-on-surface-variant);
-  font-size: var(--text-label-sm);
-}
-.section-action:focus-visible,
-.section-link:focus-visible,
-.preview-row:focus-visible,
-.plan-filters button:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 3px;
-}
-@media (max-width: 600px) {
-  .home-card {
-    padding: 20px 16px;
-  }
-  .preview-row {
-    align-items: flex-start;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-  .preview-title {
-    font-size: var(--text-body-md);
-  }
-  .preview-meta {
-    gap: 5px 10px;
-  }
-  .post-counts {
-    width: 100%;
-  }
-  .section-actions {
-    gap: 12px;
-  }
-}
-
-.quick-links {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 12px;
-}
-
-.quick-link {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-md);
-  font-size: var(--text-body-md);
-  font-weight: 500;
-  color: var(--color-on-surface);
-  transition:
-    box-shadow 0.2s,
-    border-color 0.2s;
-}
-
-.quick-link:hover {
-  box-shadow: var(--shadow-sm);
-}
-
-.link-icon {
-  font-size: 20px;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-md);
-  background: var(--color-surface-container-low);
-}
+.home-sections { display: flex; flex-direction: column; gap: 44px; }
+.home-section { min-width: 0; padding: 0; }
+.discussion-section { border-top: 1px solid color-mix(in srgb, var(--color-on-surface-variant) 40%, transparent); padding-top: 28px; }
+.section-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 16px; }
+.section-title { flex-shrink: 0; margin: 0; font: 600 22px/1.4 var(--font-headline); color: var(--color-on-surface); }
+.section-actions { display: flex; align-items: center; gap: 18px; font-size: 14px; }
+.section-link { color: var(--color-on-surface-variant); font-weight: 500; text-decoration: none; }.section-link:hover { color: var(--color-primary-container); }
+.section-action { padding: 7px 0; color: var(--color-primary-container); font-weight: 500; text-decoration: none; }
+.plan-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.plan-filters button { padding: 5px 11px; border: 0; border-radius: 6px; background: transparent; color: var(--color-on-surface-variant); cursor: pointer; font: inherit; font-size: 13px; }
+.plan-filters button.selected { background: var(--color-surface-container-low); color: var(--color-primary-container); font-weight: 600; }
+.plan-total { margin-left: auto; color: var(--color-on-surface-variant); font-size: 12px; }
+.preview-list { list-style: none; margin: 0; padding: 0; }
+.plan-preview { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 18px; }
+.plan-preview li { min-width: 0; }
+.plan-preview .preview-row { display: flex; align-items: center; gap: 16px; height: 100%; padding: 14px; background: var(--color-surface-container-low); border-radius: 10px; text-decoration: none; }
+.plan-preview .preview-row:hover { background: var(--color-surface-container); }
+.plan-art { display: grid; place-items: center; width: 76px; height: 88px; flex-shrink: 0; border-radius: 7px; }
+.plan-art svg { width: 52px; height: 52px; }.plan-art-0 { background: #daf0e8; color: #25836e; }.plan-art-1 { background: #e9e0f5; color: #8460b1; }.plan-art-2 { background: #dcebf6; color: #447fa7; }
+.preview-main { flex: 1; min-width: 0; }
+.preview-title-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-width: 0; margin-bottom: 10px; }
+.preview-title { color: var(--color-on-surface); font-weight: 600; font-size: 17px; line-height: 1.5; text-decoration: none; }
+.plan-preview .preview-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.plan-preview .item-badge { display: none; }
+.preview-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; color: var(--color-on-surface-variant); font-size: 12px; }
+.plan-preview .preview-meta > span:last-child { display: none; }
+.plan-status { display: inline-block; margin-top: 8px; font-size: 12px; color: var(--color-on-surface-variant); }.plan-status.ongoing { color: var(--color-primary-container); }.plan-status.not_started { color: #9a6900; }.row-inactive { opacity: .65; }
+.discussion-heading-main { display: flex; flex: 1; align-items: center; flex-wrap: wrap; gap: 16px 24px; min-width: 0; }
+.discussion-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.discussion-filters button { padding: 10px 14px; border: 0; border-radius: 7px; background: transparent; color: var(--color-on-surface-variant); font: inherit; font-size: 15px; cursor: pointer; white-space: nowrap; }
+.discussion-filters button:hover { color: var(--color-on-surface); }.discussion-filters button.selected { color: var(--color-on-surface); background: var(--color-surface-container-low); font-weight: 600; }
+.discussion-section .section-heading { margin-bottom: 8px; }
+.feed-post { position: relative; display: flex; align-items: flex-start; gap: 18px; padding: 28px 0; border-bottom: 1px solid var(--color-border-subtle); }
+.post-title-link::after { content: ''; position: absolute; inset: 0; z-index: 1; }
+.post-title-link:focus-visible::after { outline: 2px solid var(--color-primary-container); outline-offset: 3px; border-radius: 6px; }
+.feed-avatar,.feed-author { position: relative; z-index: 2; }
+.feed-avatar { width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%; overflow: hidden; }
+.feed-author { display: inline-block; margin-bottom: 10px; color: var(--color-on-surface-variant); font-size: 14px; text-decoration: none; }.feed-author:hover { color: var(--color-primary-container); }
+.feed-main .preview-title-row { margin-bottom: 14px; }.feed-main .preview-title { font-size: 20px; overflow-wrap: anywhere; }.post-title-link:hover { color: var(--color-primary-container); }
+.item-badge { flex-shrink: 0; padding: 2px 7px; border-radius: 4px; background: var(--color-surface-container-low); color: var(--color-on-surface-variant); font-size: 11px; }.pinned-badge { color: #986500; background: #fff5da; }
+.post-counts { display: flex; align-items: center; gap: 16px; margin-left: auto; }.related-problem { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.section-status,.section-empty { padding: 28px 0; color: var(--color-on-surface-variant); }.section-empty { display: grid; gap: 10px; }.section-empty p { margin: 0; color: var(--color-on-surface); }.section-empty > span { font-size: 14px; }.section-empty .section-link { justify-self: start; color: var(--color-primary-container); }.section-error { color: var(--color-status-critical); }.retry-button { padding: 0; margin-top: 10px; border: 0; background: transparent; color: var(--color-primary-container); cursor: pointer; text-decoration: underline; }
+button:focus-visible,a:focus-visible { outline: 2px solid var(--color-primary-container); outline-offset: 3px; }
+@media(max-width:1000px) { .plan-preview { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media(max-width:600px) { .home-sections { gap: 34px; }.plan-preview { grid-template-columns: minmax(0,1fr); gap: 10px; }.plan-preview > li:last-child:nth-child(3) { display: list-item; }.plan-art { width: 64px; height: 68px; }.plan-art svg { width: 44px; height: 44px; }.section-title { font-size: 20px; }.section-actions { gap: 14px; font-size: 13px; }.discussion-filters { gap: 3px; }.discussion-filters button { padding: 8px 10px; font-size: 14px; }.feed-post { padding: 22px 0; gap: 12px; }.feed-avatar { width: 34px; height: 34px; }.feed-main .preview-title { font-size: 17px; }.post-counts { margin-left: 0; }.plan-total { width: 100%; margin-left: 0; } }
 </style>

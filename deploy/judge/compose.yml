@@ -1,0 +1,17 @@
+services:
+  judge:
+    # 开发用途。向学生开放前必须部署到独立 VM 并完成 docs/上线安全要求.md 的隔离验收。
+    build: .
+    image: acmate-go-judge:1.13.3
+    container_name: acmate-go-judge
+    privileged: true
+    shm_size: 256m
+    mem_limit: 2g
+    cpus: 2
+    pids_limit: 256
+    ports:
+      - "127.0.0.1:5050:5050"
+    environment:
+      ES_AUTH_TOKEN: ${JUDGE_TOKEN:?Run start-judge.ps1 first}
+    command: ["-http-addr", "0.0.0.0:5050", "-parallelism", "1", "-no-fallback", "-file-timeout", "5m", "-src-prefix", "/usr,/bin", "-copy-out-limit", "4m"]
+    restart: unless-stopped

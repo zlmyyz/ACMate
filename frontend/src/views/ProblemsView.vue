@@ -26,6 +26,7 @@ const filters = computed<ProblemQueryParams>(() => ({
   keyword: (route.query.keyword as string) || undefined,
   platform: (route.query.platform as string) || undefined,
   difficulty: (route.query.difficulty as string) || undefined,
+  completion: (route.query.completion as string) || undefined,
 }))
 
 function syncFromQuery() {
@@ -49,11 +50,6 @@ async function fetchProblems() {
   } finally {
     loading.value = false
   }
-}
-
-function onSearch() {
-  page.value = 1
-  fetchProblems()
 }
 
 function onPageChange(p: number) {
@@ -91,11 +87,13 @@ onMounted(() => {
     <div class="problems-page">
       <ProblemFilters
         v-model="filters"
-        @search="onSearch"
+        show-completion-filter
       />
 
       <div class="problems-card">
-        <ProblemTable :problems="problems" :loading="loading" />
+        <ProblemTable :problems="problems" :loading="loading">
+          <template #status="{ problem }"><span :class="(problem as ProblemSummary).solved ? 'solved' : 'unsolved'">{{ (problem as ProblemSummary).solved ? '✓ 已完成' : '未完成' }}</span></template>
+        </ProblemTable>
         <EmptyState
           v-if="!loading && !error && problems.length === 0"
           message="没有找到符合当前条件的题目。"
@@ -157,6 +155,8 @@ onMounted(() => {
   flex-direction: column;
   gap: var(--space-stack-md);
 }
+.solved { color: var(--color-status-success); font-weight: 600; white-space: nowrap; }
+.unsolved { color: var(--color-on-surface-variant); white-space: nowrap; }
 
 .problems-card {
   background: var(--color-surface-card);

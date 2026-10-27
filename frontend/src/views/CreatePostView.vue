@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { createPost } from '@/api/discussion'
@@ -19,6 +19,10 @@ const saving = ref(false)
 const error = ref('')
 
 const types: PostType[] = ['SOLUTION', 'QUESTION', 'CONTEST_SUMMARY', 'TRAINING_EXPERIENCE', 'ANNOUNCEMENT', 'OTHER']
+
+// Refresh roles granted after this browser session was created.
+const checkingPermission = ref(true)
+onMounted(async () => { try { await auth.init() } finally { checkingPermission.value = false } })
 
 const canSelect = (t: PostType) => t !== 'ANNOUNCEMENT' || auth.isAdmin
 const isSolution = () => postType.value === 'SOLUTION'
@@ -55,7 +59,7 @@ async function handleCreate() {
     } else if (status === 401) {
       error.value = '登录已失效，请重新登录'
     } else if (status === 403) {
-      error.value = '无权发布'
+      error.value = err.response?.data?.message ?? '无权发布，请检查账号权限或刷新页面后重试'
     } else if (status === 409) {
       error.value = err.response?.data?.message ?? '内容冲突，请修改后重试'
     } else if (status === 500) {
@@ -78,7 +82,7 @@ async function handleCreate() {
 
       <div class="field">
         <label class="field-label">类型</label>
-        <select v-model="postType" class="field-input">
+        <select v-model="postType" class="field-input" :disabled="checkingPermission">
           <option v-for="t in types" :key="t" :value="t" :disabled="!canSelect(t)">
             {{ postTypeLabels[t] || t }}{{ !canSelect(t) ? '（仅管理员）' : '' }}
           </option>
@@ -153,3 +157,4 @@ async function handleCreate() {
 .save-btn:hover:not(:disabled) { opacity: 0.9; }
 .save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 </style>
+

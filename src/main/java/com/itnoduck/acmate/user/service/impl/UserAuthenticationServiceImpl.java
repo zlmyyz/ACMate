@@ -21,17 +21,24 @@ public class UserAuthenticationServiceImpl implements UserAuthenticationService 
     private final AuthenticationManager authenticationManager;
     private final SecurityContextRepository securityContextRepository;
     private final SessionAuthenticationStrategy sessionAuthenticationStrategy;
+    private final com.itnoduck.acmate.security.PasswordLoginLimiter loginLimiter;
+    private final com.itnoduck.acmate.security.ClientIpResolver clientIp;
 
     public UserAuthenticationServiceImpl(AuthenticationManager authenticationManager,
                                          SecurityContextRepository securityContextRepository,
-                                         SessionAuthenticationStrategy sessionAuthenticationStrategy) {
+                                         SessionAuthenticationStrategy sessionAuthenticationStrategy,
+                                         com.itnoduck.acmate.security.PasswordLoginLimiter loginLimiter,
+                                         com.itnoduck.acmate.security.ClientIpResolver clientIp) {
         this.authenticationManager = authenticationManager;
         this.securityContextRepository = securityContextRepository;
         this.sessionAuthenticationStrategy = sessionAuthenticationStrategy;
+        this.loginLimiter = loginLimiter;
+        this.clientIp = clientIp;
     }
 
     @Override
     public LoginResponse login(LoginRequest request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
+        loginLimiter.check(clientIp.resolve(httpRequest),request.getUsername());
         UsernamePasswordAuthenticationToken token =
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword());
 

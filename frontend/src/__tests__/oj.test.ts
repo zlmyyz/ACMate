@@ -1,3 +1,4 @@
+vi.mock('@/api/nowcoder-training',()=>({getNowcoderAccount:vi.fn().mockResolvedValue({hasAccount:false})}))
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
@@ -158,3 +159,4 @@ describe('OJAccountView sync button', () => {
     expect(wrapper.text()).toContain('1800')
   })
 })
+

@@ -83,8 +83,8 @@ public class ProblemController {
      * @return 分页题目列表
      */
     @GetMapping
-    public PageResponse<ProblemSummaryResponse> listProblems(@Valid ProblemQueryRequest request) {
-        return problemQueryService.listProblems(request);
+    public PageResponse<ProblemSummaryResponse> listProblems(@Valid ProblemQueryRequest request, @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        return problemQueryService.listProblemsForUser(request, currentUser.getId());
     }
 
     /**

@@ -1,11 +1,15 @@
 package com.itnoduck.acmate.leaderboard.service.impl;
 
+import com.itnoduck.acmate.common.cache.RedisJsonCache;
 import com.itnoduck.acmate.leaderboard.service.LeaderboardService;
 import com.itnoduck.acmate.oj.mapper.OjSubmissionMapper;
 import com.itnoduck.acmate.user.entity.AppUser;
 import com.itnoduck.acmate.user.mapper.AppUserMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.type.TypeReference;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -14,14 +18,30 @@ public class LeaderboardServiceImpl implements LeaderboardService {
 
     private final OjSubmissionMapper submissionMapper;
     private final AppUserMapper userMapper;
+    private final RedisJsonCache redisCache;
+    private static final Duration CACHE_TTL = Duration.ofSeconds(30);
+    private static final TypeReference<List<Map<String, Object>>> LEADERBOARD_TYPE = new TypeReference<>() {};
+    private static final TypeReference<Long> LEADERBOARD_COUNT_TYPE = new TypeReference<>() {};
 
-    public LeaderboardServiceImpl(OjSubmissionMapper submissionMapper, AppUserMapper userMapper) {
+    @Autowired
+    public LeaderboardServiceImpl(OjSubmissionMapper submissionMapper, AppUserMapper userMapper,
+                                  RedisJsonCache redisCache) {
         this.submissionMapper = submissionMapper;
         this.userMapper = userMapper;
+        this.redisCache = redisCache;
+    }
+
+    public LeaderboardServiceImpl(OjSubmissionMapper submissionMapper, AppUserMapper userMapper) {
+        this(submissionMapper, userMapper, null);
     }
 
     @Override
     public List<Map<String, Object>> getLeaderboard(String period, Long currentUserId, int page, int size) {
+        List<Map<String, Object>> baseRows = loadLeaderboard(period, page, size);
+        return markCurrentUser(baseRows, currentUserId);
+    }
+
+    private List<Map<String, Object>> loadLeaderboard(String period, int page, int size) {
         LocalDateTime cutoff = computeCutoff(period);
         long offset = (long) (page - 1) * size;
 
@@ -32,14 +52,31 @@ public class LeaderboardServiceImpl implements LeaderboardService {
             rows = submissionMapper.aggregateLeaderboardAll(offset, size);
         }
 
-        return enrichRows(rows, currentUserId, (page - 1) * size);
+        return enrichRows(rows, null, (page - 1) * size);
     }
 
     @Override
     public long countLeaderboard(String period) {
+        return loadLeaderboardCount(period);
+    }
+
+    private Long loadLeaderboardCount(String period) {
         LocalDateTime cutoff = computeCutoff(period);
-        if (cutoff != null) return submissionMapper.countLeaderboardUsers(cutoff);
-        return submissionMapper.countLeaderboardUsersAll();
+        return cutoff != null ? submissionMapper.countLeaderboardUsers(cutoff)
+                : submissionMapper.countLeaderboardUsersAll();
+    }
+
+    private List<Map<String, Object>> markCurrentUser(List<Map<String, Object>> rows, Long currentUserId) {
+        return rows.stream().map(row -> {
+            Map<String, Object> copy = new LinkedHashMap<>(row);
+            Object userId = copy.get("userId");
+            copy.put("isMe", userId instanceof Number number && Objects.equals(number.longValue(), currentUserId));
+            return copy;
+        }).toList();
+    }
+
+    private String normalizedPeriod(String period) {
+        return "7d".equals(period) || "30d".equals(period) ? period : "total";
     }
 
     private List<Map<String, Object>> enrichRows(List<Map<String, Object>> rows, Long currentUserId, int startRank) {

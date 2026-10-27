@@ -14,6 +14,8 @@ import com.itnoduck.acmate.problem.mapper.ProblemMapper;
 import com.itnoduck.acmate.testutil.MybatisPlusTestHelper;
 import com.itnoduck.acmate.user.entity.AppUser;
 import com.itnoduck.acmate.user.mapper.AppUserMapper;
+import com.itnoduck.acmate.training.mapper.UserProblemStatusMapper;
+import com.itnoduck.acmate.training.entity.UserProblemStatus;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,6 +44,9 @@ class ProblemQueryServiceImplTest {
     private ProblemMapper problemMapper;
     @Mock
     private AppUserMapper appUserMapper;
+
+    @Mock
+    private UserProblemStatusMapper statusMapper;
 
     @InjectMocks
     private ProblemQueryServiceImpl service;
@@ -74,6 +79,23 @@ class ProblemQueryServiceImplTest {
 
     private Problem buildProblem(Long id, String title, int status) {
         return buildProblem(id, title, status, 1L);
+    }
+
+    @Test
+    void personalCompletionUsesCurrentUserAndFiltersBeforePagination() {
+        Problem first = buildProblem(10L, "First", 1); Problem second = buildProblem(11L, "Second", 1);
+        Page<Problem> resultPage = new Page<>(1, 20, 2); resultPage.setRecords(List.of(first, second));
+        when(problemMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class))).thenReturn(resultPage);
+        when(appUserMapper.selectBatchIds(any())).thenReturn(List.of());
+        UserProblemStatus solved = new UserProblemStatus(); solved.setProblemId(10L);
+        when(statusMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(solved));
+        ProblemQueryRequest request = new ProblemQueryRequest(); request.setCompletion("SOLVED");
+        var result = service.listProblemsForUser(request, 123L);
+        assertTrue(result.records().get(0).solved()); assertFalse(result.records().get(1).solved());
+        ArgumentCaptor<LambdaQueryWrapper<Problem>> captor = ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        verify(problemMapper).selectPage(any(Page.class), captor.capture());
+        assertTrue(captor.getValue().getSqlSegment().contains("EXISTS"));
+        assertTrue(captor.getValue().getParamNameValuePairs().containsValue(123L));
     }
 
     // --- getProblem ---

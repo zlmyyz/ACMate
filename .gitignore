@@ -32,6 +32,9 @@ build/
 ### VS Code ###
 .vscode/
 
+# Vite / Node build cache
+frontend/node-compile-cache/
+
 src/main/resources/application-local.yml
 uploads/
 logs/
@@ -39,3 +42,9 @@ exports/
 *.log
 *.csv
 *.xlsx
+
+# Local practice sandbox token
+deploy/judge/.judge-token
+deploy/judge/.judge-build.sha256
+deploy/judge/.sdk-cache/
+

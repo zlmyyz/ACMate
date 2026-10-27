@@ -1,0 +1,4 @@
+.judge-token
+.judge-build.sha256
+.sdk-cache/*.download
+*.log

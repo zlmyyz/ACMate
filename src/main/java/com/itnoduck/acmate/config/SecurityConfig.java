@@ -41,12 +41,16 @@ public class SecurityConfig {
         http
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
+                .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/auth/csrf").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/auth/methods", "/api/auth/github/callback").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/email/code", "/api/auth/email/login", "/api/auth/github/authorize").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/auth/register/code", "/api/auth/password/code", "/api/auth/password/reset", "/api/auth/github/link/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/auth/github/link").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/users/me").authenticated()
+                .requestMatchers("/api/users/me/**").authenticated()
                 // 用户公开主页允许未登录访问
                 .requestMatchers(HttpMethod.GET, "/api/users/**").permitAll()
                 // 管理员接口

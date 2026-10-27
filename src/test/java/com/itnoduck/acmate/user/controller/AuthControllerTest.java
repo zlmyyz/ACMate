@@ -50,7 +50,7 @@ class AuthControllerTest {
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"testuser\",\"password\":\"password123\",\"nickname\":\"Test User\",\"email\":\"test@example.com\"}"))
+                        .content("{\"emailCode\":\"123456\",\"username\":\"testuser\",\"password\":\"password123\",\"nickname\":\"Test User\",\"email\":\"test@example.com\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.username").value("testuser"));
@@ -60,7 +60,7 @@ class AuthControllerTest {
     void shouldReturn400WhenNicknameTooShortAfterTrim() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"testuser\",\"password\":\"password123\",\"nickname\":\" a \",\"email\":\"test@example.com\"}"))
+                        .content("{\"emailCode\":\"123456\",\"username\":\"testuser\",\"password\":\"password123\",\"nickname\":\" a \",\"email\":\"test@example.com\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.fieldErrors[0].field").value("nickname"));
     }
@@ -72,7 +72,7 @@ class AuthControllerTest {
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\" TestUser \",\"password\":\"password123\",\"nickname\":\"Test User\",\"email\":\"test@example.com\"}"))
+                        .content("{\"emailCode\":\"123456\",\"username\":\" TestUser \",\"password\":\"password123\",\"nickname\":\"Test User\",\"email\":\"test@example.com\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.username").value("testuser"));
     }
@@ -84,28 +84,31 @@ class AuthControllerTest {
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"testuser\",\"password\":\"password123\",\"nickname\":\"Test User\",\"email\":\"  TEST@EXAMPLE.COM  \"}"))
+                        .content("{\"emailCode\":\"123456\",\"username\":\"testuser\",\"password\":\"password123\",\"nickname\":\"Test User\",\"email\":\"  TEST@EXAMPLE.COM  \"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.email").value("test@example.com"));
     }
 
     @Test
-    void shouldNormalizeBlankEmailToNull() throws Exception {
-        when(userRegistrationService.register(any(RegisterRequest.class)))
-                .thenReturn(new RegisterResponse(1L, "testuser", "Test User", null));
-
+    void shouldRejectBlankEmail() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"testuser\",\"password\":\"password123\",\"nickname\":\"Test User\",\"email\":\"   \"}"))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.email").doesNotExist());
+                        .content("{\"emailCode\":\"123456\",\"username\":\"testuser\",\"password\":\"password123\",\"nickname\":\"Test User\",\"email\":\"   \"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors[0].field").value("email"));
+    }
+
+    @Test void shouldRejectRegistrationWithoutEmailCode() throws Exception {
+        mockMvc.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"username\":\"testuser\",\"password\":\"password123\",\"nickname\":\"Test User\",\"email\":\"test@example.com\"}"))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.fieldErrors[0].field").value("emailCode"));
     }
 
     @Test
     void shouldReturn400WhenUsernameTooShortAfterTrim() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\" ab \",\"password\":\"password123\",\"nickname\":\"Test User\",\"email\":\"test@example.com\"}"))
+                        .content("{\"emailCode\":\"123456\",\"username\":\" ab \",\"password\":\"password123\",\"nickname\":\"Test User\",\"email\":\"test@example.com\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.fieldErrors[0].field").value("username"));
     }
@@ -117,7 +120,7 @@ class AuthControllerTest {
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"testuser\",\"password\":\"password123\",\"nickname\":\"Test User\",\"email\":\"test@example.com\",\"isAdmin\":1,\"status\":0}"))
+                        .content("{\"emailCode\":\"123456\",\"username\":\"testuser\",\"password\":\"password123\",\"nickname\":\"Test User\",\"email\":\"test@example.com\",\"isAdmin\":1,\"status\":0}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1L));
     }
@@ -126,7 +129,7 @@ class AuthControllerTest {
     void shouldReturn400WhenPasswordTooShort() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"testuser\",\"password\":\"123\",\"nickname\":\"Test User\",\"email\":\"test@example.com\"}"))
+                        .content("{\"emailCode\":\"123456\",\"username\":\"testuser\",\"password\":\"123\",\"nickname\":\"Test User\",\"email\":\"test@example.com\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.fieldErrors[0].field").value("password"));
     }
@@ -138,7 +141,7 @@ class AuthControllerTest {
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"testuser\",\"password\":\"password123\",\"nickname\":\"Test User\",\"email\":\"test@example.com\"}"))
+                        .content("{\"emailCode\":\"123456\",\"username\":\"testuser\",\"password\":\"password123\",\"nickname\":\"Test User\",\"email\":\"test@example.com\"}"))
                 .andExpect(status().isCreated());
     }
 
@@ -147,7 +150,7 @@ class AuthControllerTest {
         mockMvc.perform(put("/api/auth/register")
                         .with(user("testuser"))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"testuser\",\"password\":\"password123\",\"nickname\":\"Test User\",\"email\":\"test@example.com\"}"))
+                        .content("{\"emailCode\":\"123456\",\"username\":\"testuser\",\"password\":\"password123\",\"nickname\":\"Test User\",\"email\":\"test@example.com\"}"))
                 .andExpect(status().isForbidden());
     }
 

@@ -1,3 +1,4 @@
+vi.mock('@/api/profile-social', () => ({ getSubmissionActivity: vi.fn().mockResolvedValue({ days: [] }) }))
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
@@ -518,3 +519,4 @@ describe('NotificationsView', () => {
     expect(wrapper.findComponent({ name: 'ErrorState' }).exists() || wrapper.text()).toBeTruthy()
   })
 })
+

@@ -29,6 +29,7 @@ public interface ProblemQueryService {
      * 分页查询公共题目列表，固定过滤 status=1，支持平台、难度和关键词筛选。
      */
     PageResponse<ProblemSummaryResponse> listProblems(ProblemQueryRequest request);
+    PageResponse<ProblemSummaryResponse> listProblemsForUser(ProblemQueryRequest request, long userId);
 
     /**
      * 分页查询当前用户的题目（含正常和停用）。

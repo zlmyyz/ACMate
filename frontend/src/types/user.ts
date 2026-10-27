@@ -26,6 +26,10 @@ export interface UserProfile {
   accountStatus: string
   createdProblemCount: number
   codeforcesHandle: string | null
+  githubLogin: string | null
+  githubName: string | null
+  location: string | null
+  gender: string | null
   ojStats: OjStats | null
   createTime: string
 }
@@ -33,4 +37,6 @@ export interface UserProfile {
 export interface UpdateProfileRequest {
   nickname?: string
   bio?: string
+  location?: string
+  gender?: string
 }

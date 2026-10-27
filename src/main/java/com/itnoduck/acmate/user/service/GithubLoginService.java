@@ -67,7 +67,7 @@ public class GithubLoginService {
         return UriComponentsBuilder.fromUriString("https://github.com/login/oauth/authorize")
                 .queryParam("client_id", properties.getGithubClientId())
                 .queryParam("redirect_uri", properties.getGithubCallbackUrl())
-                .queryParam("scope", "")
+                .queryParam("scope", "user:email")
                 .queryParam("state", state)
                 .queryParam("code_challenge", challenge(verifier))
                 .queryParam("code_challenge_method", "S256")
@@ -104,7 +104,22 @@ public class GithubLoginService {
                 throw new BusinessException(401, "无法读取 GitHub 用户名，请重新登录");
             }
             String name = profile.get("name") instanceof String displayName ? displayName : null;
-            return new GithubProfile(id.longValue(), login, name);
+            String verifiedEmail = null;
+            String rawEmails = client.get().uri("https://api.github.com/user/emails")
+                    .headers(headers -> headers.setBearerAuth(accessToken))
+                    .header("Accept", "application/vnd.github+json").header("User-Agent", "ACMate")
+                    .retrieve().body(String.class);
+            if (rawEmails != null) {
+                var emails = objectMapper.readValue(rawEmails, java.util.List.class);
+                for (Object item : emails) {
+                    if (item instanceof Map<?, ?> entry && Boolean.TRUE.equals(entry.get("verified"))
+                            && entry.get("email") instanceof String address) {
+                        if (verifiedEmail == null || Boolean.TRUE.equals(entry.get("primary"))) verifiedEmail = address;
+                        if (Boolean.TRUE.equals(entry.get("primary"))) break;
+                    }
+                }
+            }
+            return new GithubProfile(id.longValue(), login, name, verifiedEmail);
         } catch (org.springframework.web.client.RestClientException | tools.jackson.core.JacksonException ex) {
             throw new BusinessException(502, "暂时无法连接 GitHub，请稍后重试");
         }
@@ -113,8 +128,9 @@ public class GithubLoginService {
     @Transactional
     public String resolveUsername(GithubProfile profile) {
         // A permanent numeric GitHub ID remains stable when the user changes their GitHub login name.
-        var ids = jdbc.queryForList("SELECT user_id FROM user_github WHERE github_id=?", Long.class, profile.id());
+        var ids = jdbc.queryForList("SELECT user_id FROM user_login_identity WHERE provider='GITHUB' AND identifier=?", Long.class, profile.id());
         if (!ids.isEmpty()) {
+            updateIdentity(profile);
             AppUser user = users.selectById(ids.get(0));
             if (user == null) throw new BusinessException(401, "关联账号不可用，请联系管理员");
             // Upgrade only our old generated placeholder. Linked local profiles and edited nicknames stay intact.
@@ -139,8 +155,12 @@ public class GithubLoginService {
         user.setIsAdmin(0);
         user.setStatus(1);
         users.insert(user);
-        jdbc.update("INSERT INTO user_github(github_id,user_id) VALUES(?,?)", profile.id(), user.getId());
+        jdbc.update("INSERT INTO user_login_identity(identifier,user_id,login_name,display_name,provider) VALUES(?,?,?,?,'GITHUB')", profile.id(), user.getId(), profile.login(), profile.name());
         return user.getUsername();
+    }
+
+    public void updateIdentity(GithubProfile profile) {
+        jdbc.update("UPDATE user_login_identity SET login_name=?,display_name=? WHERE provider='GITHUB' AND identifier=?", profile.login(), profile.name(), profile.id());
     }
 
     private String availableNickname(GithubProfile profile, Long userId) {

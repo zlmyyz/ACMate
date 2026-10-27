@@ -13,5 +13,10 @@ public record ProblemSummaryResponse(
         Long creatorUserId,
         String creatorUsername,
         String creatorNickname,
-        LocalDateTime createTime
-) {}
+        LocalDateTime createTime,
+        boolean solved
+) {
+    public ProblemSummaryResponse(Long id,String platform,String externalProblemKey,String title,String sourceUrl,String difficulty,String tags,Long creatorUserId,String creatorUsername,String creatorNickname,LocalDateTime createTime) {
+        this(id,platform,externalProblemKey,title,sourceUrl,difficulty,tags,creatorUserId,creatorUsername,creatorNickname,createTime,false);
+    }
+}

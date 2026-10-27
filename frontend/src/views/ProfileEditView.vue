@@ -1,16 +1,35 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { updateProfile, uploadAvatar } from '@/api/users'
+import { updateProfile, uploadAvatar, getUserProfile } from '@/api/users'
 import type { UpdateProfileRequest } from '@/types/user'
 import PageContainer from '@/components/layout/PageContainer.vue'
+import UserAvatar from '@/components/common/UserAvatar.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
 
 const nickname = ref(auth.user?.nickname ?? '')
 const bio = ref(auth.user?.bio ?? '')
+const location = ref('')
+const gender = ref('')
+const savedLocation = ref('')
+const savedGender = ref('')
+const profileLoading = ref(false)
+async function loadDetails() {
+  if (!auth.user) return
+  profileLoading.value = true
+  try {
+    const profile = await getUserProfile(auth.user.id)
+    location.value = savedLocation.value = profile.location ?? ''
+    gender.value = savedGender.value = profile.gender ?? ''
+  } catch { saveError.value = '所在地与性别加载失败，请刷新页面后重试' }
+  finally { profileLoading.value = false }
+}
+onMounted(loadDetails)
+watch(() => auth.user?.id, loadDetails)
+watch(() => auth.user?.id, () => { nickname.value = auth.user?.nickname ?? ''; bio.value = auth.user?.bio ?? '' })
 const saving = ref(false)
 const saveError = ref('')
 const saveSuccess = ref(false)
@@ -72,16 +91,20 @@ async function handleSave() {
   }
   const bioTrimmed = bio.value.trim()
   if (bioTrimmed !== (auth.user?.bio ?? '')) {
-    req.bio = bioTrimmed || undefined
+    req.bio = bioTrimmed
   }
+  if (location.value.trim() !== savedLocation.value) req.location = location.value.trim()
+  if (gender.value !== savedGender.value) req.gender = gender.value
 
-  if (!req.nickname && req.bio === undefined) {
+  if (!req.nickname && req.bio === undefined && req.location === undefined && req.gender === undefined) {
     saving.value = false
     return
   }
 
   try {
     await updateProfile(req)
+    if (req.location !== undefined) savedLocation.value = req.location
+    if (req.gender !== undefined) savedGender.value = req.gender
     if (auth.user) {
       if (req.nickname !== undefined) auth.user.nickname = req.nickname
       if (req.bio !== undefined) auth.user.bio = req.bio || null
@@ -110,10 +133,7 @@ async function handleSave() {
 
       <div class="avatar-section">
         <div class="avatar-preview">
-          <img v-if="auth.user?.avatarUrl" :src="auth.user.avatarUrl" alt="头像" />
-          <span v-else class="avatar-placeholder">
-            {{ (auth.user?.nickname || auth.user?.username || '?').charAt(0).toUpperCase() }}
-          </span>
+          <UserAvatar :src="auth.user?.avatarUrl" :name="auth.user?.nickname" />
         </div>
         <label class="upload-btn" :class="{ disabled: avatarUploading }">
           {{ avatarUploading ? '上传中...' : '更换头像' }}
@@ -148,6 +168,15 @@ async function handleSave() {
         </div>
 
         <div class="field">
+          <label for="profile-location" class="field-label">所在地</label>
+          <input id="profile-location" v-model="location" class="field-input" maxlength="128" placeholder="例如：河北 石家庄" :disabled="profileLoading || saving" />
+          <p class="field-hint">手动填写所在地，IP 属地根据登录地区自动更新。</p>
+        </div>
+        <div class="field">
+          <label for="profile-gender" class="field-label">性别</label>
+          <select id="profile-gender" v-model="gender" class="field-input" :disabled="profileLoading || saving"><option value="">未填写</option><option value="MALE">男</option><option value="FEMALE">女</option><option value="PRIVATE">保密</option></select>
+        </div>
+        <div class="field">
           <label class="field-label">个人简介</label>
           <textarea
             v-model="bio"
@@ -166,7 +195,7 @@ async function handleSave() {
           <span v-if="saveError" class="save-error">{{ saveError }}</span>
         </div>
         <button class="cancel-btn" @click="router.back()">取消</button>
-        <button class="save-btn" :disabled="saving || !nicknameValid" @click="handleSave">
+        <button class="save-btn" :disabled="saving || profileLoading || !nicknameValid" @click="handleSave">
           {{ saving ? '保存中...' : '保存' }}
         </button>
       </div>
@@ -178,6 +207,9 @@ async function handleSave() {
 .edit-header {
   display: flex;
   align-items: center;
+  width: 100%;
+  max-width: 640px;
+  margin-inline: auto;
 }
 
 .back-link {
@@ -200,7 +232,9 @@ async function handleSave() {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
   padding: 32px;
+  width: 100%;
   max-width: 640px;
+  margin-inline: auto;
 }
 
 .edit-title {

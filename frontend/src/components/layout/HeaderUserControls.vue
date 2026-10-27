@@ -1,0 +1,29 @@
+<script setup lang="ts">
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import { useNotificationStore } from '@/stores/notifications'
+import { getSubmissionActivity } from '@/api/profile-social'
+import UserAvatar from '@/components/common/UserAvatar.vue'
+const auth=useAuthStore(), notification=useNotificationStore(), route=useRoute(), router=useRouter()
+const keyword=ref(''), scope=ref('problems'), streak=ref<number|null>(null), menu=ref<HTMLDetailsElement>()
+const badgeText=computed(()=>notification.unreadCount>99?'99+':notification.unreadCount>0?String(notification.unreadCount):'')
+watch(()=>route.fullPath,()=>{ if(menu.value) menu.value.open=false; if(['/posts','/problems'].includes(route.path)){scope.value=route.path.slice(1);keyword.value=typeof route.query.keyword==='string'?route.query.keyword:''} },{immediate:true})
+watch(()=>auth.user?.id,async id=>{streak.value=null;if(!id)return;try{const activity=await getSubmissionActivity(id);if(auth.user?.id!==id)return;const days=[...activity.days].sort((a,b)=>a.date.localeCompare(b.date));let i=days.length-1;if(days[i]?.count===0)i--;let count=0;while(i>=0&&days[i]!.count>0){count++;i--}streak.value=count}catch{}},{immediate:true})
+function search(){void router.push({path:'/'+scope.value,query:keyword.value.trim()?{keyword:keyword.value.trim()}:{}})}
+async function logout(){await auth.logout();notification.reset();await router.push({name:'login'})}
+</script>
+<template>
+<div class="user-controls">
+<form class="header-search" role="search" @submit.prevent="search"><button aria-label="搜索"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6.5"/><path d="m15 15 6 6"/></svg></button><input v-model="keyword" type="search" placeholder="搜索" aria-label="搜索关键词"/><select v-model="scope" aria-label="搜索范围"><option value="problems">题目</option><option value="posts">讨论</option></select></form>
+<template v-if="auth.user">
+<RouterLink to="/notifications" class="notif-bell" :aria-label="`消息通知，${notification.unreadCount} 条未读`" title="消息通知"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4M12 2V1"/></svg><span v-if="badgeText" class="badge">{{badgeText}}</span></RouterLink>
+<RouterLink :to="`/users/${auth.user.id}`" class="streak" :title="streak===null?'连续提交天数暂不可用':`连续提交 ${streak} 天`"><svg viewBox="0 0 24 24"><path d="M13 2c1 5-4 6-3 10 2 0 3-2 3-4 4 3 6 6 5 9a6 6 0 0 1-12-1c0-4 4-7 7-14Z"/></svg>{{streak??'—'}}</RouterLink>
+<details ref="menu" class="account-menu" @keydown.esc="menu && (menu.open=false)" @focusout="(event: FocusEvent) => { if(menu && !menu.contains(event.relatedTarget as Node)) menu.open=false }"><summary aria-label="个人账号菜单"><UserAvatar :src="auth.user.avatarUrl" :name="auth.user.nickname"/></summary><nav aria-label="个人账号"><strong>{{auth.user.nickname||auth.user.username}}</strong><small v-if="auth.isAdmin">管理员</small><RouterLink :to="`/users/${auth.user.id}`">个人主页</RouterLink><RouterLink to="/settings/profile">编辑个人资料</RouterLink><RouterLink to="/settings/security">账号安全</RouterLink><button @click="logout">退出登录</button></nav></details>
+</template>
+</div>
+</template>
+<style scoped>
+.user-controls{display:flex;align-items:center;gap:14px;flex-shrink:0;color:var(--color-on-surface-variant)}svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.header-search{display:flex;align-items:center;gap:8px;border-radius:999px;padding:8px 12px;background:var(--color-surface-container-low)}.header-search button{display:flex;padding:0;color:inherit}.header-search input{width:70px;min-width:0;border:0;outline:0;background:transparent;color:var(--color-on-surface);font:inherit}.header-search:focus-within{box-shadow:0 0 0 2px var(--color-primary)}.header-search select{border:0;background:transparent;color:inherit;font-size:12px;cursor:pointer}.header-search option{background:var(--color-surface-container-lowest)}.notif-bell{position:relative;display:grid;place-items:center;width:40px;height:40px;border-radius:9px;color:inherit;transition:background .2s}.notif-bell:hover,.notif-bell:focus-visible{background:var(--color-surface-container-low);color:var(--color-on-surface)}.notif-bell:hover svg{animation:ring .5s ease;transform-origin:50% 15%}.badge{position:absolute;right:-3px;top:0;min-width:16px;height:16px;padding:0 3px;border-radius:10px;display:grid;place-items:center;background:var(--color-status-error);color:white;font-size:10px;font-weight:700}.streak{display:flex;align-items:center;gap:5px;color:inherit;font-weight:600}.streak:hover{color:var(--color-primary)}.account-menu{position:relative}.account-menu summary{display:block;list-style:none;width:34px;height:34px;border-radius:50%;cursor:pointer}.account-menu summary::-webkit-details-marker{display:none}.account-menu summary:hover,.account-menu[open] summary{outline:2px solid var(--color-primary);outline-offset:3px}.account-menu nav{position:absolute;right:0;top:48px;display:grid;min-width:180px;gap:3px;padding:10px;border:1px solid var(--color-border-subtle);border-radius:12px;background:var(--color-surface-container-lowest);box-shadow:0 8px 30px #0002}.account-menu nav strong,.account-menu nav small{padding:5px 8px}.account-menu nav a,.account-menu nav button{text-align:left;padding:9px 8px;color:inherit;border-radius:6px;font:inherit}.account-menu nav a:hover,.account-menu nav button:hover{background:var(--color-surface-container-low)}@keyframes ring{0%,100%{transform:rotate(0)}25%{transform:rotate(12deg)}50%{transform:rotate(-10deg)}75%{transform:rotate(6deg)}}@media(prefers-reduced-motion:reduce){.notif-bell:hover svg{animation:none}}@media(max-width:650px){.user-controls{gap:6px}.header-search{gap:4px;padding:6px}.header-search input{width:45px}}
+</style>
+
