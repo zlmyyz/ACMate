@@ -9,7 +9,7 @@
 - **MyBatis-Plus 3.5.17** + MySQL 8.0
 - **Spring Security** — Session 登录 + CSRF
 - **Flyway** — 数据库版本迁移
-- **Maven** — 构建管理
+- **Maven** — 构建管理1
 
 ### 前端
 - **Vue 3** + TypeScript + Vite 8
@@ -43,7 +43,7 @@
 - 成员加入 / 退出 / 重新加入
 - 成员进度跟踪（题目状态、备注、排名、计分）
 - 必做 / 选做题目区分
-- 计划截止时间与停用
+- 计划截止时间与停用1
 
 ### OJ 账号绑定与同步
 - Codeforces 账号绑定
