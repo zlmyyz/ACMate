@@ -13,7 +13,7 @@ https://github.com/user-attachments/assets/e4facc2c-1c83-44a4-98ed-668b53096a94
 - **MyBatis-Plus 3.5.17** + MySQL 8.0
 - **Spring Security** — Session 登录 + CSRF
 - **Flyway** — 数据库版本迁移
-- **Maven** — 构建管理
+- **Maven** — 构建管理1
 
 ### 前端
 - **Vue 3** + TypeScript + Vite 8
@@ -28,7 +28,7 @@ https://github.com/user-attachments/assets/e4facc2c-1c83-44a4-98ed-668b53096a94
 - 注册 / Session 登录 / 退出
 - 普通用户与管理员两级权限
 - 个人资料编辑（昵称、头像、Bio）
-- 公开个人主页
+- 公开个人主页1
 
 ### 帖子讨论
 - 帖子 CRUD（普通帖 / 求助帖 / 公告帖）
@@ -47,7 +47,7 @@ https://github.com/user-attachments/assets/e4facc2c-1c83-44a4-98ed-668b53096a94
 - 成员加入 / 退出 / 重新加入
 - 成员进度跟踪（题目状态、备注、排名、计分）
 - 必做 / 选做题目区分
-- 计划截止时间与停用
+- 计划截止时间与停用1
 
 ### OJ 账号绑定与同步
 - Codeforces 账号绑定
@@ -57,7 +57,7 @@ https://github.com/user-attachments/assets/e4facc2c-1c83-44a4-98ed-668b53096a94
 - 同步任务日志
 
 ### 可信排行榜
-- 全站 / 30 天 / 7 天排行
+- 全站 / 30 天 / 7 天排行1
 - 并列排名、分页、lastAcceptedTime
 - 基于真实 Codeforces 数据
 
